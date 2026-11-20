@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "app.h"
+#include "board.h"
 
 using namespace Gdiplus;
 
@@ -23,7 +24,7 @@ static int g_hover = -1, g_press = -1;
 
 /* layout */
 #define W_INIT 1040
-#define H_INIT 640
+#define H_INIT 860
 #define PAD 22
 #define HEADER_H 64
 #define CARD_R 14
@@ -77,6 +78,35 @@ static void text(Graphics *g, const char *s, const RectF &r, float size,
     g->DrawString(wide, -1, &f, r, &fmt, &b);
 }
 
+static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim)
+{
+    /* scale the board into the card, keeping its aspect ratio */
+    float pad = 16.0f;
+    float avail_w = area.Width - pad * 2, avail_h = area.Height - pad * 2;
+    float sx = avail_w / BOARD_WIDTH, sy = avail_h / BOARD_HEIGHT;
+    float s = sx < sy ? sx : sy;
+    float ox = area.X + (area.Width - BOARD_WIDTH * s) / 2;
+    float oy = area.Y + (area.Height - BOARD_HEIGHT * s) / 2;
+    float gap = 2.0f;
+    int i;
+    Font key(L"Tahoma", 9.0f, FontStyleRegular, UnitPixel);
+    SolidBrush textbrush(dim);
+    for (i = 0; i < KEY_COUNT; i++) {
+        RectF k(ox + KEYS[i].x * s + gap / 2, oy + KEYS[i].y * s + gap / 2,
+                KEYS[i].w * s - gap, KEYS[i].h * s - gap);
+        fill_round(g, k, 4.0f, Color(255, 32, 37, 47));
+        stroke_round(g, k, 4.0f, line, 1.0f);
+        if (k.Width > 26.0f) {
+            StringFormat c;
+            c.SetAlignment(StringAlignmentCenter);
+            c.SetLineAlignment(StringAlignmentCenter);
+            wchar_t lbl[32];
+            MultiByteToWideChar(CP_UTF8, 0, KEYS[i].label, -1, lbl, 32);
+            g->DrawString(lbl, -1, &key, k, &c, &textbrush);
+        }
+    }
+}
+
 static void paint(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC dc = BeginPaint(hwnd, &ps);
@@ -118,6 +148,16 @@ static void paint(HWND hwnd) {
         int right_w = 300;
         int left_w = rc.right - PAD * 3 - right_w;
 
+        /* keyboard card across the top */
+        {
+            RectF kb((REAL)PAD, (REAL)top, (REAL)(rc.right - PAD * 2), 340.0f);
+            fill_round(&g, kb, CARD_R, card);
+            stroke_round(&g, kb, CARD_R, line, 1.0f);
+            text(&g, "KEYBOARD", RectF(kb.X + 18, kb.Y + 12, 200, 20), 11.0f, dim, StringAlignmentNear);
+            draw_keyboard(&g, RectF(kb.X + 8, kb.Y + 30, kb.Width - 16, kb.Height - 38), line, dim);
+        }
+        top += 356;
+
         /* effect card */
         RectF lc((REAL)PAD, (REAL)top, (REAL)left_w, (REAL)(rc.bottom - top - PAD));
         fill_round(&g, lc, CARD_R, card);
@@ -125,7 +165,7 @@ static void paint(HWND hwnd) {
         text(&g, "EFFECT", RectF(lc.X + 18, lc.Y + 12, 200, 20), 11.0f, dim, StringAlignmentNear);
 
         {
-            int cols = 3, cw = (left_w - 18 * 2 - (cols - 1) * 10) / cols, ch = 44;
+            int cols = 3, cw = (left_w - 18 * 2 - (cols - 1) * 10) / cols, ch = 34;
             int i, x0 = (int)lc.X + 18, y0 = (int)lc.Y + 38;
             for (i = 0; i < app_effect_count(); i++) {
                 int cx = x0 + (i % cols) * (cw + 10);
@@ -146,7 +186,7 @@ static void paint(HWND hwnd) {
         /* right column */
         {
             int rx = rc.right - PAD - right_w;
-            RectF rc2((REAL)rx, (REAL)top, (REAL)right_w, 250.0f);
+            RectF rc2((REAL)rx, (REAL)top, (REAL)right_w, 232.0f);
             fill_round(&g, rc2, CARD_R, card);
             stroke_round(&g, rc2, CARD_R, line, 1.0f);
             text(&g, "COLOUR", RectF(rc2.X + 18, rc2.Y + 12, 160, 20), 11.0f, dim, StringAlignmentNear);

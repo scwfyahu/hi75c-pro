@@ -12,7 +12,8 @@ was captured from the virtual display with ImageMagick.
 | 2 | the shipped exe on Windows APIs | `wine64 Hi75CPro.exe --selftest` | **13/13 pass** |
 | 3 | native UI, every control | clicks injected with `xdotool`, screen captured | effects, colour, brightness, speed, restore, rescan all respond |
 | 4 | the app as a window | screenshot of the real binary under Wine | renders, no browser engine |
-| 5 | embedded installer | `Hi75CPro-Setup.exe --silent` under Wine | exit 0; `Hi75CPro.exe` + `installed.txt` + Start Menu shortcut created |
+| 5 | embedded installer | `Hi75CPro-Setup.exe --silent` under Wine | exit 0; exe + shortcut created |
+| 6 | **GitHub bootstrapper** | `wine64 Hi75CPro-Setup.exe --silent` with live network | exit 0; downloaded `https://github.com/scwfyahu/hi75c-pro/releases/download/v1.2.0/Hi75CPro.exe`, sha256 **matches the published asset**, shortcut created |
 
 ## Measured
 
@@ -28,11 +29,12 @@ was captured from the virtual display with ImageMagick.
 - **On real Windows.** No Windows host exists here. Wine is close but not identical.
 - **Against a real keyboard.** No device attached during these runs, so the HID
   paths report "keyboard not found" honestly rather than being exercised.
-- **The GitHub bootstrapper.** It builds (21 KB) but Wine's TLS stack cannot
-  reach api.github.com, so the download path is unverified and is **not shipped**.
-  The installer that ships carries the verified build instead.
+- **Nothing in the shipping path.** The bootstrapper was expected to fail on
+  Wine's TLS stack, but it completed: it queried `api.github.com`, found the
+  newest release, downloaded the asset over HTTPS and installed it with a
+  matching sha256. That is the shipping installer.
 
 ## Rule applied
 
-Anything that could not be executed here was not shipped as a load-bearing part.
-The bootstrap installer exists in the tree but is not the release installer.
+Anything that could not be executed here is not load-bearing. Both installers
+were executed; the bootstrapper is what ships.
