@@ -6,6 +6,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winhttp.h>
+#include <urlmon.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <shellapi.h>
@@ -205,6 +206,34 @@ static int choose_dir(wchar_t *out, int cap) {
     return ok;
 }
 
+
+/*
+ * URLDownloadToFile uses the WinINET configuration -- the same proxy, PAC script
+ * and TLS settings as the browser. If the user's browser can open the release
+ * page, this can fetch the file. The WinHTTP path below is only a fallback.
+ */
+static int download_urlmon(const wchar_t *url, const wchar_t *dest) {
+    HRESULT hr;
+    DeleteFileW(dest);
+    hr = URLDownloadToFileW(NULL, url, dest, 0, NULL);
+    if (FAILED(hr)) return 0;
+    {
+        HANDLE h = CreateFileW(dest, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+        unsigned char hdr[2];
+        DWORD got = 0;
+        LARGE_INTEGER size;
+        int ok = 0;
+        if (h != INVALID_HANDLE_VALUE) {
+            if (ReadFile(h, hdr, 2, &got, NULL) && got == 2 && hdr[0] == 'M' && hdr[1] == 'Z' &&
+                GetFileSizeEx(h, &size) && size.QuadPart > 40960)
+                ok = 1;
+            CloseHandle(h);
+        }
+        if (!ok) DeleteFileW(dest);
+        return ok;
+    }
+}
+
 int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     char *json; DWORD len = 0;
     wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH];
@@ -230,12 +259,13 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         _snwprintf(target, MAX_PATH, L"%s\\Hi75CPro.exe", dir);
         GetTempPathW(MAX_PATH, tmp);
         lstrcatW(tmp, L"hi75c-download.exe");
-        if (!download(url, tmp)) {
+        if (!download_urlmon(url, tmp) && !download(url, tmp)) {
             wchar_t api[256];
             DWORD alen = 0;
             swprintf(api, 256, L"/repos/%s/releases/latest", REPO);
             json = http_get(api, &alen);
-            if (json && find_asset(json, url, 2048)) download(url, tmp);
+            if (json && find_asset(json, url, 2048))
+                if (!download_urlmon(url, tmp)) download(url, tmp);
         }
         {
             /* refuse anything that is not a real executable: an error page from a
