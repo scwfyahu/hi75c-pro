@@ -400,6 +400,15 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         case WM_ERASEBKGND:
             return 1;
         case WM_DESTROY:
+            {
+                WINDOWPLACEMENT wp;
+                RECT r;
+                memset(&wp, 0, sizeof(wp));
+                wp.length = sizeof(wp);
+                GetWindowPlacement(h, &wp);
+                r = wp.rcNormalPosition;
+                app_save_state(r.left, r.top, r.right - r.left, r.bottom - r.top);
+            }
             app_shutdown();
             PostQuitMessage(0);
             return 0;
@@ -418,6 +427,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
         const char *eff = cmdline ? strstr(cmdline, "--effect ") : NULL;
         if (eff) return app_effect_test(eff + 9);
     }
+    {
+        /* headless background runner: no window, no GDI+, just HID traffic */
+        const char *bg = cmdline ? strstr(cmdline, "--daemon ") : NULL;
+        if (bg) return app_daemon(bg + 9);
+    }
 
     GdiplusStartup(&g_gdiplus, &gsi, NULL);
     {
@@ -433,8 +447,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
     RegisterClassA(&wc);
 
-    g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
-                           CW_USEDEFAULT, CW_USEDEFAULT, W_INIT, H_INIT, NULL, NULL, inst, NULL);
+    {
+        int wx = CW_USEDEFAULT, wy = CW_USEDEFAULT, ww = W_INIT, wh = H_INIT;
+        app_load_state(&wx, &wy, &ww, &wh);
+        if (ww < 900 || wh < 700) { ww = W_INIT; wh = H_INIT; wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
+        g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
+                               wx, wy, ww, wh, NULL, NULL, inst, NULL);
+    }
     if (!g_hwnd) return 1;
     ShowWindow(g_hwnd, show);
     UpdateWindow(g_hwnd);

@@ -31,10 +31,13 @@ void app_stop_effect(void);
 int  app_keymap_set(int key_index, int type, int usage);   /* 1 on success */
 int  app_keymap_get(int key_index);                        /* current usage, -1 on failure */
 void app_clear_note(void);
+void app_save_state(int wx, int wy, int ww, int wh);
+void app_load_state(int *wx, int *wy, int *ww, int *wh);
 const char *app_import_name(void);
 
 int app_self_test(void);
 int app_effect_test(const char *path);
+int app_daemon(const char *path);
 
 #ifdef __cplusplus
 }

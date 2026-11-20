@@ -24,6 +24,7 @@
 #include "app.h"
 #include "expr.h"
 #include <commdlg.h>
+#include <shlobj.h>
 
 #define RPT 0x13
 #define RPT_LEN 20
@@ -439,6 +440,50 @@ int app_keymap_set(int idx, int type, int usage) {
 
 void app_clear_note(void) { g_state.note[0] = 0; }
 
+
+/* ------------------------------------------------------- remembered state */
+/* lighting and keymap live in the keyboard; only the app's own view state
+   needs remembering, so it goes in a tiny ini under %LOCALAPPDATA% */
+static void state_path(char *out, int cap) {
+    char dir[MAX_PATH];
+    if (!SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) { out[0] = 0; return; }
+    lstrcatA(dir, "\\Hi75C Pro");
+    CreateDirectoryA(dir, NULL);              /* the file cannot be written without it */
+    snprintf(out, cap, "%s\\state.ini", dir);
+}
+
+void app_save_state(int wx, int wy, int ww, int wh) {
+    char path[MAX_PATH];
+    FILE *f;
+    state_path(path, MAX_PATH);
+    if (!path[0]) return;
+    f = fopen(path, "w");
+    if (!f) return;
+    fprintf(f, "effect=%d\ncolour=%d\nbrightness=%d\nspeed=%d\nwindow=%d,%d,%d,%d\n",
+            g_state.effect, g_state.colour, g_state.brightness, g_state.speed, wx, wy, ww, wh);
+    fclose(f);
+}
+
+void app_load_state(int *wx, int *wy, int *ww, int *wh) {
+    char path[MAX_PATH], line[256];
+    FILE *f;
+    state_path(path, MAX_PATH);
+    if (!path[0]) return;
+    f = fopen(path, "r");
+    if (!f) return;
+    while (fgets(line, sizeof(line), f)) {
+        int a, b, c, d;
+        if (sscanf(line, "effect=%d", &a) == 1) g_state.effect = a;
+        else if (sscanf(line, "colour=%d", &a) == 1) g_state.colour = a;
+        else if (sscanf(line, "brightness=%d", &a) == 1) g_state.brightness = a;
+        else if (sscanf(line, "speed=%d", &a) == 1) g_state.speed = a;
+        else if (sscanf(line, "window=%d,%d,%d,%d", &a, &b, &c, &d) == 4 && wx) {
+            *wx = a; *wy = b; *ww = c; *wh = d;
+        }
+    }
+    fclose(f);
+}
+
 /* ------------------------------------------------------------ interface */
 
 void app_init(void) {
@@ -502,6 +547,46 @@ int app_effect_test(const char *path) {
     }
     expr_free(fx->r); expr_free(fx->g); expr_free(fx->b); free(fx);
     printf("3 checks, 0 failures\n");
+    return 0;
+}
+
+/* Runs an effect file with no user interface at all. Spawned by the app when
+   "keep running after the window closes" is set; exits when the file is gone
+   or the keyboard disappears. */
+static int g_daemon_dry;
+
+int app_daemon(const char *path) {
+    g_daemon_dry = GetEnvironmentVariableA("HI75C_DAEMON_DRY", NULL, 0) > 0;
+    Effect *fx = NULL;
+    char err[128] = "";
+    unsigned char profile[PROFILE];
+    double t0;
+
+    if (!load_effect(path, &fx, err, sizeof(err))) return 2;
+    t0 = (double)GetTickCount64();
+    for (;;) {
+        double now = ((double)GetTickCount64() - t0) / 1000.0;
+        int i;
+        if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) break;
+        memset(profile, 0, sizeof(profile));
+        for (i = 0; i < KEY_COUNT; i++) {
+            int at = KEYS[i].idx;
+            double v;
+            if (at < 0 || at >= 126) continue;
+            v = expr_eval(fx->r, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+            profile[at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            v = expr_eval(fx->g, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+            profile[126 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            v = expr_eval(fx->b, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+            profile[252 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+        }
+        if (!g_daemon_dry) {
+            if (!device_open()) break;
+            if (!p_write(dev(), 0x02, 0, profile, PROFILE)) break;
+        }
+        Sleep((DWORD)(1000 / (fx->fps > 0 ? fx->fps : 30)));
+    }
+    if (g_dev != INVALID_HANDLE_VALUE) CloseHandle(g_dev);
     return 0;
 }
 
