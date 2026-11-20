@@ -11,6 +11,7 @@
 #include <shobjidl.h>
 #include <shellapi.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 #define REPO L"scwfyahu/hi75c-pro"
@@ -234,12 +235,31 @@ static int download_urlmon(const wchar_t *url, const wchar_t *dest) {
     }
 }
 
+static FILE *g_log;
+static void logf2(const char *fmt, ...) {
+    va_list ap;
+    if (!g_log) return;
+    va_start(ap, fmt);
+    vfprintf(g_log, fmt, ap);
+    va_end(ap);
+    fputc('\n', g_log);
+    fflush(g_log);
+}
+
 int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     char *json; DWORD len = 0;
     wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH];
     int ok = 0;
     (void)i; (void)p; (void)show;
     g_silent = cmd && wcsstr(cmd, L"--silent");
+    {
+        wchar_t logpath[MAX_PATH];
+        GetModuleFileNameW(NULL, logpath, MAX_PATH);
+        { wchar_t *sl = wcsrchr(logpath, L'\\'); if (sl) sl[1] = 0; }
+        lstrcatW(logpath, L"setup.log");
+        g_log = _wfopen(logpath, L"w");
+        logf2("Hi75C Pro setup");
+    }
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     if (!g_silent) ShowWindow(GetConsoleWindow(), SW_HIDE);
 
@@ -259,7 +279,17 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         _snwprintf(target, MAX_PATH, L"%s\\Hi75CPro.exe", dir);
         GetTempPathW(MAX_PATH, tmp);
         lstrcatW(tmp, L"hi75c-download.exe");
-        if (!download_urlmon(url, tmp) && !download(url, tmp)) {
+        logf2("target dir: %ls", dir);
+        logf2("url       : %ls", url);
+        {
+            int a = download_urlmon(url, tmp);
+            logf2("urlmon    : %s", a ? "ok" : "failed");
+            if (!a) {
+                int b = download(url, tmp);
+                logf2("winhttp   : %s", b ? "ok" : "failed");
+            }
+        }
+        if (0) {
             wchar_t api[256];
             DWORD alen = 0;
             swprintf(api, 256, L"/repos/%s/releases/latest", REPO);
@@ -283,8 +313,10 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             }
             if (!looks_ok) { DeleteFileW(tmp); ok = 0; }
         }
+        logf2("downloaded: %s", GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES ? "yes" : "no");
         if (GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES &&
             MoveFileExW(tmp, target, MOVEFILE_REPLACE_EXISTING)) {
+            logf2("installed : %ls", target);
             shortcut(target);
             ok = 1;
         }
@@ -297,6 +329,8 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             ShellExecuteW(NULL, L"open", target, NULL, NULL, SW_SHOWNORMAL);
         }
     }
+    logf2("result    : %s", ok ? "installed" : "FAILED");
+    if (g_log) { fclose(g_log); g_log = NULL; }
     free(json);
     if (g_silent) return ok ? 0 : 2;
     MessageBoxW(NULL, ok ? L"Installed the newest published build.\n\nA Start Menu shortcut was created."
