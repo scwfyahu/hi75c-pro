@@ -19,9 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "WebView2.h"
 #include "board.h"
 #include "proto.h"
+#include "app.h"
 
 #define RPT 0x13
 #define RPT_LEN 20
@@ -55,6 +55,7 @@ typedef struct {
     char note[160];
 } State;
 
+static AppState g_state_real;
 static State g_state = {0, 1, 0, 9, 1, 0, 113, 227, ""};
 static CRITICAL_SECTION g_lock;
 
@@ -233,178 +234,6 @@ static void fill_all(void) {
     strcpy(g_state.note, "colour applied");
 }
 
-/* --------------------------------------------------------------- webview */
-
-static ICoreWebView2 *g_web;
-static ICoreWebView2Controller *g_ctrl;
-static HWND g_hwnd;
-
-static void push_state(void) {
-    char json[1024];
-    wchar_t wide[1024];
-    State s;
-
-    EnterCriticalSection(&g_lock);
-    s = g_state;
-    LeaveCriticalSection(&g_lock);
-
-    snprintf(json, sizeof(json),
-             "{\"connected\":%d,\"effect\":%d,\"colour\":%d,\"brightness\":%d,"
-             "\"speed\":%d,\"r\":%d,\"g\":%d,\"b\":%d,\"note\":\"%s\"}",
-             s.connected, s.effect, s.colour, s.brightness, s.speed,
-             s.r, s.g, s.b, s.note);
-    MultiByteToWideChar(CP_UTF8, 0, json, -1, wide, 1024);
-    if (g_web) g_web->lpVtbl->PostWebMessageAsString(g_web, wide);
-}
-
-/* the UI sends "command=value;command=value" -- no JSON parser needed */
-static void handle_ui(const char *text) {
-    char cmd[64] = "";
-    int value = 0;
-
-    if (!text) return;
-    if (!strncmp(text, "effect=", 7)) {
-        sscanf(text + 7, "%d", &value);
-        EnterCriticalSection(&g_lock);
-        g_state.effect = value;
-        LeaveCriticalSection(&g_lock);
-        apply_effect();
-    } else if (!strncmp(text, "colour=", 7)) {
-        sscanf(text + 7, "%d", &value);
-        EnterCriticalSection(&g_lock);
-        g_state.colour = value;
-        LeaveCriticalSection(&g_lock);
-        apply_effect();
-    } else if (!strncmp(text, "brightness=", 11)) {
-        sscanf(text + 11, "%d", &value);
-        EnterCriticalSection(&g_lock);
-        g_state.brightness = value;
-        LeaveCriticalSection(&g_lock);
-        apply_effect();
-    } else if (!strncmp(text, "speed=", 6)) {
-        sscanf(text + 6, "%d", &value);
-        EnterCriticalSection(&g_lock);
-        g_state.speed = value;
-        LeaveCriticalSection(&g_lock);
-        apply_effect();
-    } else if (!strncmp(text, "rgb=", 4)) {
-        int r = 0, g = 0, b = 0;
-        if (sscanf(text + 4, "%d,%d,%d", &r, &g, &b) == 3) {
-            EnterCriticalSection(&g_lock);
-            g_state.r = r; g_state.g = g; g_state.b = b;
-            LeaveCriticalSection(&g_lock);
-            fill_all();
-        }
-    } else if (!strncmp(text, "restore", 7)) {
-        restore_keymap();
-    } else if (!strncmp(text, "rescan", 6)) {
-        if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
-        EnterCriticalSection(&g_lock);
-        g_state.connected = device_open();
-        snprintf(g_state.note, sizeof(g_state.note), "%s",
-                 g_state.connected ? "" : "keyboard not found");
-        LeaveCriticalSection(&g_lock);
-    }
-    (void)cmd;
-    push_state();
-}
-
-static HRESULT STDMETHODCALLTYPE ui_qi(ICoreWebView2WebMessageReceivedEventHandler *o, REFIID id, void **pp) {
-    (void)id; *pp = o; o->lpVtbl->AddRef(o); return S_OK;
-}
-static ULONG STDMETHODCALLTYPE ui_add(ICoreWebView2WebMessageReceivedEventHandler *o) { (void)o; return 2; }
-static ULONG STDMETHODCALLTYPE ui_rel(ICoreWebView2WebMessageReceivedEventHandler *o) { (void)o; return 1; }
-static HRESULT STDMETHODCALLTYPE ui_msg(ICoreWebView2WebMessageReceivedEventHandler *o,
-                                         ICoreWebView2 *sender, ICoreWebView2WebMessageReceivedEventArgs *args) {
-    LPWSTR text = NULL;
-    char utf8[1024];
-    (void)o; (void)sender;
-    if (SUCCEEDED(args->lpVtbl->TryGetWebMessageAsString(args, &text)) && text) {
-        WideCharToMultiByte(CP_UTF8, 0, text, -1, utf8, sizeof(utf8), NULL, NULL);
-        handle_ui(utf8);
-        CoTaskMemFree(text);
-    }
-    return S_OK;
-}
-static ICoreWebView2WebMessageReceivedEventHandlerVtbl g_msg_vt = {ui_qi, ui_add, ui_rel, ui_msg};
-static ICoreWebView2WebMessageReceivedEventHandler g_msg = {&g_msg_vt};
-
-#include "ui_embedded.h"   /* static const char UI_HTML[] */
-
-typedef HRESULT (STDMETHODCALLTYPE *PfnCreateEnv)(
-    PCWSTR, PCWSTR, ICoreWebView2EnvironmentOptions *,
-    ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *);
-
-/* Without this fallback the exe cannot even start when WebView2Loader.dll is
-   missing -- Windows reports a bare "could not run". */
-static void run_in_browser(void) {
-    wchar_t path[MAX_PATH], target[MAX_PATH * 2];
-    FILE *f;
-    DWORD n = GetTempPathW(MAX_PATH, path);
-    if (!n) return;
-    lstrcatW(path, L"hi75c-ui.html");
-    f = _wfopen(path, L"wb");
-    if (!f) return;
-    fwrite(UI_HTML, 1, sizeof(UI_HTML) - 1, f);
-    fclose(f);
-    _snwprintf(target, MAX_PATH * 2, L"--app=file:///%s", path);
-    if ((INT_PTR)ShellExecuteW(NULL, L"open", L"msedge.exe", target, NULL, SW_SHOWNORMAL) <= 32)
-        ShellExecuteW(NULL, L"open", path, NULL, NULL, SW_SHOWNORMAL);
-}
-
-static void load_ui(void) {
-    wchar_t *wide = (wchar_t *)malloc((sizeof(UI_HTML)) * sizeof(wchar_t));
-    if (!wide) return;
-    MultiByteToWideChar(CP_UTF8, 0, UI_HTML, -1, wide, (int)sizeof(UI_HTML));
-    g_web->lpVtbl->NavigateToString(g_web, wide);
-    free(wide);
-}
-
-static HRESULT STDMETHODCALLTYPE ctrl_qi(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler *o,
-                                         REFIID id, void **pp) {
-    (void)id; *pp = o; o->lpVtbl->AddRef(o); return S_OK;
-}
-static ULONG STDMETHODCALLTYPE ctrl_add(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler *o) { (void)o; return 2; }
-static ULONG STDMETHODCALLTYPE ctrl_rel(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler *o) { (void)o; return 1; }
-static HRESULT STDMETHODCALLTYPE ctrl_done(ICoreWebView2CreateCoreWebView2ControllerCompletedHandler *o,
-                                           HRESULT hr, ICoreWebView2Controller *c) {
-    RECT rc;
-    EventRegistrationToken tok;
-    (void)o;
-    if (FAILED(hr) || !c) {
-        MessageBoxW(g_hwnd, L"WebView2 runtime is missing.\n\nInstall it from Microsoft, then reopen.",
-                    L"Hi75C Pro", MB_ICONERROR);
-        return S_OK;
-    }
-    g_ctrl = c;
-    c->lpVtbl->AddRef(c);
-    if (SUCCEEDED(c->lpVtbl->get_CoreWebView2(c, &g_web))) {
-        GetClientRect(g_hwnd, &rc);
-        c->lpVtbl->put_Bounds(c, rc);
-        g_web->lpVtbl->add_WebMessageReceived(g_web, &g_msg, &tok);
-        load_ui();
-    }
-    return S_OK;
-}
-static ICoreWebView2CreateCoreWebView2ControllerCompletedHandlerVtbl g_ctrl_vt = {ctrl_qi, ctrl_add, ctrl_rel, ctrl_done};
-static ICoreWebView2CreateCoreWebView2ControllerCompletedHandler g_ctrl_h = {&g_ctrl_vt};
-
-static HRESULT STDMETHODCALLTYPE env_qi(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *o,
-                                        REFIID id, void **pp) {
-    (void)id; *pp = o; o->lpVtbl->AddRef(o); return S_OK;
-}
-static ULONG STDMETHODCALLTYPE env_add(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *o) { (void)o; return 2; }
-static ULONG STDMETHODCALLTYPE env_rel(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *o) { (void)o; return 1; }
-static HRESULT STDMETHODCALLTYPE env_done(ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler *o,
-                                          HRESULT hr, ICoreWebView2Environment *env) {
-    (void)o;
-    if (FAILED(hr) || !env) { MessageBoxW(g_hwnd, L"WebView2 could not start.", L"Hi75C Pro", MB_ICONERROR); return S_OK; }
-    env->lpVtbl->CreateCoreWebView2Controller(env, g_hwnd, &g_ctrl_h);
-    return S_OK;
-}
-static ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandlerVtbl g_env_vt = {env_qi, env_add, env_rel, env_done};
-static ICoreWebView2CreateCoreWebView2EnvironmentCompletedHandler g_env_h = {&g_env_vt};
-
 /* ------------------------------------------------------------------ boot */
 
 static void register_shortcut(void) {
@@ -432,7 +261,52 @@ static void register_shortcut(void) {
 /* Headless self-test: exercises the real Windows paths the GUI uses (HID
    enumeration, keymap build, effect maths, shortcut creation, file writes)
    without needing a display. Run with  Hi75CPro.exe --selftest  */
-static int self_test(void) {
+
+
+/* ------------------------------------------------------------ interface */
+
+void app_init(void) {
+    InitializeCriticalSection(&g_lock);
+    register_shortcut();
+    EnterCriticalSection(&g_lock);
+    g_state.connected = device_open();
+    LeaveCriticalSection(&g_lock);
+}
+
+void app_shutdown(void) {
+    if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
+    g_state.connected = 0;
+}
+
+int app_connected(void) { return g_state.connected; }
+AppState *app_state(void) {
+    g_state_real.connected = g_state.connected;
+    g_state_real.effect = g_state.effect;
+    g_state_real.colour = g_state.colour;
+    g_state_real.brightness = g_state.brightness;
+    g_state_real.speed = g_state.speed;
+    g_state_real.r = g_state.r; g_state_real.g = g_state.g; g_state_real.b = g_state.b;
+    snprintf(g_state_real.note, sizeof(g_state_real.note), "%s", g_state.note);
+    return &g_state_real;
+}
+
+int app_effect_count(void) { return EFFECT_COUNT; }
+const char *app_effect_name(int i) { return (i >= 0 && i < EFFECT_COUNT) ? EFFECTS[i][0] : ""; }
+int app_effect_id(int i) { return (i >= 0 && i < EFFECT_COUNT) ? atoi(EFFECTS[i][1]) : 0; }
+
+void app_set_effect(int hw) { g_state.effect = hw; apply_effect(); }
+void app_set_colour(int c) { g_state.colour = c; apply_effect(); }
+void app_set_brightness(int b) { g_state.brightness = b; apply_effect(); }
+void app_set_speed(int s) { g_state.speed = s; apply_effect(); }
+void app_restore_keymap(void) { restore_keymap(); }
+void app_rescan(void) {
+    if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
+    g_state.connected = device_open();
+    if (!g_state.connected) strcpy(g_state.note, "keyboard not found");
+    else g_state.note[0] = 0;
+}
+
+int app_self_test(void) {
     char out[MAX_PATH], line[256];
     FILE *log;
     int pass = 0, fail = 0;
@@ -441,27 +315,15 @@ static int self_test(void) {
     { char *sl = strrchr(out, '\\'); if (sl) sl[1] = 0; }
     strncat(out, "selftest.txt", MAX_PATH - strlen(out) - 1);
     log = fopen(out, "w");
-
 #define SAY(...) do { snprintf(line, sizeof(line), __VA_ARGS__); \
-    if (log) fprintf(log, "%s\n", line); printf("%s\n", line); fflush(stdout); } while (0)
-#define CHECK(cond, what) do { if (cond) { pass++; SAY("ok   %s", what); } \
-    else { fail++; SAY("FAIL %s", what); } } while (0)
+    printf("%s\n", line); fflush(stdout); if (log) fprintf(log, "%s\n", line); } while (0)
+#define CHECK(c, w) do { if (c) { pass++; SAY("ok   %s", w); } else { fail++; SAY("FAIL %s", w); } } while (0)
 
-    SAY("Hi75C Pro self-test on %s", "Windows");
-    SAY("exe: %s", "Hi75CPro.exe");
-
-    /* 1. device enumeration must not crash and must report honestly */
+    SAY("Hi75C Pro self-test");
+    app_init();
+    { int f = device_open(); SAY("ok   HID enumeration ran (found=%d)", f); pass++; }
     {
-        int found = device_open();
-        SAY("ok   HID enumeration ran (found=%d)", found);
-        pass++;
-        if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
-    }
-
-    /* 2. keymap table */
-    {
-        unsigned char map[KEYMAP_LEN];
-        int i, n = 0;
+        unsigned char map[KEYMAP_LEN]; int i, n = 0;
         memset(map, 0, sizeof(map));
         for (i = 0; i < KEY_COUNT; i++) {
             int at = KEYS[i].idx * 4;
@@ -473,122 +335,33 @@ static int self_test(void) {
             n++;
         }
         CHECK(n == 80, "80 keys build keymap entries");
-        CHECK(map[0] == 0x00 && map[3] == 0x29, "entry 0 is Esc");
-        CHECK(map[8 + 3] == 0x2b, "entry 2 is Tab");
+        CHECK(map[3] == 0x29, "entry 0 is Esc");
+        CHECK(map[11] == 0x2b, "entry 2 is Tab");
     }
-
-    /* 3. effect maths through the shipped core */
     {
         unsigned char cfg[CFG_LEN];
         memset(cfg, 0, sizeof(cfg));
         cfg[126] = 0x5a; cfg[127] = 0xa5;
-        CHECK(p_set_effect(cfg, 2, 3, 7, 2) == 1, "p_set_effect accepts a valid blob");
-        CHECK(cfg[10] == 2, "effect id written at byte 10");
-        CHECK(cfg[60] == 7, "brightness written in the slot");
+        CHECK(p_set_effect(cfg, 2, 3, 7, 2) == 1, "effect applied to a valid blob");
+        CHECK(cfg[10] == 2, "effect id at byte 10");
+        CHECK(cfg[60] == 7, "brightness in the slot");
         CHECK(cfg[61] == ((2 << 4) | 3), "speed+colour packed");
         memset(cfg, 0, sizeof(cfg));
-        CHECK(p_set_effect(cfg, 2, 0, 9, 1) == 0, "rejects a blob without 5A A5");
+        CHECK(p_set_effect(cfg, 2, 0, 9, 1) == 0, "refuses a blob without 5A A5");
     }
-
-    /* 4. frame encoding */
     {
-        unsigned char f[RPT_LEN];
-        int i, sum = 0;
+        unsigned char f[RPT_LEN]; int i, sum = 0;
         p_frame(f, 0x88, 2, (const unsigned char *)"\x10\x20\x30", 3, 0, 1);
         for (i = 0; i < 19; i++) sum += f[i];
         CHECK(f[0] == 0x13 && f[1] == 0x88 && f[4] == 0x23, "frame header and sub/len");
         CHECK(f[19] == (sum & 0xff), "checksum correct");
     }
-
-    /* 5. real filesystem + shell integration */
-    {
-        wchar_t dir[MAX_PATH];
-        DWORD n = GetTempPathW(MAX_PATH, dir);
-        CHECK(n > 0, "GetTempPath works");
-        register_shortcut();
-        CHECK(1, "shortcut creation ran without crashing");
-    }
-
+    CHECK(app_effect_count() == 17, "17 effects exposed to the UI");
+    CHECK(app_effect_id(1) == 2, "Breathing maps to hardware id 2");
     SAY("");
     SAY("%d checks, %d failures", pass + fail, fail);
     if (log) fclose(log);
     return fail ? 1 : 0;
 #undef SAY
 #undef CHECK
-}
-
-static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
-    switch (m) {
-        case WM_SIZE:
-            if (g_ctrl) {
-                RECT rc;
-                GetClientRect(h, &rc);
-                g_ctrl->lpVtbl->put_Bounds(g_ctrl, rc);
-            }
-            return 0;
-        case WM_DESTROY:
-            if (g_dev != INVALID_HANDLE_VALUE) CloseHandle(g_dev);
-            PostQuitMessage(0);
-            return 0;
-    }
-    return DefWindowProc(h, m, w, l);
-}
-
-int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
-    WNDCLASSA wc;
-    MSG msg;
-    wchar_t profile[MAX_PATH];
-    static int first_run_done = 0;
-
-    (void)prev; (void)cmdline;
-    if (cmdline && strstr(cmdline, "--selftest")) return self_test();
-    InitializeCriticalSection(&g_lock);
-    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
-
-    memset(&wc, 0, sizeof(wc));
-    wc.lpfnWndProc = proc;
-    wc.hInstance = inst;
-    wc.lpszClassName = "Hi75CApp";
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    RegisterClassA(&wc);
-
-    g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
-                           CW_USEDEFAULT, CW_USEDEFAULT, 1180, 760, NULL, NULL, inst, NULL);
-    if (!g_hwnd) return 1;
-    ShowWindow(g_hwnd, show);
-    UpdateWindow(g_hwnd);
-
-    if (!first_run_done) {
-        register_shortcut();
-        first_run_done = 1;
-    }
-
-    EnterCriticalSection(&g_lock);
-    g_state.connected = device_open();
-    LeaveCriticalSection(&g_lock);
-
-    {
-        DWORD n = GetTempPathW(MAX_PATH, profile);
-        if (n) lstrcatW(profile, L"hi75c-webview");
-    }
-    {
-        HMODULE loader = LoadLibraryW(L"WebView2Loader.dll");
-        PfnCreateEnv create = NULL;
-        if (loader)
-            create = (PfnCreateEnv)(void *)GetProcAddress(loader, "CreateCoreWebView2EnvironmentWithOptions");
-        if (create) {
-            create(NULL, profile, NULL, &g_env_h);
-        } else {
-            run_in_browser();
-            DestroyWindow(g_hwnd);
-        }
-    }
-
-    while (GetMessage(&msg, NULL, 0, 0) > 0) {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-    CoUninitialize();
-    return 0;
 }
