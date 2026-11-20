@@ -1,0 +1,187 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hi75C Pro</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --line: #262b36; --text: #e8ecf4;
+    --dim: #8b95a7; --accent: #3d8bfd; --ok: #35c07a; --warn: #e0574c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; user-select: none;
+  }
+  header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 18px 24px; border-bottom: 1px solid var(--line);
+  }
+  h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .2px; }
+  .pill {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 12px; border-radius: 999px; font-size: 12px;
+    background: rgba(224,87,76,.12); color: var(--warn);
+  }
+  .pill.on { background: rgba(53,192,122,.12); color: var(--ok); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  main { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto auto;
+         gap: 20px; padding: 22px 24px; align-items: start; }
+  .boardcard { grid-column: 1 / -1; }
+  #board { position: relative; width: 100%; padding: 14px; border-radius: 12px;
+           background: #0b0d11; border: 1px solid #20242e; }
+  .k { position: absolute; border-radius: 6px; background: linear-gradient(#20242e, #191d25);
+       border: 1px solid #2c3140; display: flex; align-items: center; justify-content: center;
+       font-size: 9px; color: #8792a6; overflow: hidden; padding: 0 3px;
+       white-space: nowrap; text-overflow: ellipsis; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+  .card h2 { margin: 0 0 14px; font-size: 11px; letter-spacing: .12em;
+             text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  button {
+    font: inherit; color: var(--text); background: #1e222c; border: 1px solid var(--line);
+    border-radius: 10px; padding: 11px 10px; cursor: pointer; transition: .12s;
+    text-align: center;
+  }
+  button:hover { background: #252a36; border-color: #38404f; }
+  button.on { background: rgba(61,139,253,.16); border-color: var(--accent); color: #cfe1ff; }
+  .swatches { display: flex; gap: 9px; margin-bottom: 16px; }
+  .sw { width: 34px; height: 34px; border-radius: 9px; cursor: pointer;
+        border: 2px solid transparent; }
+  .sw.on { border-color: #fff; }
+  label { display: flex; justify-content: space-between; color: var(--dim);
+          font-size: 12px; margin: 16px 0 7px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; gap: 9px; margin-top: 18px; }
+  .row button { flex: 1; }
+  footer { padding: 0 24px 22px; color: var(--dim); font-size: 12px; min-height: 20px; }
+  .note-bad { color: var(--warn); }
+</style>
+
+<header>
+  <h1>LEOBOG Hi75C Pro</h1>
+  <span class="pill" id="status"><span class="dot"></span><span id="statusText">not connected</span></span>
+</header>
+
+<main>
+  <section class="card boardcard">
+    <h2>Keyboard</h2>
+    <div id="board"></div>
+  </section>
+
+  <section class="card">
+    <h2>Effect</h2>
+    <div class="grid" id="effects"></div>
+  </section>
+
+  <section class="card">
+    <h2>Colour</h2>
+    <div class="swatches" id="swatches"></div>
+    <label>Brightness <span id="brightVal">100%</span></label>
+    <input type="range" id="brightness" min="0" max="9" value="9">
+    <label>Speed <span id="speedVal">1x</span></label>
+    <input type="range" id="speed" min="0" max="3" value="1">
+    <div class="row">
+      <button id="restore">Restore keymap</button>
+      <button id="rescan">Rescan</button>
+    </div>
+  </section>
+</main>
+
+<footer id="note"></footer>
+
+<script>
+/*__KEYS__*/
+  var EFFECTS = [
+    ["Fixed On", 1], ["Breathing", 2], ["Spectrum Cycle", 3], ["Row Ripple", 4],
+    ["Raindrops", 5], ["Slow Wave", 6], ["Board Ripple", 7], ["Stars Twinkle", 8],
+    ["Snake", 10], ["Neon Stream", 11], ["Reactive", 12], ["Center Wave", 13],
+    ["Rainbow Wheel", 15], ["Waterfall", 16], ["Fast Flicker", 17],
+    ["Per-Key", 32], ["Off", 0]
+  ];
+  var COLOURS = [
+    ["#e0574c", 0], ["#e8a33d", 1], ["#e2d34b", 2], ["#54c07a", 3],
+    ["#4aa8e8", 4], ["#7c6cf0", 5], ["#e06cc0", 6]
+  ];
+  var state = { connected: 0, effect: 1, brightness: 9, speed: 1, note: "" };
+
+  function send(text) {
+    if (window.chrome && window.chrome.webview) window.chrome.webview.postMessage(text);
+  }
+
+  function build() {
+    var fx = document.getElementById("effects");
+    EFFECTS.forEach(function (e) {
+      var b = document.createElement("button");
+      b.textContent = e[0];
+      b.dataset.id = e[1];
+      b.onclick = function () { state.effect = e[1]; render(); send("effect=" + e[1]); };
+      fx.appendChild(b);
+    });
+    var sw = document.getElementById("swatches");
+    COLOURS.forEach(function (c) {
+      var d = document.createElement("div");
+      d.className = "sw";
+      d.style.background = c[0];
+      d.dataset.id = c[1];
+      d.onclick = function () { send("colour=" + c[1]); };
+      sw.appendChild(d);
+    });
+    document.getElementById("brightness").oninput = function () {
+      document.getElementById("brightVal").textContent = Math.round(this.value / 9 * 100) + "%";
+      send("brightness=" + this.value);
+    };
+    document.getElementById("speed").oninput = function () {
+      document.getElementById("speedVal").textContent = (Number(this.value) + 1) + "x";
+      send("speed=" + this.value);
+    };
+    document.getElementById("restore").onclick = function () { send("restore"); };
+    document.getElementById("rescan").onclick = function () { send("rescan"); };
+  }
+
+  function render() {
+    document.getElementById("status").classList.toggle("on", !!state.connected);
+    document.getElementById("statusText").textContent =
+      state.connected ? "connected" : "not connected";
+    Array.prototype.forEach.call(document.querySelectorAll("#effects button"), function (b) {
+      b.classList.toggle("on", Number(b.dataset.id) === state.effect);
+    });
+    var note = document.getElementById("note");
+    note.textContent = state.note || "";
+    note.className = state.note ? "note-bad" : "";
+  }
+
+  if (window.chrome && window.chrome.webview) {
+    window.chrome.webview.addEventListener("message", function (e) {
+      try { state = JSON.parse(e.data); render(); } catch (err) {}
+    });
+    send("hello");
+  }
+  function drawBoard() {
+    var host = document.getElementById("board");
+    var keys = window.__KEYS__ || [];
+    var maxX = 0, maxY = 0;
+    keys.forEach(function (k) {
+      maxX = Math.max(maxX, k.x + k.w);
+      maxY = Math.max(maxY, k.y + k.h);
+    });
+    if (!maxX || !maxY) { host.style.display = "none"; return; }
+    var h = Math.min(360, Math.round(host.clientWidth * (maxY / maxX)));
+    host.style.height = h + "px";
+    var unit = host.clientWidth / maxX;
+    var unitY = (host.clientHeight - 28) / maxY;
+    keys.forEach(function (k) {
+      var d = document.createElement("div");
+      d.className = "k";
+      d.style.left = (k.x * unit) + "px";
+      d.style.top = (k.y * unitY + 14) + "px";
+      d.style.width = (k.w * unit - 3) + "px";
+      d.style.height = (k.h * unitY - 3) + "px";
+      d.textContent = k.label;
+      host.appendChild(d);
+    });
+  }
+
+  build();
+  drawBoard();
+  render();
+</script>

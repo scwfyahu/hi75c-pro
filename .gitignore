@@ -1,0 +1,8 @@
+*.exe
+*.zip
+*.dll
+test-run.log
+selftest.txt
+shot.png
+ui_built.html
+ui_embedded.h
