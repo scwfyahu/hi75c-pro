@@ -115,7 +115,7 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
                 KEYS[i].w * s - gap, KEYS[i].h * s - gap);
         {
             LinearGradientBrush grad(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height),
-                                     Color(255, 40, 46, 58), Color(255, 26, 30, 39));
+                                     Color(255, 48, 55, 70), Color(255, 33, 38, 49));
             GraphicsPath kp;
             rounded(&kp, k, 4.0f);
             g->FillPath(&grad, &kp);
@@ -145,6 +145,24 @@ static void card_skin(Graphics *g, GraphicsPath *path, const RectF &r,
     g->DrawLine(&hi, PointF(r.X + 16, r.Y + 1.5f), PointF(r.X + r.Width - 16, r.Y + 1.5f));
 }
 
+
+/* Windows 10/11: paint the non-client area dark so the window does not have a
+   bright title bar bolted onto a dark app. Silently ignored elsewhere. */
+static void dark_title_bar(HWND hwnd) {
+    HMODULE dwm = LoadLibraryW(L"dwmapi.dll");
+    typedef HRESULT (WINAPI *PfnDwmSetWindowAttribute)(HWND, DWORD, LPCVOID, DWORD);
+    if (!dwm) return;
+    {
+        PfnDwmSetWindowAttribute set_attr =
+            (PfnDwmSetWindowAttribute)(void *)GetProcAddress(dwm, "DwmSetWindowAttribute");
+        if (set_attr) {
+            BOOL on = TRUE;
+            set_attr(hwnd, 20, &on, sizeof(on));   /* DWMWA_USE_IMMERSIVE_DARK_MODE */
+            set_attr(hwnd, 19, &on, sizeof(on));   /* older builds */
+        }
+    }
+}
+
 static void paint(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC dc = BeginPaint(hwnd, &ps);
@@ -161,8 +179,8 @@ static void paint(HWND hwnd) {
         g.SetPixelOffsetMode(PixelOffsetModeHalf);
 
         const Color bgTop(255, 18, 21, 27), bgBot(255, 10, 12, 16);
-        const Color cardTop(255, 25, 29, 38), cardBot(255, 20, 23, 30);
-        const Color line(255, 44, 51, 66), lineSoft(255, 32, 37, 48);
+        const Color cardTop(255, 32, 37, 48), cardBot(255, 23, 27, 35);
+        const Color line(255, 56, 64, 82), lineSoft(255, 38, 44, 57);
         const Color ink(255, 237, 241, 248), dim(255, 148, 158, 176);
         const Color accent(255, 74, 144, 255), accentSoft(255, 32, 52, 84);
         const Color ok(255, 62, 207, 142), bad(255, 240, 104, 92);
@@ -206,7 +224,11 @@ static void paint(HWND hwnd) {
             RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), 404.0f);
             GraphicsPath p; rounded(&p, kb, 18.0f);
             card_skin(&g, &p, kb, cardTop, cardBot, line);
-            text(&g, "BOARD", RectF(kb.X + 22, kb.Y + 16, 200, 18), 10.5f, dim, StringAlignmentNear);
+            {
+                SolidBrush bar(accent);
+                g.FillRectangle(&bar, (REAL)(kb.X + 22), kb.Y + 17, 3.0f, 12.0f);
+                text(&g, "BOARD", RectF(kb.X + 32, kb.Y + 16, 200, 18), 10.5f, dim, StringAlignmentNear);
+            }
 
             /* layer switch, top right of the card */
             {
@@ -232,7 +254,11 @@ static void paint(HWND hwnd) {
             RectF ec((REAL)pad, (REAL)y, (REAL)leftW, (REAL)(rc.bottom - y - 46));
             GraphicsPath p; rounded(&p, ec, 18.0f);
             card_skin(&g, &p, ec, cardTop, cardBot, line);
-            text(&g, "ON THE KEYBOARD", RectF(ec.X + 22, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear);
+            {
+                SolidBrush bar(accent);
+                g.FillRectangle(&bar, (REAL)(ec.X + 22), ec.Y + 17, 3.0f, 12.0f);
+                text(&g, "ON THE KEYBOARD", RectF(ec.X + 32, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear);
+            }
             text(&g, "stored in the board", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
                  Color(255, 96, 106, 124), StringAlignmentFar);
 
@@ -248,7 +274,7 @@ static void paint(HWND hwnd) {
                 int active = (app_state()->effect == app_effect_id(i));
                 RectF btn((REAL)cx, (REAL)cy, (REAL)bw, (REAL)bh);
                 Color fillc = active ? accentSoft
-                             : (g_hover == id ? Color(255, 38, 44, 57) : Color(255, 29, 34, 44));
+                             : (g_hover == id ? Color(255, 44, 51, 66) : Color(255, 35, 41, 53));
                 fill_round(&g, btn, 11.0f, fillc);
                 if (active) {
                     Pen glow(Color(48, 74, 144, 255), 4.0f);
@@ -268,7 +294,11 @@ static void paint(HWND hwnd) {
             RectF cc((REAL)rx, (REAL)y, (REAL)rightW, (REAL)(rc.bottom - y - 46));
             GraphicsPath p; rounded(&p, cc, 18.0f);
             card_skin(&g, &p, cc, cardTop, cardBot, line);
-            text(&g, "COLOUR", RectF(cc.X + 22, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear);
+            {
+                SolidBrush bar(accent);
+                g.FillRectangle(&bar, (REAL)(cc.X + 22), cc.Y + 17, 3.0f, 12.0f);
+                text(&g, "COLOUR", RectF(cc.X + 32, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear);
+            }
 
             const Color *sw = SWATCH;
             static const char *hex[7] = {"#F0685C", "#F4B04C", "#ECD85C", "#60D08A", "#58B0F4", "#8A7AF6", "#EC7AC6"};
@@ -595,6 +625,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
                                wx, wy, ww, wh, NULL, NULL, inst, NULL);
     }
     if (!g_hwnd) return 1;
+    dark_title_bar(g_hwnd);
     app_pump(g_hwnd);
     SetTimer(g_hwnd, 1, 150, NULL);
     ShowWindow(g_hwnd, show);
