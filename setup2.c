@@ -24,6 +24,10 @@ static char *http_get(const wchar_t *path, DWORD *len) {
                     WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!s) return NULL;
     WinHttpSetTimeouts(s, 8000, 8000, 20000, 20000);
+    {
+        DWORD tls = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+        WinHttpSetOption(s, WINHTTP_OPTION_SECURE_PROTOCOLS, &tls, sizeof(tls));
+    }
     c = WinHttpConnect(s, L"api.github.com", 443, 0);
     if (!c) { WinHttpCloseHandle(s); return NULL; }
     r = WinHttpOpenRequest(c, L"GET", path, NULL, WINHTTP_NO_REFERER,
@@ -96,6 +100,10 @@ static int download(const wchar_t *url, const wchar_t *dest) {
                     WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
     if (!s) return 0;
     WinHttpSetTimeouts(s, 8000, 8000, 30000, 30000);
+    {
+        DWORD tls = WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+        WinHttpSetOption(s, WINHTTP_OPTION_SECURE_PROTOCOLS, &tls, sizeof(tls));
+    }
     c = WinHttpConnect(s, host, uc.nPort, 0);
     if (c) {
         r = WinHttpOpenRequest(c, L"GET", path, NULL, WINHTTP_NO_REFERER,
@@ -158,7 +166,12 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         swprintf(api, 256, L"/repos/%s/releases/latest", REPO);
         json = http_get(api, &len);
     }
-    if (json && find_asset(json, url, 2048)) {
+    if (!json || !find_asset(json, url, 2048)) {
+        /* the API can be rate limited or blocked; this URL always points at the
+           newest upload of that asset name */
+        lstrcpynW(url, L"https://github.com/" REPO L"/releases/latest/download/Hi75CPro.exe", 2048);
+    }
+    {
         if (!SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) ok = 0;
         lstrcatW(dir, L"\\Hi75C Pro");
         CreateDirectoryW(dir, NULL);
