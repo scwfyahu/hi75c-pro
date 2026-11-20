@@ -12,6 +12,8 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <shlobj.h>
+#include <urlmon.h>
+#include <winhttp.h>
 #include <objbase.h>
 #include <setupapi.h>
 #include <hidsdi.h>
@@ -25,6 +27,8 @@
 #include "expr.h"
 #include <commdlg.h>
 #include <shlobj.h>
+#include <urlmon.h>
+#include <winhttp.h>
 
 #define RPT 0x13
 #define RPT_LEN 20
@@ -271,6 +275,127 @@ static void register_shortcut(void) {
 
 
 
+
+/* ------------------------------------------------------------- updates */
+/*
+ * The app checks the same GitHub release the installer uses. A download is
+ * accepted only if it is a real PE of plausible size; the running exe is then
+ * renamed aside (Windows allows that) and replaced, and the app relaunches.
+ */
+#define APP_VERSION L"1.3.0"
+static char g_latest[64];
+
+const char *app_version(void) { return "1.3.0"; }
+const char *app_latest_tag(void) { return g_latest; }
+
+static int version_gt(const char *a, const char *b) {
+    /* dotted numeric compare, ignores a leading v */
+    while (*a && (*a < '0' || *a > '9')) a++;
+    while (*b && (*b < '0' || *b > '9')) b++;
+    for (;;) {
+        long x = 0, y = 0;
+        while (*a >= '0' && *a <= '9') x = x * 10 + (*a++ - '0');
+        while (*b >= '0' && *b <= '9') y = y * 10 + (*b++ - '0');
+        if (x != y) return x > y;
+        if (*a != '.' && *b != '.') break;
+        if (*a == '.') a++;
+        if (*b == '.') b++;
+    }
+    return 0;
+}
+
+static int file_is_exe(const wchar_t *path) {
+    HANDLE h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    int ok = 0;
+    if (h != INVALID_HANDLE_VALUE) {
+        unsigned char mz[2];
+        DWORD got = 0;
+        LARGE_INTEGER size;
+        if (ReadFile(h, mz, 2, &got, NULL) && got == 2 && mz[0] == 'M' && mz[1] == 'Z' &&
+            GetFileSizeEx(h, &size) && size.QuadPart > 40960)
+            ok = 1;
+        CloseHandle(h);
+    }
+    return ok;
+}
+
+static HINTERNET http_open(const wchar_t *host, const wchar_t *path) {
+    HINTERNET s, c, r;
+    s = WinHttpOpen(L"Hi75CPro/1.3", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+                    WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
+    if (!s) return NULL;
+    WinHttpSetTimeouts(s, 6000, 6000, 15000, 15000);
+    c = WinHttpConnect(s, host, 443, 0);
+    if (!c) { WinHttpCloseHandle(s); return NULL; }
+    r = WinHttpOpenRequest(c, L"GET", path, NULL, WINHTTP_NO_REFERER,
+                           WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
+    if (r) {
+        DWORD policy = WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS;
+        WinHttpSetOption(r, WINHTTP_OPTION_REDIRECT_POLICY, &policy, sizeof(policy));
+        WinHttpAddRequestHeaders(r, L"User-Agent: Hi75CPro", (DWORD)-1, WINHTTP_ADDREQ_FLAG_ADD);
+    }
+    return r;
+}
+
+int app_update_check(void) {
+    HINTERNET r = http_open(L"api.github.com", L"/repos/scwfyahu/hi75c-pro/releases/latest");
+    char buf[8192];
+    DWORD got = 0, total = 0;
+    const char *tag;
+
+    g_latest[0] = 0;
+    if (!r) return 0;
+    if (!WinHttpSendRequest(r, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) ||
+        !WinHttpReceiveResponse(r, NULL)) {
+        WinHttpCloseHandle(r);
+        return 0;
+    }
+    while (WinHttpReadData(r, buf + total, (DWORD)(sizeof(buf) - total - 1), &got) && got > 0) {
+        total += got;
+        if (total >= sizeof(buf) - 1) break;
+    }
+    buf[total] = 0;
+    WinHttpCloseHandle(r);
+
+    tag = strstr(buf, "\"tag_name\":");
+    if (!tag) return 0;
+    {
+        const char *q = strchr(tag, '"');
+        const char *e;
+        if (!q) return 0;
+        q++;
+        if (*q == 'v') q++;
+        e = strchr(q, '"');
+        if (!e) return 0;
+        if (e - q < (int)sizeof(g_latest)) {
+            memcpy(g_latest, q, (size_t)(e - q));
+            g_latest[e - q] = 0;
+        }
+    }
+    return version_gt(g_latest, "1.3.0");
+}
+
+int app_update_apply(void) {
+    wchar_t tmp[MAX_PATH], self[MAX_PATH], parked[MAX_PATH];
+    DWORD n;
+    if (GetTempPathW(MAX_PATH, tmp) == 0) return 0;
+    lstrcatW(tmp, L"Hi75CPro-new.exe");
+    DeleteFileW(tmp);
+    if (FAILED(URLDownloadToFileW(NULL,
+            L"https://github.com/scwfyahu/hi75c-pro/releases/latest/download/Hi75CPro.exe",
+            tmp, 0, NULL))) return 0;
+    if (!file_is_exe(tmp)) { DeleteFileW(tmp); return 0; }
+
+    GetModuleFileNameW(NULL, self, MAX_PATH);
+    lstrcpynW(parked, self, MAX_PATH);
+    lstrcatW(parked, L".old");
+    DeleteFileW(parked);
+    if (!MoveFileW(self, parked)) return 0;          /* running exe can be renamed */
+    if (!CopyFileW(tmp, self, FALSE)) { MoveFileW(parked, self); return 0; }
+    DeleteFileW(tmp);
+    return 1;
+}
+
 /* ------------------------------------------------------- effect files */
 /*
    name = Wave
@@ -489,6 +614,77 @@ void app_load_state(int *wx, int *wy, int *ww, int *wh) {
     fclose(f);
 }
 
+
+/* --------------------------------------------------- worker thread */
+/*
+ * HID traffic must never run on the UI thread: a read can wait 2.5 s and a
+ * bulk write paces at 120 ms, which makes the window look dead if a click does
+ * it inline. Requests are queued here and executed on one worker thread.
+ */
+typedef struct { int kind, a, b, c; } Req;   /* kind: 1 effect 2 colour 3 bright 4 speed 5 restore 6 rescan */
+
+static Req g_q[64];
+static int g_q_head, g_q_tail;
+static HANDLE g_wake, g_worker;
+static HWND g_notify;
+static CRITICAL_SECTION g_q_lock;
+
+static void enqueue(int kind, int a, int b, int c) {
+    EnterCriticalSection(&g_q_lock);
+    if (((g_q_tail + 1) % 64) != g_q_head) {
+        g_q[g_q_tail].kind = kind; g_q[g_q_tail].a = a;
+        g_q[g_q_tail].b = b; g_q[g_q_tail].c = c;
+        g_q_tail = (g_q_tail + 1) % 64;
+    }
+    LeaveCriticalSection(&g_q_lock);
+    if (g_wake) SetEvent(g_wake);
+}
+
+static DWORD WINAPI worker_main(LPVOID unused) {
+    (void)unused;
+    for (;;) {
+        Req r;
+        int have = 0;
+        WaitForSingleObject(g_wake, INFINITE);
+        for (;;) {
+            EnterCriticalSection(&g_q_lock);
+            if (g_q_head != g_q_tail) {
+                r = g_q[g_q_head];
+                g_q_head = (g_q_head + 1) % 64;
+                have = 1;
+            } else {
+                have = 0;
+            }
+            LeaveCriticalSection(&g_q_lock);
+            if (!have) break;
+            switch (r.kind) {
+                case 1: g_state.effect = r.a; apply_effect(); break;
+                case 2: g_state.colour = r.a; apply_effect(); break;
+                case 3: g_state.brightness = r.a; apply_effect(); break;
+                case 4: g_state.speed = r.a; apply_effect(); break;
+                case 5: g_map_valid = 0; restore_keymap(); break;
+                case 6:
+                    if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
+                    g_map_valid = 0;
+                    g_state.connected = device_open();
+                    if (!g_state.connected) strcpy(g_state.note, "keyboard not found");
+                    else g_state.note[0] = 0;
+                    break;
+            }
+            if (g_notify) InvalidateRect(g_notify, NULL, FALSE);
+        }
+    }
+    return 0;
+}
+
+void app_pump(void *hwnd) {
+    g_notify = (HWND)hwnd;
+    if (g_wake) return;
+    InitializeCriticalSection(&g_q_lock);
+    g_wake = CreateEventW(NULL, FALSE, FALSE, NULL);
+    g_worker = CreateThread(NULL, 0, worker_main, NULL, 0, NULL);
+}
+
 /* ------------------------------------------------------------ interface */
 
 void app_init(void) {
@@ -520,18 +716,12 @@ int app_effect_count(void) { return EFFECT_COUNT; }
 const char *app_effect_name(int i) { return (i >= 0 && i < EFFECT_COUNT) ? EFFECTS[i][0] : ""; }
 int app_effect_id(int i) { return (i >= 0 && i < EFFECT_COUNT) ? atoi(EFFECTS[i][1]) : 0; }
 
-void app_set_effect(int hw) { g_state.effect = hw; apply_effect(); }
-void app_set_colour(int c) { g_state.colour = c; apply_effect(); }
-void app_set_brightness(int b) { g_state.brightness = b; apply_effect(); }
-void app_set_speed(int s) { g_state.speed = s; apply_effect(); }
-void app_restore_keymap(void) { restore_keymap(); }
-void app_rescan(void) {
-    g_map_valid = 0;
-    if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
-    g_state.connected = device_open();
-    if (!g_state.connected) strcpy(g_state.note, "keyboard not found");
-    else g_state.note[0] = 0;
-}
+void app_set_effect(int hw) { enqueue(1, hw, 0, 0); }
+void app_set_colour(int c) { enqueue(2, c, 0, 0); }
+void app_set_brightness(int b) { enqueue(3, b, 0, 0); }
+void app_set_speed(int s) { enqueue(4, s, 0, 0); }
+void app_restore_keymap(void) { enqueue(5, 0, 0, 0); }
+void app_rescan(void) { enqueue(6, 0, 0, 0); }
 
 /* headless check of the importer: load a file, evaluate the first frame */
 int app_effect_test(const char *path) {

@@ -12,6 +12,7 @@ typedef struct {
 } AppState;
 
 void      app_init(void);
+void      app_pump(void *hwnd);
 void      app_shutdown(void);
 int       app_connected(void);
 AppState *app_state(void);
@@ -39,6 +40,10 @@ const char *app_import_name(void);
 
 int app_self_test(void);
 int app_effect_test(const char *path);
+int  app_update_check(void);        /* 1 if a newer build exists */
+int  app_update_apply(void);        /* download + swap; 1 on success */
+const char *app_version(void);
+const char *app_latest_tag(void);
 int app_daemon(const char *path);
 
 #ifdef __cplusplus

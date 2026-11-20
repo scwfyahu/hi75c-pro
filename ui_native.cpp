@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdarg.h>
 #include <string.h>
 #include "app.h"
 #include "board.h"
@@ -21,26 +22,39 @@ using namespace Gdiplus;
 
 static ULONG_PTR g_gdiplus;
 static HWND g_hwnd;
-static const wchar_t *g_face = L"Tahoma";   /* Segoe UI where it exists */
+static const wchar_t *g_face = L"Tahoma";
+static const Color SWATCH[7] = {
+    Color(255, 240, 104, 92), Color(255, 244, 176, 76), Color(255, 236, 216, 92),
+    Color(255, 96, 208, 138), Color(255, 88, 176, 244), Color(255, 138, 122, 246),
+    Color(255, 236, 122, 198)
+};   /* Segoe UI where it exists */
 static int g_hover = -1, g_press = -1;
-static int g_sel = -1;          /* selected key index in the keymap */
+static FILE *g_dbg;
+static void dbg(const char *fmt, ...) {
+    va_list ap;
+    if (!g_dbg) return;
+    va_start(ap, fmt); vfprintf(g_dbg, fmt, ap); va_end(ap);
+    fputc('\n', g_dbg); fflush(g_dbg);
+}
+static int g_sel = -1;
+static volatile LONG g_update = 0;          /* selected key index in the keymap */
 static char g_code[8] = "";     /* hex code being typed */
 static int g_code_cur = -1;     /* usage last read for the selected key */
 
 /* layout */
-#define W_INIT 1040
-#define H_INIT 900
+#define W_INIT 1180
+#define H_INIT 940
 #define PAD 22
 #define HEADER_H 64
 #define CARD_R 14
 
 typedef struct { int x, y, w, h, id; const char *label; } Hot;
 
-static Hot g_hot[64];
+static Hot g_hot[256];
 static int g_hot_n;
 
 static void add_hot(int x, int y, int w, int h, int id, const char *label) {
-    if (g_hot_n >= 64) return;
+    if (g_hot_n >= 256) return;
     g_hot[g_hot_n].x = x; g_hot[g_hot_n].y = y;
     g_hot[g_hot_n].w = w; g_hot[g_hot_n].h = h;
     g_hot[g_hot_n].id = id; g_hot[g_hot_n].label = label;
@@ -120,6 +134,17 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     }
 }
 
+
+static void card_skin(Graphics *g, GraphicsPath *path, const RectF &r,
+                      const Color &top, const Color &bot, const Color &line) {
+    LinearGradientBrush brush(PointF(r.X, r.Y), PointF(r.X, r.Y + r.Height), top, bot);
+    g->FillPath(&brush, path);
+    Pen edge(line, 1.0f);
+    g->DrawPath(&edge, path);
+    Pen hi(Color(18, 255, 255, 255), 1.0f);
+    g->DrawLine(&hi, PointF(r.X + 16, r.Y + 1.5f), PointF(r.X + r.Width - 16, r.Y + 1.5f));
+}
+
 static void paint(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC dc = BeginPaint(hwnd, &ps);
@@ -133,195 +158,258 @@ static void paint(HWND hwnd) {
         Graphics g(mem);
         g.SetSmoothingMode(SmoothingModeAntiAlias);
         g.SetTextRenderingHint(TextRenderingHintClearTypeGridFit);
-        const Color bg(255, 15, 17, 21), card(255, 23, 26, 33), line(255, 38, 43, 54);
-        const Color txt(255, 232, 236, 244), dim(255, 139, 149, 167);
-        const Color accent(255, 61, 139, 253);
+        g.SetPixelOffsetMode(PixelOffsetModeHalf);
+
+        const Color bgTop(255, 18, 21, 27), bgBot(255, 10, 12, 16);
+        const Color cardTop(255, 25, 29, 38), cardBot(255, 20, 23, 30);
+        const Color line(255, 44, 51, 66), lineSoft(255, 32, 37, 48);
+        const Color ink(255, 237, 241, 248), dim(255, 148, 158, 176);
+        const Color accent(255, 74, 144, 255), accentSoft(255, 32, 52, 84);
+        const Color ok(255, 62, 207, 142), bad(255, 240, 104, 92);
+
         {
-            LinearGradientBrush bg2(PointF(0, 0), PointF(0, (REAL)rc.bottom),
-                                    Color(255, 17, 19, 24), Color(255, 11, 13, 17));
-            g.FillRectangle(&bg2, 0, 0, rc.right, rc.bottom);
+            LinearGradientBrush bg(PointF(0, 0), PointF(0, (REAL)rc.bottom), bgTop, bgBot);
+            g.FillRectangle(&bg, 0, 0, rc.right, rc.bottom);
         }
 
-        /* header */
+        const int pad = 26;
+        const int headerH = 76;
+
+        /* ---------------- header ---------------- */
         {
-            RectF t(0, 0, 1, 1);
-            t = RectF((REAL)PAD, 18.0f, 420.0f, 28.0f);
-            text(&g, "LEOBOG Hi75C Pro", t, 19.0f, txt, StringAlignmentNear);
-            char st[64];
-            int online = app_connected();
-            sprintf(st, "%s", online ? "connected" : "not connected");
-            RectF pill((REAL)(rc.right - PAD - 150), 18.0f, 150.0f, 30.0f);
-            fill_round(&g, pill, 15.0f, Color(255, online ? 24 : 40, online ? 40 : 26, online ? 32 : 26));
-            stroke_round(&g, pill, 15.0f, Color(120, online ? 53 : 224, online ? 192 : 87, online ? 122 : 76), 1.0f);
-            SolidBrush dot(online ? Color(255, 53, 192, 122) : Color(255, 224, 87, 76));
-            g.FillEllipse(&dot, (REAL)(rc.right - PAD - 132), 29.0f, 8.0f, 8.0f);
-            text(&g, st, RectF((REAL)(rc.right - PAD - 116), 18.0f, 108.0f, 30.0f), 12.5f,
-                 online ? Color(255, 53, 192, 122) : Color(255, 224, 87, 76), StringAlignmentNear);
+            RectF title((REAL)pad, 22.0f, 400.0f, 30.0f);
+            text(&g, "LEOBOG Hi75C Pro", title, 22.0f, ink, StringAlignmentNear);
+            RectF sub((REAL)pad, 48.0f, 400.0f, 18.0f);
+            char subtext[96];
+            snprintf(subtext, sizeof(subtext), "%s   |   v%s",
+                     app_connected() ? "USB / 2.4 GHz" : "no keyboard", app_version());
+            text(&g, subtext, sub, 11.5f, dim, StringAlignmentNear);
+
+            const char *st = app_connected() ? "Connected" : "Not connected";
+            float pw = 132.0f;
+            RectF pill((REAL)(rc.right - pad - pw), 26.0f, pw, 34.0f);
+            fill_round(&g, pill, 17.0f, app_connected() ? Color(255, 20, 44, 33) : Color(255, 44, 24, 24));
+            stroke_round(&g, pill, 17.0f, app_connected() ? Color(90, 62, 207, 142) : Color(90, 240, 104, 92), 1.0f);
+            SolidBrush dotc(app_connected() ? ok : bad);
+            g.FillEllipse(&dotc, pill.X + 16, pill.Y + 13, 8.0f, 8.0f);
+            text(&g, st, RectF(pill.X + 32, pill.Y, pw - 38, pill.Height), 12.5f,
+                 app_connected() ? ok : bad, StringAlignmentNear);
         }
 
         g_hot_n = 0;
-        int top = HEADER_H;
-        int right_w = 300;
-        int left_w = rc.right - PAD * 3 - right_w;
+        int y = headerH;
+        int rightW = 320;
+        int leftW = rc.right - pad * 2 - rightW - 20;
 
-        /* keyboard card across the top */
+        /* ---------------- keyboard ---------------- */
         {
-            RectF kb((REAL)PAD, (REAL)top, (REAL)(rc.right - PAD * 2), 340.0f);
-            fill_round(&g, kb, CARD_R, card);
-            stroke_round(&g, kb, CARD_R, line, 1.0f);
-            text(&g, "KEYBOARD", RectF(kb.X + 18, kb.Y + 12, 200, 20), 11.0f, dim, StringAlignmentNear);
-            draw_keyboard(&g, RectF(kb.X + 8, kb.Y + 30, kb.Width - 16, kb.Height - 38), line, dim);
+            RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), 404.0f);
+            GraphicsPath p; rounded(&p, kb, 18.0f);
+            card_skin(&g, &p, kb, cardTop, cardBot, line);
+            text(&g, "BOARD", RectF(kb.X + 22, kb.Y + 16, 200, 18), 10.5f, dim, StringAlignmentNear);
+
+            /* layer switch, top right of the card */
             {
-                char info[160];
-                RectF strip(kb.X + 2, kb.Y + kb.Height + 6, kb.Width, 20);
-                if (g_sel >= 0 && g_sel < KEY_COUNT) {
-                    if (g_code[0])
-                        snprintf(info, sizeof(info), "%s  (index %d)  -  typing 0x%s   Enter to apply",
-                                 KEYS[g_sel].label, KEYS[g_sel].idx, g_code);
-                    else
-                        snprintf(info, sizeof(info), "%s  (index %d)  -  current usage 0x%02x   type a hex code",
-                                 KEYS[g_sel].label, KEYS[g_sel].idx,
-                                 g_code_cur < 0 ? 0 : g_code_cur);
-                    text(&g, info, strip, 11.5f, Color(255, 160, 172, 190), StringAlignmentNear);
-                } else {
-                    text(&g, "Click a key to remap it. Keys are written to the keyboard's own keymap.",
-                         strip, 11.5f, dim, StringAlignmentNear);
-                }
-                {
-                    RectF lb((REAL)(kb.X + kb.Width - 150), kb.Y + 10, 64, 24);
-                    RectF lf((REAL)(kb.X + kb.Width - 80), kb.Y + 10, 64, 24);
-                    int layer = app_layer();
-                    fill_round(&g, lb, 7.0f, layer == 0 ? Color(255, 30, 48, 78) : Color(255, 30, 34, 44));
-                    stroke_round(&g, lb, 7.0f, layer == 0 ? accent : line, 1.0f);
-                    text(&g, "Base", lb, 11.0f, layer == 0 ? Color(255, 207, 225, 255) : dim, StringAlignmentCenter);
-                    add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
-                    fill_round(&g, lf, 7.0f, layer == 1 ? Color(255, 30, 48, 78) : Color(255, 30, 34, 44));
-                    stroke_round(&g, lf, 7.0f, layer == 1 ? accent : line, 1.0f);
-                    text(&g, "FN", lf, 11.0f, layer == 1 ? Color(255, 207, 225, 255) : dim, StringAlignmentCenter);
-                    add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
-                }
+                int layer = app_layer();
+                RectF lb(kb.X + kb.Width - 176, kb.Y + 14, 74, 26);
+                RectF lf(kb.X + kb.Width - 96, kb.Y + 14, 74, 26);
+                fill_round(&g, lb, 8.0f, layer == 0 ? accentSoft : Color(255, 27, 31, 41));
+                stroke_round(&g, lb, 8.0f, layer == 0 ? accent : lineSoft, 1.0f);
+                text(&g, "Base", lb, 11.5f, layer == 0 ? Color(255, 210, 228, 255) : dim, StringAlignmentCenter);
+                add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
+                fill_round(&g, lf, 8.0f, layer == 1 ? accentSoft : Color(255, 27, 31, 41));
+                stroke_round(&g, lf, 8.0f, layer == 1 ? accent : lineSoft, 1.0f);
+                text(&g, "FN", lf, 11.5f, layer == 1 ? Color(255, 210, 228, 255) : dim, StringAlignmentCenter);
+                add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
             }
+
+            draw_keyboard(&g, RectF(kb.X + 10, kb.Y + 42, kb.Width - 20, kb.Height - 52), line, dim);
         }
-        top += 392;
+        y += 404 + 20;
 
-        /* effect card */
-        RectF lc((REAL)PAD, (REAL)top, (REAL)left_w, (REAL)(rc.bottom - top - PAD));
-        fill_round(&g, lc, CARD_R, card);
-        stroke_round(&g, lc, CARD_R, line, 1.0f);
-        text(&g, "EFFECT", RectF(lc.X + 18, lc.Y + 12, 200, 20), 11.0f, dim, StringAlignmentNear);
-
+        /* ---------------- effects ---------------- */
         {
-            int cols = 3, cw = (left_w - 18 * 2 - (cols - 1) * 10) / cols, ch = 34;
-            int i, x0 = (int)lc.X + 18, y0 = (int)lc.Y + 38;
+            RectF ec((REAL)pad, (REAL)y, (REAL)leftW, (REAL)(rc.bottom - y - 46));
+            GraphicsPath p; rounded(&p, ec, 18.0f);
+            card_skin(&g, &p, ec, cardTop, cardBot, line);
+            text(&g, "ON THE KEYBOARD", RectF(ec.X + 22, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear);
+            text(&g, "stored in the board", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
+                 Color(255, 96, 106, 124), StringAlignmentFar);
+
+            int cols = 3, gap = 12;
+            int bw = (int)((ec.Width - 44 - gap * (cols - 1)) / cols);
+            int bh = 42;
+            int x0 = (int)ec.X + 22, y0 = (int)ec.Y + 44;
+            int i;
             for (i = 0; i < app_effect_count(); i++) {
-                int cx = x0 + (i % cols) * (cw + 10);
-                int cy = y0 + (i / cols) * (ch + 10);
+                int cx = x0 + (i % cols) * (bw + gap);
+                int cy = y0 + (i / cols) * (bh + gap);
                 int id = 100 + i;
                 int active = (app_state()->effect == app_effect_id(i));
-                RectF btn((REAL)cx, (REAL)cy, (REAL)cw, (REAL)ch);
-                fill_round(&g, btn, 10.0f,
-                           active ? Color(255, 30, 48, 78)
-                                  : (g_hover == id ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44)));
-                stroke_round(&g, btn, 10.0f, active ? accent : line, active ? 1.4f : 1.0f);
-                text(&g, app_effect_name(i), RectF(btn.X, btn.Y, btn.Width, btn.Height), 13.5f,
-                     active ? Color(255, 207, 225, 255) : txt, StringAlignmentCenter);
-                add_hot(cx, cy, cw, ch, id, app_effect_name(i));
+                RectF btn((REAL)cx, (REAL)cy, (REAL)bw, (REAL)bh);
+                Color fillc = active ? accentSoft
+                             : (g_hover == id ? Color(255, 38, 44, 57) : Color(255, 29, 34, 44));
+                fill_round(&g, btn, 11.0f, fillc);
+                if (active) {
+                    Pen glow(Color(48, 74, 144, 255), 4.0f);
+                    GraphicsPath gp; rounded(&gp, btn, 11.0f);
+                    g.DrawPath(&glow, &gp);
+                }
+                stroke_round(&g, btn, 11.0f, active ? accent : lineSoft, active ? 1.6f : 1.0f);
+                text(&g, app_effect_name(i), RectF(btn.X, btn.Y, btn.Width, btn.Height), 13.0f,
+                     active ? Color(255, 214, 231, 255) : ink, StringAlignmentCenter);
+                add_hot(cx, cy, bw, bh, id, app_effect_name(i));
             }
         }
 
-        /* right column */
+        /* ---------------- right column ---------------- */
         {
-            int rx = rc.right - PAD - right_w;
-            RectF rc2((REAL)rx, (REAL)top, (REAL)right_w, 232.0f);
-            fill_round(&g, rc2, CARD_R, card);
-            stroke_round(&g, rc2, CARD_R, line, 1.0f);
-            text(&g, "COLOUR", RectF(rc2.X + 18, rc2.Y + 12, 160, 20), 11.0f, dim, StringAlignmentNear);
+            int rx = rc.right - pad - rightW;
+            RectF cc((REAL)rx, (REAL)y, (REAL)rightW, (REAL)(rc.bottom - y - 46));
+            GraphicsPath p; rounded(&p, cc, 18.0f);
+            card_skin(&g, &p, cc, cardTop, cardBot, line);
+            text(&g, "COLOUR", RectF(cc.X + 22, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear);
 
-            static const Color sw[7] = {
-                Color(255, 224, 87, 76), Color(255, 232, 163, 61), Color(255, 226, 211, 75),
-                Color(255, 84, 192, 122), Color(255, 74, 168, 232), Color(255, 124, 108, 240),
-                Color(255, 224, 108, 192)
-            };
+            const Color *sw = SWATCH;
+            static const char *hex[7] = {"#F0685C", "#F4B04C", "#ECD85C", "#60D08A", "#58B0F4", "#8A7AF6", "#EC7AC6"};
             int k;
             for (k = 0; k < 7; k++) {
-                RECT box;
-                box.left = (LONG)rc2.X + 18 + k * 36;
-                box.top = (LONG)rc2.Y + 40;
-                box.right = box.left + 30;
-                box.bottom = box.top + 30;
-                RectF b2((REAL)box.left, (REAL)box.top, 30.0f, 30.0f);
-                fill_round(&g, b2, 8.0f, sw[k]);
-                if (app_state()->colour == k) stroke_round(&g, b2, 8.0f, Color(255, 255, 255, 255), 2.0f);
-                add_hot(box.left, box.top, 30, 30, 200 + k, "colour");
+                RectF b2((REAL)(cc.X + 22 + k * 38), cc.Y + 44, 32.0f, 32.0f);
+                fill_round(&g, b2, 9.0f, sw[k]);
+                if (app_state()->colour == k) {
+                    stroke_round(&g, b2, 9.0f, Color(255, 255, 255, 255), 2.0f);
+                } else {
+                    stroke_round(&g, b2, 9.0f, Color(60, 255, 255, 255), 1.0f);
+                }
+                add_hot((int)b2.X, (int)b2.Y, (int)b2.Width, (int)b2.Height, 200 + k, "swatch");
             }
+            text(&g, hex[app_state()->colour < 7 ? app_state()->colour : 0],
+                 RectF(cc.X + 22, cc.Y + 82, 120, 16), 11.0f, Color(255, 110, 120, 138), StringAlignmentNear);
 
             {
-                char buf[32];
-                RectF lab(rc2.X + 18, rc2.Y + 84, 160, 18);
-                text(&g, "Brightness", lab, 12.0f, dim, StringAlignmentNear);
-                sprintf(buf, "%d%%", (app_state()->brightness + 1) * 10);
-                text(&g, buf, RectF(rc2.X + rc2.Width - 78, rc2.Y + 84, 60, 18), 12.0f, dim, StringAlignmentFar);
+                char buf[16];
+                RectF lab(cc.X + 22, cc.Y + 120, 160, 16);
+                text(&g, "Brightness", lab, 11.5f, dim, StringAlignmentNear);
+                snprintf(buf, sizeof(buf), "%d%%", (app_state()->brightness + 1) * 10);
+                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 120, 70, 16), 11.5f,
+                     Color(255, 190, 200, 216), StringAlignmentFar);
             }
             {
-                int by = (int)rc2.Y + 116, bx = (int)rc2.X + 18, bw = right_w - 36;
-                SolidBrush track(Color(255, 44, 49, 62));
-                g.FillRectangle(&track, bx, by, bw, 4);
+                int by = (int)cc.Y + 148, bx = (int)cc.X + 22, bw = rightW - 44;
+                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 38, 44, 57));
                 int filled = bw * (app_state()->brightness + 1) / 10;
-                SolidBrush fill(accent);
-                g.FillRectangle(&fill, bx, by, filled, 4);
-                SolidBrush knob(Color(255, 245, 248, 255));
-                g.FillEllipse(&knob, (REAL)(bx + filled - 7), (REAL)(by - 5), 14.0f, 14.0f);
-                add_hot(bx - 6, by - 12, bw + 12, 28, 300, "brightness");
+                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)filled, 6.0f), 3.0f, accent);
+                SolidBrush knob(Color(255, 248, 251, 255));
+                g.FillEllipse(&knob, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
+                Pen ring(Color(255, 120, 170, 255), 1.0f);
+                g.DrawEllipse(&ring, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
+                add_hot(bx - 8, by - 14, bw + 16, 30, 300, "brightness");
             }
 
             {
                 char buf[16];
-                text(&g, "Speed", RectF(rc2.X + 18, rc2.Y + 148, 160, 18), 12.0f, dim, StringAlignmentNear);
-                sprintf(buf, "%dx", app_state()->speed + 1);
-                text(&g, buf, RectF(rc2.X + rc2.Width - 78, rc2.Y + 148, 60, 18), 12.0f, dim, StringAlignmentFar);
+                text(&g, "Speed", RectF(cc.X + 22, cc.Y + 190, 160, 16), 11.5f, dim, StringAlignmentNear);
+                snprintf(buf, sizeof(buf), "%dx", app_state()->speed + 1);
+                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 190, 70, 16), 11.5f,
+                     Color(255, 190, 200, 216), StringAlignmentFar);
             }
             {
-                int by = (int)rc2.Y + 180, bx = (int)rc2.X + 18, bw = right_w - 36;
-                SolidBrush track(Color(255, 44, 49, 62));
-                g.FillRectangle(&track, bx, by, bw, 4);
+                int by = (int)cc.Y + 218, bx = (int)cc.X + 22, bw = rightW - 44;
+                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 38, 44, 57));
                 int filled = bw * (app_state()->speed + 1) / 4;
-                SolidBrush fill(accent);
-                g.FillRectangle(&fill, bx, by, filled, 4);
-                SolidBrush knob(Color(255, 245, 248, 255));
-                g.FillEllipse(&knob, (REAL)(bx + filled - 7), (REAL)(by - 5), 14.0f, 14.0f);
-                add_hot(bx - 6, by - 12, bw + 12, 28, 301, "speed");
+                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)filled, 6.0f), 3.0f, accent);
+                SolidBrush knob(Color(255, 248, 251, 255));
+                g.FillEllipse(&knob, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
+                Pen ring(Color(255, 120, 170, 255), 1.0f);
+                g.DrawEllipse(&ring, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
+                add_hot(bx - 8, by - 14, bw + 16, 30, 301, "speed");
+            }
+
+            /* live summary */
+            {
+                int sy = (int)cc.Y + 222;
+                RectF box((REAL)(cc.X + 22), (REAL)sy, (REAL)(rightW - 44), 74.0f);
+                fill_round(&g, box, 12.0f, Color(255, 24, 28, 37));
+                stroke_round(&g, box, 12.0f, lineSoft, 1.0f);
+                text(&g, "RUNNING", RectF(box.X + 14, box.Y + 10, 120, 16), 9.5f,
+                     Color(255, 110, 120, 138), StringAlignmentNear);
+                text(&g, app_effect_name(0) && app_state()->effect == 0 ? "Off" : "",
+                     RectF(box.X + 14, box.Y + 26, 200, 18), 12.0f, ink, StringAlignmentNear);
+                {
+                    int i, found = -1;
+                    for (i = 0; i < app_effect_count(); i++)
+                        if (app_effect_id(i) == app_state()->effect) found = i;
+                    if (found >= 0)
+                        text(&g, app_effect_name(found), RectF(box.X + 14, box.Y + 26, 200, 18),
+                             12.0f, ink, StringAlignmentNear);
+                    else if (app_state()->effect == 0)
+                        text(&g, "Off", RectF(box.X + 14, box.Y + 26, 200, 18), 12.0f, ink, StringAlignmentNear);
+                }
+                {
+                    char line2[64];
+                    snprintf(line2, sizeof(line2), "brightness %d%%   |   speed %dx",
+                             (app_state()->brightness + 1) * 10, app_state()->speed + 1);
+                    text(&g, line2, RectF(box.X + 14, box.Y + 50, rightW - 70, 16), 11.0f, dim,
+                         StringAlignmentNear);
+                }
+                SolidBrush chip(app_state()->colour < 7 ? sw[app_state()->colour] : sw[0]);
+                g.FillEllipse(&chip, (REAL)(box.X + box.Width - 40), (REAL)(box.Y + 22), 16.0f, 16.0f);
+            }
+
+            /* actions */
+            {
+                int ay = (int)cc.Y + (int)cc.Height - 58;
+                int bw3 = (rightW - 20) / 3;
+                const char *names[3] = {"Import", "Restore", "Rescan"};
+                int ids[3] = {402, 400, 401};
+                int j;
+                for (j = 0; j < 3; j++) {
+                    RectF b((REAL)(rx + j * (bw3 + 10)), (REAL)ay, (REAL)bw3, 38.0f);
+                    fill_round(&g, b, 11.0f, g_hover == ids[j] ? Color(255, 40, 46, 60) : Color(255, 29, 34, 44));
+                    stroke_round(&g, b, 11.0f, lineSoft, 1.0f);
+                    text(&g, names[j], b, 12.0f, ink, StringAlignmentCenter);
+                    add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
+                }
+            }
+
+            if (InterlockedCompareExchange(&g_update, 0, 0)) {
+                RectF up((REAL)rx, (REAL)(y + 332), (REAL)rightW, 36.0f);
+                fill_round(&g, up, 11.0f, accentSoft);
+                stroke_round(&g, up, 11.0f, accent, 1.2f);
+                char ub[64];
+                snprintf(ub, sizeof(ub), "Update to %s", app_latest_tag());
+                text(&g, ub, up, 12.5f, Color(255, 214, 231, 255), StringAlignmentCenter);
+                add_hot((int)up.X, (int)up.Y, (int)up.Width, (int)up.Height, 403, "update");
             }
         }
 
-        /* action row */
-        {
-            int rx = rc.right - PAD - right_w;
-            int y = top + 262;
-            int bw2 = (right_w - 20) / 3;
-            RectF imp((REAL)rx, (REAL)y, (REAL)bw2, 40.0f);
-            RectF a((REAL)(rx + bw2 + 10), (REAL)y, (REAL)bw2, 40.0f);
-            RectF b2((REAL)(rx + 2 * (bw2 + 10)), (REAL)y, (REAL)bw2, 40.0f);
-            fill_round(&g, imp, 10.0f, g_hover == 402 ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44));
-            stroke_round(&g, imp, 10.0f, line, 1.0f);
-            text(&g, "Import...", imp, 12.0f, txt, StringAlignmentCenter);
-            add_hot((int)imp.X, (int)imp.Y, (int)imp.Width, (int)imp.Height, 402, "import");
-            fill_round(&g, a, 10.0f, g_hover == 400 ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44));
-            stroke_round(&g, a, 10.0f, line, 1.0f);
-            text(&g, "Restore", a, 12.0f, txt, StringAlignmentCenter);
-            add_hot((int)a.X, (int)a.Y, (int)a.Width, (int)a.Height, 400, "restore");
-            fill_round(&g, b2, 10.0f, g_hover == 401 ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44));
-            stroke_round(&g, b2, 10.0f, line, 1.0f);
-            text(&g, "Rescan", b2, 12.0f, txt, StringAlignmentCenter);
-            add_hot((int)b2.X, (int)b2.Y, (int)b2.Width, (int)b2.Height, 401, "rescan");
-        }
-
-        /* note */
+        /* ---------------- footer / status ---------------- */
         {
             const char *note = app_state()->note;
+            RectF strip((REAL)pad, (REAL)(rc.bottom - 32), (REAL)(rc.right - pad * 2), 18.0f);
             if (note[0])
-                text(&g, note, RectF((REAL)PAD, (REAL)(rc.bottom - 26), (REAL)(rc.right - PAD * 2), 18.0f),
-                     12.0f, Color(255, 224, 87, 76), StringAlignmentNear);
+                text(&g, note, strip, 11.5f, bad, StringAlignmentNear);
+            else if (g_sel >= 0 && g_sel < KEY_COUNT) {
+                char info[160];
+                if (g_code[0])
+                    snprintf(info, sizeof(info), "%s   |   index %d   |   typing 0x%s   |   Enter to apply",
+                             KEYS[g_sel].label, KEYS[g_sel].idx, g_code);
+                else
+                    snprintf(info, sizeof(info), "%s   |   index %d   |   current usage 0x%02x   |   type a hex code",
+                             KEYS[g_sel].label, KEYS[g_sel].idx, g_code_cur < 0 ? 0 : g_code_cur);
+                text(&g, info, strip, 11.5f, dim, StringAlignmentNear);
+            } else {
+                text(&g, "Click a key to remap it, or pick an effect above.",
+                     strip, 11.5f, Color(255, 96, 106, 124), StringAlignmentNear);
+            }
         }
+    }
+    if (g_dbg) {
+        int hi;
+        dbg("hotspots %d", g_hot_n);
+        for (hi = 0; hi < g_hot_n; hi++)
+            dbg("hot %d %d %d %d %d", g_hot[hi].id, g_hot[hi].x, g_hot[hi].y,
+                g_hot[hi].w, g_hot[hi].h);
     }
     BitBlt(dc, 0, 0, rc.right, rc.bottom, mem, 0, 0, SRCCOPY);
     SelectObject(mem, old);
@@ -368,6 +456,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             {
                 int x = (int)(short)LOWORD(l), y = (int)(short)HIWORD(l);
                 int id = hit(x, y);
+                dbg("click at %d,%d  hotspots=%d  hit=%d", x, y, g_hot_n, id);
                 g_press = id;
                 if (id >= 100 && id < 100 + app_effect_count()) app_set_effect(app_effect_id(id - 100));
                 else if (id >= 200 && id < 207) app_set_colour(id - 200);
@@ -376,6 +465,17 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 else if (id == 400) app_restore_keymap();
                 else if (id == 401) app_rescan();
                 else if (id == 402) app_import_effect(h);
+                else if (id == 403) {
+                    if (app_update_apply()) {
+                        wchar_t self[MAX_PATH];
+                        GetModuleFileNameW(NULL, self, MAX_PATH);
+                        ShellExecuteW(NULL, L"open", self, NULL, NULL, SW_SHOWNORMAL);
+                        PostMessageW(h, WM_CLOSE, 0, 0);
+                    } else {
+                        snprintf(app_state()->note, 160, "update failed - download the new build manually");
+                        InvalidateRect(h, NULL, FALSE);
+                    }
+                }
                 else if (id == 500) { app_set_layer(0); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id == 501) { app_set_layer(1); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id >= 1000) {
@@ -411,6 +511,18 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     InvalidateRect(h, NULL, FALSE);
                 }
             }
+            return 0;
+        case WM_APP + 1:
+            {
+                HANDLE th = CreateThread(NULL, 0, [](LPVOID)->DWORD {
+                    if (app_update_check()) InterlockedExchange(&g_update, 1);
+                    return 0;
+                }, NULL, 0, NULL);
+                if (th) CloseHandle(th);
+            }
+            return 0;
+        case WM_TIMER:
+            InvalidateRect(h, NULL, FALSE);
             return 0;
         case WM_ERASEBKGND:
             return 1;
@@ -448,12 +560,25 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
         if (bg) return app_daemon(bg + 9);
     }
 
+    {
+        char env[8];
+        if (GetEnvironmentVariableA("HI75C_DEBUG", env, sizeof(env)) > 0) {
+            char p[MAX_PATH];
+            GetModuleFileNameA(NULL, p, MAX_PATH);
+            { char *sl = strrchr(p, '\\'); if (sl) sl[1] = 0; }
+            strncat(p, "ui-debug.log", MAX_PATH - strlen(p) - 1);
+            g_dbg = fopen(p, "w");
+            dbg("Hi75C UI debug");
+        }
+    }
     GdiplusStartup(&g_gdiplus, &gsi, NULL);
     {
         FontFamily probe(L"Segoe UI");
         g_face = (probe.GetLastStatus() == Ok) ? L"Segoe UI" : L"Tahoma";
     }
     app_init();
+    /* the update probe is deferred until after the first paint */
+    PostMessageW(g_hwnd, WM_APP + 1, 0, 0);
 
     memset(&wc, 0, sizeof(wc));
     wc.lpfnWndProc = proc;
@@ -470,6 +595,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
                                wx, wy, ww, wh, NULL, NULL, inst, NULL);
     }
     if (!g_hwnd) return 1;
+    app_pump(g_hwnd);
+    SetTimer(g_hwnd, 1, 150, NULL);
     ShowWindow(g_hwnd, show);
     UpdateWindow(g_hwnd);
 
