@@ -23,6 +23,22 @@ using namespace Gdiplus;
 static ULONG_PTR g_gdiplus;
 static HWND g_hwnd;
 static const wchar_t *g_face = L"Tahoma";
+
+/* ---- design tokens: near-black canvas, one accent, hierarchy by weight ---- */
+static const Color C_CANVAS_TOP(255, 13, 14, 18);
+static const Color C_CANVAS_BOT(255, 8, 9, 12);
+static const Color C_SURFACE_TOP(255, 22, 24, 31);
+static const Color C_SURFACE_BOT(255, 17, 19, 24);
+static const Color C_HAIRLINE(255, 40, 44, 54);
+static const Color C_HAIRLINE_SOFT(255, 30, 33, 41);
+static const Color C_INK(255, 236, 238, 242);
+static const Color C_INK_2(255, 155, 161, 174);
+static const Color C_INK_3(255, 110, 116, 128);
+static const Color C_ACCENT(255, 91, 140, 255);
+static const Color C_ACCENT_DIM(255, 22, 35, 61);
+static const Color C_OK(255, 62, 207, 142);
+static const Color C_BAD(255, 240, 104, 92);
+
 static const Color SWATCH[7] = {
     Color(255, 240, 104, 92), Color(255, 244, 176, 76), Color(255, 236, 216, 92),
     Color(255, 96, 208, 138), Color(255, 88, 176, 244), Color(255, 138, 122, 246),
@@ -42,8 +58,8 @@ static char g_code[8] = "";     /* hex code being typed */
 static int g_code_cur = -1;     /* usage last read for the selected key */
 
 /* layout */
-#define W_INIT 1180
-#define H_INIT 940
+#define W_INIT 1010
+#define H_INIT 900
 #define PAD 22
 #define HEADER_H 64
 #define CARD_R 14
@@ -108,14 +124,14 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     float oy = area.Y + (area.Height - BOARD_HEIGHT * s) / 2;
     float gap = 2.0f;
     int i;
-    Font key(L"Tahoma", 10.0f, FontStyleRegular, UnitPixel);
+    Font key(g_face, 10.5f, FontStyleRegular, UnitPixel);
     SolidBrush textbrush(dim);
     for (i = 0; i < KEY_COUNT; i++) {
         RectF k(ox + KEYS[i].x * s + gap / 2, oy + KEYS[i].y * s + gap / 2,
                 KEYS[i].w * s - gap, KEYS[i].h * s - gap);
         {
             LinearGradientBrush grad(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height),
-                                     Color(255, 48, 55, 70), Color(255, 33, 38, 49));
+                                     Color(255, 38, 42, 53), Color(255, 27, 30, 38));
             GraphicsPath kp;
             rounded(&kp, k, 4.0f);
             g->FillPath(&grad, &kp);
@@ -178,18 +194,19 @@ static void paint(HWND hwnd) {
         g.SetTextRenderingHint(TextRenderingHintClearTypeGridFit);
         g.SetPixelOffsetMode(PixelOffsetModeHalf);
 
-        const Color bgTop(255, 18, 21, 27), bgBot(255, 10, 12, 16);
-        const Color cardTop(255, 32, 37, 48), cardBot(255, 23, 27, 35);
-        const Color line(255, 56, 64, 82), lineSoft(255, 38, 44, 57);
-        const Color ink(255, 237, 241, 248), dim(255, 148, 158, 176);
-        const Color accent(255, 74, 144, 255), accentSoft(255, 32, 52, 84);
-        const Color ok(255, 62, 207, 142), bad(255, 240, 104, 92);
+        const Color bgTop = C_CANVAS_TOP, bgBot = C_CANVAS_BOT;
+        const Color cardTop = C_SURFACE_TOP, cardBot = C_SURFACE_BOT;
+        const Color line = C_HAIRLINE, lineSoft = C_HAIRLINE_SOFT;
+        const Color ink = C_INK, dim = C_INK_2;
+        const Color accent = C_ACCENT, accentSoft = C_ACCENT_DIM;
+        const Color ok = C_OK, bad = C_BAD;
 
         {
             LinearGradientBrush bg(PointF(0, 0), PointF(0, (REAL)rc.bottom), bgTop, bgBot);
             g.FillRectangle(&bg, 0, 0, rc.right, rc.bottom);
         }
 
+        if (g_dbg) dbg("paint %dx%d", rc.right, rc.bottom);
         const int pad = 26;
         const int headerH = 76;
 
@@ -220,8 +237,13 @@ static void paint(HWND hwnd) {
         int leftW = rc.right - pad * 2 - rightW - 20;
 
         /* ---------------- keyboard ---------------- */
+        int kbH = 250;
         {
-            RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), 404.0f);
+            int availH = rc.bottom - headerH - 46;
+            kbH = (int)(availH * 0.46);
+            if (kbH > 420) kbH = 420;
+            if (kbH < 250) kbH = 250;
+            RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), (REAL)kbH);
             GraphicsPath p; rounded(&p, kb, 18.0f);
             card_skin(&g, &p, kb, cardTop, cardBot, line);
             {
@@ -235,11 +257,11 @@ static void paint(HWND hwnd) {
                 int layer = app_layer();
                 RectF lb(kb.X + kb.Width - 176, kb.Y + 14, 74, 26);
                 RectF lf(kb.X + kb.Width - 96, kb.Y + 14, 74, 26);
-                fill_round(&g, lb, 8.0f, layer == 0 ? accentSoft : Color(255, 27, 31, 41));
+                fill_round(&g, lb, 8.0f, layer == 0 ? accentSoft : Color(255, 23, 25, 32));
                 stroke_round(&g, lb, 8.0f, layer == 0 ? accent : lineSoft, 1.0f);
                 text(&g, "Base", lb, 11.5f, layer == 0 ? Color(255, 210, 228, 255) : dim, StringAlignmentCenter);
                 add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
-                fill_round(&g, lf, 8.0f, layer == 1 ? accentSoft : Color(255, 27, 31, 41));
+                fill_round(&g, lf, 8.0f, layer == 1 ? accentSoft : Color(255, 23, 25, 32));
                 stroke_round(&g, lf, 8.0f, layer == 1 ? accent : lineSoft, 1.0f);
                 text(&g, "FN", lf, 11.5f, layer == 1 ? Color(255, 210, 228, 255) : dim, StringAlignmentCenter);
                 add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
@@ -247,7 +269,7 @@ static void paint(HWND hwnd) {
 
             draw_keyboard(&g, RectF(kb.X + 10, kb.Y + 42, kb.Width - 20, kb.Height - 52), line, dim);
         }
-        y += 404 + 20;
+        y += kbH + 18;
 
         /* ---------------- effects ---------------- */
         {
@@ -264,7 +286,10 @@ static void paint(HWND hwnd) {
 
             int cols = 3, gap = 12;
             int bw = (int)((ec.Width - 44 - gap * (cols - 1)) / cols);
-            int bh = 42;
+            int rows = (app_effect_count() + cols - 1) / cols;
+            int bh = (int)((ec.Height - 44 - 14 - gap * (rows - 1)) / rows);
+            if (bh > 46) bh = 46;
+            if (bh < 28) bh = 28;
             int x0 = (int)ec.X + 22, y0 = (int)ec.Y + 44;
             int i;
             for (i = 0; i < app_effect_count(); i++) {
@@ -274,7 +299,7 @@ static void paint(HWND hwnd) {
                 int active = (app_state()->effect == app_effect_id(i));
                 RectF btn((REAL)cx, (REAL)cy, (REAL)bw, (REAL)bh);
                 Color fillc = active ? accentSoft
-                             : (g_hover == id ? Color(255, 44, 51, 66) : Color(255, 35, 41, 53));
+                             : (g_hover == id ? Color(255, 36, 40, 50) : Color(255, 26, 29, 37));
                 fill_round(&g, btn, 11.0f, fillc);
                 if (active) {
                     Pen glow(Color(48, 74, 144, 255), 4.0f);
@@ -318,15 +343,15 @@ static void paint(HWND hwnd) {
 
             {
                 char buf[16];
-                RectF lab(cc.X + 22, cc.Y + 120, 160, 16);
+                RectF lab(cc.X + 22, cc.Y + 104, 160, 16);
                 text(&g, "Brightness", lab, 11.5f, dim, StringAlignmentNear);
                 snprintf(buf, sizeof(buf), "%d%%", (app_state()->brightness + 1) * 10);
-                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 120, 70, 16), 11.5f,
+                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 104, 70, 16), 11.5f,
                      Color(255, 190, 200, 216), StringAlignmentFar);
             }
             {
-                int by = (int)cc.Y + 148, bx = (int)cc.X + 22, bw = rightW - 44;
-                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 38, 44, 57));
+                int by = (int)cc.Y + 128, bx = (int)cc.X + 22, bw = rightW - 44;
+                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 31, 34, 42));
                 int filled = bw * (app_state()->brightness + 1) / 10;
                 fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)filled, 6.0f), 3.0f, accent);
                 SolidBrush knob(Color(255, 248, 251, 255));
@@ -338,14 +363,14 @@ static void paint(HWND hwnd) {
 
             {
                 char buf[16];
-                text(&g, "Speed", RectF(cc.X + 22, cc.Y + 190, 160, 16), 11.5f, dim, StringAlignmentNear);
+                text(&g, "Speed", RectF(cc.X + 22, cc.Y + 156, 160, 16), 11.5f, dim, StringAlignmentNear);
                 snprintf(buf, sizeof(buf), "%dx", app_state()->speed + 1);
-                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 190, 70, 16), 11.5f,
+                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 156, 70, 16), 11.5f,
                      Color(255, 190, 200, 216), StringAlignmentFar);
             }
             {
-                int by = (int)cc.Y + 218, bx = (int)cc.X + 22, bw = rightW - 44;
-                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 38, 44, 57));
+                int by = (int)cc.Y + 180, bx = (int)cc.X + 22, bw = rightW - 44;
+                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 31, 34, 42));
                 int filled = bw * (app_state()->speed + 1) / 4;
                 fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)filled, 6.0f), 3.0f, accent);
                 SolidBrush knob(Color(255, 248, 251, 255));
@@ -357,9 +382,9 @@ static void paint(HWND hwnd) {
 
             /* live summary */
             {
-                int sy = (int)cc.Y + 222;
-                RectF box((REAL)(cc.X + 22), (REAL)sy, (REAL)(rightW - 44), 74.0f);
-                fill_round(&g, box, 12.0f, Color(255, 24, 28, 37));
+                int sy = (int)cc.Y + 206;
+                RectF box((REAL)(cc.X + 22), (REAL)sy, (REAL)(rightW - 44), 76.0f);
+                fill_round(&g, box, 12.0f, Color(255, 20, 22, 28));
                 stroke_round(&g, box, 12.0f, lineSoft, 1.0f);
                 text(&g, "RUNNING", RectF(box.X + 14, box.Y + 10, 120, 16), 9.5f,
                      Color(255, 110, 120, 138), StringAlignmentNear);
@@ -387,15 +412,15 @@ static void paint(HWND hwnd) {
             }
 
             /* actions */
+            int ay = (int)cc.Y + (int)cc.Height - 54;
             {
-                int ay = (int)cc.Y + (int)cc.Height - 58;
                 int bw3 = (rightW - 20) / 3;
                 const char *names[3] = {"Import", "Restore", "Rescan"};
                 int ids[3] = {402, 400, 401};
                 int j;
                 for (j = 0; j < 3; j++) {
                     RectF b((REAL)(rx + j * (bw3 + 10)), (REAL)ay, (REAL)bw3, 38.0f);
-                    fill_round(&g, b, 11.0f, g_hover == ids[j] ? Color(255, 40, 46, 60) : Color(255, 29, 34, 44));
+                    fill_round(&g, b, 11.0f, g_hover == ids[j] ? Color(255, 34, 38, 48) : Color(255, 26, 29, 37));
                     stroke_round(&g, b, 11.0f, lineSoft, 1.0f);
                     text(&g, names[j], b, 12.0f, ink, StringAlignmentCenter);
                     add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
@@ -403,11 +428,12 @@ static void paint(HWND hwnd) {
             }
 
             if (InterlockedCompareExchange(&g_update, 0, 0)) {
-                RectF up((REAL)rx, (REAL)(y + 332), (REAL)rightW, 36.0f);
+                RectF up((REAL)rx, (REAL)(ay - 46), (REAL)rightW, 36.0f);
                 fill_round(&g, up, 11.0f, accentSoft);
                 stroke_round(&g, up, 11.0f, accent, 1.2f);
                 char ub[64];
-                snprintf(ub, sizeof(ub), "Update to %s", app_latest_tag());
+                if (app_latest_tag()[0]) snprintf(ub, sizeof(ub), "Update to %s", app_latest_tag());
+                else lstrcpynA(ub, "Update available", (int)sizeof(ub));
                 text(&g, ub, up, 12.5f, Color(255, 214, 231, 255), StringAlignmentCenter);
                 add_hot((int)up.X, (int)up.Y, (int)up.Width, (int)up.Height, 403, "update");
             }
@@ -551,7 +577,19 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 if (th) CloseHandle(th);
             }
             return 0;
+        case WM_SIZE:
+            InvalidateRect(h, NULL, FALSE);   /* layout depends on the client size */
+            return 0;
+        case WM_GETMINMAXINFO:
+            {
+                MINMAXINFO *mm = (MINMAXINFO *)l;
+                mm->ptMinTrackSize.x = 940;
+                mm->ptMinTrackSize.y = 820;
+            }
+            return 0;
         case WM_TIMER:
+            if (w == 1) { InvalidateRect(h, NULL, FALSE); return 0; }
+            break;
             InvalidateRect(h, NULL, FALSE);
             return 0;
         case WM_ERASEBKGND:
@@ -579,6 +617,20 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     WNDCLASSA wc;
 
     (void)prev;
+    {
+        /* without this the whole window is bitmap-stretched on a scaled display */
+        HMODULE user32 = GetModuleHandleW(L"user32.dll");
+        typedef BOOL (WINAPI *PfnSetCtx)(HANDLE);
+        typedef BOOL (WINAPI *PfnSetAware)(void);
+        if (user32) {
+            PfnSetCtx set_ctx = (PfnSetCtx)(void *)GetProcAddress(user32, "SetProcessDpiAwarenessContext");
+            if (set_ctx) set_ctx((HANDLE)-4);          /* PER_MONITOR_AWARE_V2 */
+            else {
+                PfnSetAware set_aware = (PfnSetAware)(void *)GetProcAddress(user32, "SetProcessDPIAware");
+                if (set_aware) set_aware();
+            }
+        }
+    }
     if (cmdline && strstr(cmdline, "--selftest")) return app_self_test();
     {
         const char *eff = cmdline ? strstr(cmdline, "--effect ") : NULL;
@@ -619,6 +671,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
     {
         int wx = CW_USEDEFAULT, wy = CW_USEDEFAULT, ww = W_INIT, wh = H_INIT;
+        {   /* --size WxH lets the layout be tested at other dimensions */
+            const char *sz = cmdline ? strstr(cmdline, "--size ") : NULL;
+            if (sz) {
+                int w = 0, h = 0;
+                if (sscanf(sz + 7, "%dx%d", &w, &h) == 2 && w > 600 && h > 500) { ww = w; wh = h; }
+            }
+        }
         app_load_state(&wx, &wy, &ww, &wh);
         if (ww < 900 || wh < 700) { ww = W_INIT; wh = H_INIT; wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
         g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
@@ -626,6 +685,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     }
     if (!g_hwnd) return 1;
     dark_title_bar(g_hwnd);
+    SetTimer(g_hwnd, 1, 250, NULL);
     app_pump(g_hwnd);
     SetTimer(g_hwnd, 1, 150, NULL);
     ShowWindow(g_hwnd, show);
