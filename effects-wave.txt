@@ -1,0 +1,5 @@
+name = Wave
+fps = 30
+r = clamp(128 + 127*sin(t*2 + x*0.45), 0, 255)
+g = clamp(60 + 40*sin(t*3 + y*0.8), 0, 255)
+b = clamp(180 + 70*cos(t*2 + x*0.3), 0, 255)

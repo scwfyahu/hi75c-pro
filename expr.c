@@ -1,0 +1,237 @@
+#include "expr.h"
+#include <ctype.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Node Node;
+struct Node {
+    int kind;            /* 0 num, 1 var, 2 binop, 3 unary, 4 call, 5 ternary */
+    double num;
+    int op;
+    char name[16];
+    Node *a, *b, *c;
+};
+
+struct Expr { Node *root; };
+
+static const char *P;
+
+static Node *parse_expr(void);
+
+static void skip(void) { while (*P == ' ' || *P == '\t') P++; }
+
+static Node *node(int kind) {
+    Node *n = (Node *)calloc(1, sizeof(Node));
+    if (n) n->kind = kind;
+    return n;
+}
+
+static Node *parse_primary(void) {
+    skip();
+    if (*P == '(') {
+        Node *e;
+        P++;
+        e = parse_expr();
+        skip();
+        if (*P == ')') P++;
+        return e;
+    }
+    if (*P == '-') { Node *n; P++; n = node(3); n->op = '-'; n->a = parse_primary(); return n; }
+    if (isdigit((unsigned char)*P) || *P == '.') {
+        char *end = NULL;
+        double v = strtod(P, &end);
+        Node *n = node(0);
+        n->num = v;
+        P = end;
+        return n;
+    }
+    if (isalpha((unsigned char)*P) || *P == '_') {
+        char name[16];
+        int len = 0;
+        while ((isalnum((unsigned char)*P) || *P == '_') && len < 15) name[len++] = *P++;
+        name[len] = 0;
+        skip();
+        if (*P == '(') {
+            Node *n = node(4);
+            strncpy(n->name, name, 15);
+            P++;
+            n->a = parse_expr();
+            skip();
+            if (*P == ',') { P++; n->b = parse_expr(); skip(); }
+            if (*P == ',') { P++; n->c = parse_expr(); skip(); }
+            if (*P == ')') P++;
+            return n;
+        }
+        {
+            Node *n = node(1);
+            strncpy(n->name, name, 15);
+            return n;
+        }
+    }
+    return NULL;
+}
+
+static int precedence(int op) {
+    switch (op) {
+        case 1: return 1;   /* || */
+        case 2: return 2;   /* && */
+        case 3: case 4: return 3;  /* < > */
+        case 5: case 6: return 4;  /* + - */
+        case 7: case 8: return 5;  /* * / */
+        case 9: return 6;   /* ^ */
+    }
+    return 0;
+}
+
+static int peek_op(void) {
+    skip();
+    if (P[0] == '|' && P[1] == '|') return 1;
+    if (P[0] == '&' && P[1] == '&') return 2;
+    if (P[0] == '<') return 3;
+    if (P[0] == '>') return 4;
+    if (P[0] == '+') return 5;
+    if (P[0] == '-') return 6;
+    if (P[0] == '*') return 7;
+    if (P[0] == '/') return 8;
+    if (P[0] == '^') return 9;
+    return 0;
+}
+
+static void take_op(int op) {
+    if (op == 1 || op == 2) P += 2;
+    else P += 1;
+}
+
+static Node *parse_bin(int minprec) {
+    Node *left = parse_primary();
+    for (;;) {
+        int op = peek_op();
+        int prec;
+        if (!op) break;
+        prec = precedence(op);
+        if (prec < minprec) break;
+        take_op(op);
+        if (op == 9) {                     /* right assoc */
+            Node *n = node(2);
+            n->op = op;
+            n->a = left;
+            n->b = parse_bin(prec);
+            left = n;
+        } else {
+            Node *n = node(2);
+            n->op = op;
+            n->a = left;
+            n->b = parse_bin(prec + 1);
+            left = n;
+        }
+    }
+    return left;
+}
+
+static Node *parse_expr(void) {
+    Node *cond = parse_bin(0);
+    skip();
+    if (*P == '?') {
+        Node *n = node(5);
+        P++;
+        n->a = cond;
+        n->b = parse_expr();
+        skip();
+        if (*P == ':') P++;
+        n->c = parse_expr();
+        return n;
+    }
+    return cond;
+}
+
+Expr *expr_compile(const char *text, char *err, int errlen) {
+    Expr *e = (Expr *)calloc(1, sizeof(Expr));
+    if (!e) return NULL;
+    P = text;
+    e->root = parse_expr();
+    skip();
+    if (!e->root) {
+        if (err) snprintf(err, errlen, "could not parse the expression");
+        free(e);
+        return NULL;
+    }
+    return e;
+}
+
+static double call(const char *name, double a, double b, double c) {
+    if (!strcmp(name, "sin")) return sin(a);
+    if (!strcmp(name, "cos")) return cos(a);
+    if (!strcmp(name, "tan")) return tan(a);
+    if (!strcmp(name, "abs")) return fabs(a);
+    if (!strcmp(name, "floor")) return floor(a);
+    if (!strcmp(name, "ceil")) return ceil(a);
+    if (!strcmp(name, "round")) return floor(a + 0.5);
+    if (!strcmp(name, "sqrt")) return a > 0 ? sqrt(a) : 0;
+    if (!strcmp(name, "pow")) return pow(a, b);
+    if (!strcmp(name, "log")) return a > 0 ? log(a) : 0;
+    if (!strcmp(name, "exp")) return exp(a);
+    if (!strcmp(name, "min")) return a < b ? a : b;
+    if (!strcmp(name, "max")) return a > b ? a : b;
+    if (!strcmp(name, "mod")) return b ? fmod(a, b) : 0;
+    if (!strcmp(name, "clamp")) return a < b ? b : (a > c ? c : a);
+    if (!strcmp(name, "mix")) return a + (b - a) * c;
+    if (!strcmp(name, "step")) return a <= b ? 1 : 0;
+    if (!strcmp(name, "smoothstep")) {          /* smoothstep(edge0, edge1, x) */
+        double t = (b == a) ? 0 : (c - a) / (b - a);
+        if (t < 0) t = 0;
+        if (t > 1) t = 1;
+        return t * t * (3 - 2 * t);
+    }
+    if (!strcmp(name, "fract")) return a - floor(a);
+    if (!strcmp(name, "tri")) { double f = a - floor(a); return f < 0.5 ? f * 2 : 2 - f * 2; }
+    return 0;
+}
+
+static double eval(Node *n, double t, double x, double y, double i, double cnt) {
+    if (!n) return 0;
+    switch (n->kind) {
+        case 0: return n->num;
+        case 1:
+            if (!strcmp(n->name, "t")) return t;
+            if (!strcmp(n->name, "x")) return x;
+            if (!strcmp(n->name, "y")) return y;
+            if (!strcmp(n->name, "i")) return i;
+            if (!strcmp(n->name, "n")) return cnt;
+            if (!strcmp(n->name, "pi")) return 3.14159265358979;
+            if (!strcmp(n->name, "tau")) return 6.28318530717959;
+            if (!strcmp(n->name, "e")) return 2.71828182845905;
+            return 0;
+        case 2: {
+            double a = eval(n->a, t, x, y, i, cnt), b = eval(n->b, t, x, y, i, cnt);
+            switch (n->op) {
+                case 1: return (a != 0 || b != 0) ? 1 : 0;
+                case 2: return (a != 0 && b != 0) ? 1 : 0;
+                case 3: return a < b;
+                case 4: return a > b;
+                case 5: return a + b;
+                case 6: return a - b;
+                case 7: return a * b;
+                case 8: return b != 0 ? a / b : 0;
+                case 9: return pow(a, b);
+            }
+            return 0;
+        }
+        case 3: return -eval(n->a, t, x, y, i, cnt);
+        case 4:
+            return call(n->name, eval(n->a, t, x, y, i, cnt),
+                        n->b ? eval(n->b, t, x, y, i, cnt) : 0,
+                        n->c ? eval(n->c, t, x, y, i, cnt) : 0);
+        case 5:
+            return eval(n->a, t, x, y, i, cnt) != 0 ? eval(n->b, t, x, y, i, cnt)
+                                                    : eval(n->c, t, x, y, i, cnt);
+    }
+    return 0;
+}
+
+double expr_eval(Expr *e, double t, double x, double y, double i, double n) {
+    return e ? eval(e->root, t, x, y, i, n) : 0;
+}
+
+void expr_free(Expr *e) { free(e); }

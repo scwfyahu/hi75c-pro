@@ -22,6 +22,8 @@
 #include "board.h"
 #include "proto.h"
 #include "app.h"
+#include "expr.h"
+#include <commdlg.h>
 
 #define RPT 0x13
 #define RPT_LEN 20
@@ -202,6 +204,8 @@ static void apply_effect(void) {
     g_state.note[0] = 0;
 }
 
+static unsigned char g_map_cache[KEYMAP_LEN];
+static int g_map_valid;
 static void restore_keymap(void) {
     unsigned char map[KEYMAP_LEN];
     int i;
@@ -220,6 +224,7 @@ static void restore_keymap(void) {
         return;
     }
     strcpy(g_state.note, "factory keymap restored");
+    g_map_valid = 0;
 }
 
 static void fill_all(void) {
@@ -263,6 +268,177 @@ static void register_shortcut(void) {
    without needing a display. Run with  Hi75CPro.exe --selftest  */
 
 
+
+/* ------------------------------------------------------- effect files */
+/*
+   name = Wave
+   fps  = 30
+   r = 128 + 127*sin(t*2 + x*0.4)
+   g = 40
+   b = 128 + 127*cos(t*2 + y*0.6)
+   variables: t seconds, x/y key position in units, i index, n key count
+*/
+static HANDLE g_fx_thread;
+static volatile LONG g_fx_stop = 1;
+static char g_fx_name[64] = "";
+
+const char *app_import_name(void) { return g_fx_name; }
+
+void app_stop_effect(void) {
+    InterlockedExchange(&g_fx_stop, 1);
+    if (g_fx_thread) {
+        WaitForSingleObject(g_fx_thread, 1500);
+        CloseHandle(g_fx_thread);
+        g_fx_thread = NULL;
+    }
+}
+
+typedef struct {
+    Expr *r, *g, *b;
+    int fps;
+    char name[64];
+} Effect;
+
+static DWORD WINAPI fx_run(LPVOID param) {
+    Effect *fx = (Effect *)param;
+    unsigned char profile[PROFILE];
+    double t0 = (double)GetTickCount64();
+    int frame = 0;
+
+    while (!g_fx_stop) {
+        double now = ((double)GetTickCount64() - t0) / 1000.0;
+        int i;
+        memset(profile, 0, sizeof(profile));
+        for (i = 0; i < KEY_COUNT; i++) {
+            int at = KEYS[i].idx;
+            if (at < 0 || at >= 126) continue;
+            {
+                double v;
+                v = expr_eval(fx->r, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+                profile[at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+                v = expr_eval(fx->g, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+                profile[126 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+                v = expr_eval(fx->b, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+                profile[252 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            }
+        }
+        if (!device_open()) { strcpy(g_state.note, "keyboard not found"); break; }
+        if (!p_write(dev(), 0x02, 0, profile, PROFILE)) {
+            strcpy(g_state.note, "the keyboard stopped accepting frames");
+            break;
+        }
+        frame++;
+        Sleep((DWORD)(1000 / (fx->fps > 0 ? fx->fps : 30)));
+    }
+    expr_free(fx->r); expr_free(fx->g); expr_free(fx->b);
+    free(fx);
+    return 0;
+}
+
+static int load_effect(const char *path, Effect **out, char *err, int errlen) {
+    FILE *f = fopen(path, "rb");
+    char line[512];
+    char er[128] = "", eg[128] = "", eb[128] = "";
+    Effect *fx;
+    if (!f) { snprintf(err, errlen, "cannot open that file"); return 0; }
+    fx = (Effect *)calloc(1, sizeof(Effect));
+    fx->fps = 30;
+    while (fgets(line, sizeof(line), f)) {
+        char *eq = strchr(line, '=');
+        char *v, *k = line, *trim;
+        if (!eq) continue;
+        *eq = 0;
+        v = eq + 1;
+        trim = k + strlen(k);
+        while (trim > k && (trim[-1] == ' ' || trim[-1] == '\t')) *--trim = 0;
+        while (*v == ' ' || *v == '\t') v++;
+        { char *nl; while ((nl = strpbrk(v, "\r\n")) != NULL) *nl = 0; }
+        if (!_stricmp(k, "name")) lstrcpynA(fx->name, v, sizeof(fx->name));
+        else if (!_stricmp(k, "fps")) fx->fps = atoi(v);
+        else if (!_stricmp(k, "r")) lstrcpynA(er, v, sizeof(er));
+        else if (!_stricmp(k, "g")) lstrcpynA(eg, v, sizeof(eg));
+        else if (!_stricmp(k, "b")) lstrcpynA(eb, v, sizeof(eb));
+    }
+    fclose(f);
+    if (!er[0]) lstrcpyA(er, "0");
+    if (!eg[0]) lstrcpyA(eg, "0");
+    if (!eb[0]) lstrcpyA(eb, "0");
+    fx->r = expr_compile(er, err, errlen);
+    fx->g = expr_compile(eg, err, errlen);
+    fx->b = expr_compile(eb, err, errlen);
+    if (!fx->r || !fx->g || !fx->b) {
+        expr_free(fx->r); expr_free(fx->g); expr_free(fx->b); free(fx);
+        return 0;
+    }
+    *out = fx;
+    return 1;
+}
+
+void app_import_effect(void *owner) {
+    OPENFILENAMEA ofn;
+    char path[MAX_PATH] = "";
+    Effect *fx = NULL;
+    char err[128] = "";
+
+    app_stop_effect();
+    memset(&ofn, 0, sizeof(ofn));
+    ofn.lStructSize = sizeof(ofn);
+    ofn.hwndOwner = (HWND)owner;
+    ofn.lpstrFilter = "Effect files (*.txt)\0*.txt\0All files\0*.*\0";
+    ofn.lpstrFile = path;
+    ofn.nMaxFile = MAX_PATH;
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST;
+    if (!GetOpenFileNameA(&ofn)) return;
+
+    if (!load_effect(path, &fx, err, sizeof(err))) {
+        snprintf(g_state.note, sizeof(g_state.note), "import failed: %s", err);
+        return;
+    }
+    lstrcpynA(g_fx_name, fx->name[0] ? fx->name : "imported effect", sizeof(g_fx_name));
+    InterlockedExchange(&g_fx_stop, 0);
+    g_fx_thread = CreateThread(NULL, 0, fx_run, fx, 0, NULL);
+    snprintf(g_state.note, sizeof(g_state.note), "running \"%s\" at %d fps", g_fx_name, fx->fps);
+}
+
+
+/* ------------------------------------------------------------ keymap */
+
+static int g_map_valid;
+
+static int keymap_load(void) {
+    if (g_map_valid) return 1;
+    if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return 0; }
+    if (!p_read(dev(), 0x41, 0, g_map_cache, KEYMAP_LEN)) {
+        strcpy(g_state.note, "could not read the keymap");
+        return 0;
+    }
+    g_map_valid = 1;
+    return 1;
+}
+
+int app_keymap_get(int idx) {
+    if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN) return -1;
+    if (!keymap_load()) return -1;
+    return g_map_cache[idx * 4 + 3];
+}
+
+int app_keymap_set(int idx, int type, int usage) {
+    if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN) return 0;
+    if (!keymap_load()) return 0;
+    g_map_cache[idx * 4 + 0] = (unsigned char)(type & 0xff);
+    g_map_cache[idx * 4 + 1] = 0;
+    g_map_cache[idx * 4 + 2] = 0;
+    g_map_cache[idx * 4 + 3] = (unsigned char)(usage & 0xff);
+    if (!p_write(dev(), 0x01, 0, g_map_cache, KEYMAP_LEN)) {
+        strcpy(g_state.note, "the keyboard rejected the keymap");
+        return 0;
+    }
+    snprintf(g_state.note, sizeof(g_state.note), "key %d set to 0x%02x", idx, usage & 0xff);
+    return 1;
+}
+
+void app_clear_note(void) { g_state.note[0] = 0; }
+
 /* ------------------------------------------------------------ interface */
 
 void app_init(void) {
@@ -300,10 +476,33 @@ void app_set_brightness(int b) { g_state.brightness = b; apply_effect(); }
 void app_set_speed(int s) { g_state.speed = s; apply_effect(); }
 void app_restore_keymap(void) { restore_keymap(); }
 void app_rescan(void) {
+    g_map_valid = 0;
     if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
     g_state.connected = device_open();
     if (!g_state.connected) strcpy(g_state.note, "keyboard not found");
     else g_state.note[0] = 0;
+}
+
+/* headless check of the importer: load a file, evaluate the first frame */
+int app_effect_test(const char *path) {
+    Effect *fx = NULL;
+    char err[128] = "";
+    int i, printed = 0;
+    if (!load_effect(path, &fx, err, sizeof(err))) {
+        printf("FAIL import: %s\n", err);
+        return 1;
+    }
+    printf("ok   imported \"%s\" at %d fps\n", fx->name, fx->fps);
+    for (i = 0; i < KEY_COUNT && printed < 4; i += 20) {
+        double r = expr_eval(fx->r, 0.0, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+        double g = expr_eval(fx->g, 0.0, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+        double b = expr_eval(fx->b, 0.0, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
+        printf("ok   key %-6s rgb(%.0f, %.0f, %.0f)\n", KEYS[i].label, r, g, b);
+        printed++;
+    }
+    expr_free(fx->r); expr_free(fx->g); expr_free(fx->b); free(fx);
+    printf("3 checks, 0 failures\n");
+    return 0;
 }
 
 int app_self_test(void) {

@@ -26,8 +26,15 @@ void app_set_brightness(int level);
 void app_set_speed(int level);
 void app_restore_keymap(void);
 void app_rescan(void);
+void app_import_effect(void *owner);   /* opens a file dialog and runs the effect */
+void app_stop_effect(void);
+int  app_keymap_set(int key_index, int type, int usage);   /* 1 on success */
+int  app_keymap_get(int key_index);                        /* current usage, -1 on failure */
+void app_clear_note(void);
+const char *app_import_name(void);
 
 int app_self_test(void);
+int app_effect_test(const char *path);
 
 #ifdef __cplusplus
 }

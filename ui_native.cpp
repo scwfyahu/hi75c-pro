@@ -9,6 +9,8 @@
 #include <objidl.h>
 #include <gdiplus.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include "app.h"
 #include "board.h"
@@ -21,10 +23,13 @@ static ULONG_PTR g_gdiplus;
 static HWND g_hwnd;
 static const wchar_t *g_face = L"Tahoma";   /* Segoe UI where it exists */
 static int g_hover = -1, g_press = -1;
+static int g_sel = -1;          /* selected key index in the keymap */
+static char g_code[8] = "";     /* hex code being typed */
+static int g_code_cur = -1;     /* usage last read for the selected key */
 
 /* layout */
 #define W_INIT 1040
-#define H_INIT 860
+#define H_INIT 900
 #define PAD 22
 #define HEADER_H 64
 #define CARD_R 14
@@ -89,13 +94,21 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     float oy = area.Y + (area.Height - BOARD_HEIGHT * s) / 2;
     float gap = 2.0f;
     int i;
-    Font key(L"Tahoma", 9.0f, FontStyleRegular, UnitPixel);
+    Font key(L"Tahoma", 10.0f, FontStyleRegular, UnitPixel);
     SolidBrush textbrush(dim);
     for (i = 0; i < KEY_COUNT; i++) {
         RectF k(ox + KEYS[i].x * s + gap / 2, oy + KEYS[i].y * s + gap / 2,
                 KEYS[i].w * s - gap, KEYS[i].h * s - gap);
-        fill_round(g, k, 4.0f, Color(255, 32, 37, 47));
-        stroke_round(g, k, 4.0f, line, 1.0f);
+        {
+            LinearGradientBrush grad(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height),
+                                     Color(255, 40, 46, 58), Color(255, 26, 30, 39));
+            GraphicsPath kp;
+            rounded(&kp, k, 4.0f);
+            g->FillPath(&grad, &kp);
+            Pen edge(i == g_sel ? Color(255, 61, 139, 253) : line, i == g_sel ? 1.8f : 1.0f);
+            g->DrawPath(&edge, &kp);
+        }
+        add_hot((int)k.X, (int)k.Y, (int)k.Width, (int)k.Height, 1000 + i, KEYS[i].label);
         if (k.Width > 26.0f) {
             StringFormat c;
             c.SetAlignment(StringAlignmentCenter);
@@ -123,8 +136,11 @@ static void paint(HWND hwnd) {
         const Color bg(255, 15, 17, 21), card(255, 23, 26, 33), line(255, 38, 43, 54);
         const Color txt(255, 232, 236, 244), dim(255, 139, 149, 167);
         const Color accent(255, 61, 139, 253);
-        SolidBrush bgb(bg);
-        g.FillRectangle(&bgb, 0, 0, rc.right, rc.bottom);
+        {
+            LinearGradientBrush bg2(PointF(0, 0), PointF(0, (REAL)rc.bottom),
+                                    Color(255, 17, 19, 24), Color(255, 11, 13, 17));
+            g.FillRectangle(&bg2, 0, 0, rc.right, rc.bottom);
+        }
 
         /* header */
         {
@@ -155,8 +171,25 @@ static void paint(HWND hwnd) {
             stroke_round(&g, kb, CARD_R, line, 1.0f);
             text(&g, "KEYBOARD", RectF(kb.X + 18, kb.Y + 12, 200, 20), 11.0f, dim, StringAlignmentNear);
             draw_keyboard(&g, RectF(kb.X + 8, kb.Y + 30, kb.Width - 16, kb.Height - 38), line, dim);
+            {
+                char info[160];
+                RectF strip(kb.X + 2, kb.Y + kb.Height + 6, kb.Width, 20);
+                if (g_sel >= 0 && g_sel < KEY_COUNT) {
+                    if (g_code[0])
+                        snprintf(info, sizeof(info), "%s  (index %d)  -  typing 0x%s   Enter to apply",
+                                 KEYS[g_sel].label, KEYS[g_sel].idx, g_code);
+                    else
+                        snprintf(info, sizeof(info), "%s  (index %d)  -  current usage 0x%02x   type a hex code",
+                                 KEYS[g_sel].label, KEYS[g_sel].idx,
+                                 g_code_cur < 0 ? 0 : g_code_cur);
+                    text(&g, info, strip, 11.5f, Color(255, 160, 172, 190), StringAlignmentNear);
+                } else {
+                    text(&g, "Click a key to remap it. Keys are written to the keyboard's own keymap.",
+                         strip, 11.5f, dim, StringAlignmentNear);
+                }
+            }
         }
-        top += 356;
+        top += 392;
 
         /* effect card */
         RectF lc((REAL)PAD, (REAL)top, (REAL)left_w, (REAL)(rc.bottom - top - PAD));
@@ -251,15 +284,21 @@ static void paint(HWND hwnd) {
         {
             int rx = rc.right - PAD - right_w;
             int y = top + 262;
-            RectF a((REAL)rx, (REAL)y, (REAL)((right_w - 10) / 2), 40.0f);
-            RectF b2((REAL)(rx + (right_w - 10) / 2 + 10), (REAL)y, (REAL)((right_w - 10) / 2), 40.0f);
+            int bw2 = (right_w - 20) / 3;
+            RectF imp((REAL)rx, (REAL)y, (REAL)bw2, 40.0f);
+            RectF a((REAL)(rx + bw2 + 10), (REAL)y, (REAL)bw2, 40.0f);
+            RectF b2((REAL)(rx + 2 * (bw2 + 10)), (REAL)y, (REAL)bw2, 40.0f);
+            fill_round(&g, imp, 10.0f, g_hover == 402 ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44));
+            stroke_round(&g, imp, 10.0f, line, 1.0f);
+            text(&g, "Import...", imp, 12.0f, txt, StringAlignmentCenter);
+            add_hot((int)imp.X, (int)imp.Y, (int)imp.Width, (int)imp.Height, 402, "import");
             fill_round(&g, a, 10.0f, g_hover == 400 ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44));
             stroke_round(&g, a, 10.0f, line, 1.0f);
-            text(&g, "Restore keymap", a, 12.5f, txt, StringAlignmentCenter);
+            text(&g, "Restore", a, 12.0f, txt, StringAlignmentCenter);
             add_hot((int)a.X, (int)a.Y, (int)a.Width, (int)a.Height, 400, "restore");
             fill_round(&g, b2, 10.0f, g_hover == 401 ? Color(255, 37, 42, 54) : Color(255, 30, 34, 44));
             stroke_round(&g, b2, 10.0f, line, 1.0f);
-            text(&g, "Rescan", b2, 12.5f, txt, StringAlignmentCenter);
+            text(&g, "Rescan", b2, 12.0f, txt, StringAlignmentCenter);
             add_hot((int)b2.X, (int)b2.Y, (int)b2.Width, (int)b2.Height, 401, "rescan");
         }
 
@@ -323,11 +362,40 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 else if (id == 301) app_set_speed(slider_value(301, x));
                 else if (id == 400) app_restore_keymap();
                 else if (id == 401) app_rescan();
+                else if (id == 402) app_import_effect(h);
+                else if (id >= 1000) {
+                    g_sel = id - 1000;
+                    g_code[0] = 0;
+                    g_code_cur = app_keymap_get(KEYS[g_sel].idx);
+                    InvalidateRect(h, NULL, FALSE);
+                }
                 InvalidateRect(h, NULL, FALSE);
             }
             return 0;
         case WM_LBUTTONUP:
             g_press = -1;
+            return 0;
+        case WM_CHAR:
+            if (g_sel >= 0) {
+                int ch = (int)w;
+                if (ch == VK_RETURN || ch == '\r') {
+                    if (strlen(g_code) > 0) {
+                        int usage = (int)strtol(g_code, NULL, 16);
+                        if (app_keymap_set(KEYS[g_sel].idx, 0, usage)) g_code_cur = usage;
+                        g_code[0] = 0;
+                        InvalidateRect(h, NULL, FALSE);
+                    }
+                } else if ((ch == '\b') || (ch == 8)) {
+                    size_t n = strlen(g_code);
+                    if (n) g_code[n - 1] = 0;
+                    InvalidateRect(h, NULL, FALSE);
+                } else if (isxdigit(ch) && strlen(g_code) < 2) {
+                    size_t n = strlen(g_code);
+                    g_code[n] = (char)toupper(ch);
+                    g_code[n + 1] = 0;
+                    InvalidateRect(h, NULL, FALSE);
+                }
+            }
             return 0;
         case WM_ERASEBKGND:
             return 1;
@@ -346,6 +414,10 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
     (void)prev;
     if (cmdline && strstr(cmdline, "--selftest")) return app_self_test();
+    {
+        const char *eff = cmdline ? strstr(cmdline, "--effect ") : NULL;
+        if (eff) return app_effect_test(eff + 9);
+    }
 
     GdiplusStartup(&g_gdiplus, &gsi, NULL);
     {
