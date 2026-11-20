@@ -314,8 +314,20 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             if (!looks_ok) { DeleteFileW(tmp); ok = 0; }
         }
         logf2("downloaded: %s", GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES ? "yes" : "no");
-        if (GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES &&
-            MoveFileExW(tmp, target, MOVEFILE_REPLACE_EXISTING)) {
+        /* the target is often on another drive than %TEMP%, so copy rather than
+           move: MoveFileEx cannot cross volumes without MOVEFILE_COPY_ALLOWED */
+        if (GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES) {
+            BOOL copied = CopyFileW(tmp, target, FALSE);
+            if (!copied) {
+                DWORD why = GetLastError();
+                logf2("copy      : failed, error %lu", (unsigned long)why);
+                if (why == ERROR_ACCESS_DENIED) logf2("            (a running Hi75CPro.exe may be locking it)");
+            } else {
+                logf2("copied    : %ls", target);
+            }
+            DeleteFileW(tmp);
+        }
+        if (GetFileAttributesW(target) != INVALID_FILE_ATTRIBUTES) {
             logf2("installed : %ls", target);
             shortcut(target);
             ok = 1;
