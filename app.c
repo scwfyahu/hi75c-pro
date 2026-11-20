@@ -207,6 +207,7 @@ static void apply_effect(void) {
 
 static unsigned char g_map_cache[KEYMAP_LEN];
 static int g_map_valid;
+static int g_layer;              /* 0 = base, 1 = FN */
 static void restore_keymap(void) {
     unsigned char map[KEYMAP_LEN];
     int i;
@@ -409,7 +410,7 @@ static int g_map_valid;
 static int keymap_load(void) {
     if (g_map_valid) return 1;
     if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return 0; }
-    if (!p_read(dev(), 0x41, 0, g_map_cache, KEYMAP_LEN)) {
+    if (!p_read(dev(), 0x41, g_layer, g_map_cache, KEYMAP_LEN)) {
         strcpy(g_state.note, "could not read the keymap");
         return 0;
     }
@@ -430,15 +431,19 @@ int app_keymap_set(int idx, int type, int usage) {
     g_map_cache[idx * 4 + 1] = 0;
     g_map_cache[idx * 4 + 2] = 0;
     g_map_cache[idx * 4 + 3] = (unsigned char)(usage & 0xff);
-    if (!p_write(dev(), 0x01, 0, g_map_cache, KEYMAP_LEN)) {
+    if (!p_write(dev(), 0x01, g_layer, g_map_cache, KEYMAP_LEN)) {
         strcpy(g_state.note, "the keyboard rejected the keymap");
         return 0;
     }
-    snprintf(g_state.note, sizeof(g_state.note), "key %d set to 0x%02x", idx, usage & 0xff);
+    snprintf(g_state.note, sizeof(g_state.note), "%s key %d set to 0x%02x",
+             g_layer ? "FN" : "base", idx, usage & 0xff);
     return 1;
 }
 
 void app_clear_note(void) { g_state.note[0] = 0; }
+
+void app_set_layer(int layer) { g_layer = layer ? 1 : 0; g_map_valid = 0; }
+int app_layer(void) { return g_layer; }
 
 
 /* ------------------------------------------------------- remembered state */

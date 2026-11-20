@@ -187,6 +187,19 @@ static void paint(HWND hwnd) {
                     text(&g, "Click a key to remap it. Keys are written to the keyboard's own keymap.",
                          strip, 11.5f, dim, StringAlignmentNear);
                 }
+                {
+                    RectF lb((REAL)(kb.X + kb.Width - 150), kb.Y + 10, 64, 24);
+                    RectF lf((REAL)(kb.X + kb.Width - 80), kb.Y + 10, 64, 24);
+                    int layer = app_layer();
+                    fill_round(&g, lb, 7.0f, layer == 0 ? Color(255, 30, 48, 78) : Color(255, 30, 34, 44));
+                    stroke_round(&g, lb, 7.0f, layer == 0 ? accent : line, 1.0f);
+                    text(&g, "Base", lb, 11.0f, layer == 0 ? Color(255, 207, 225, 255) : dim, StringAlignmentCenter);
+                    add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
+                    fill_round(&g, lf, 7.0f, layer == 1 ? Color(255, 30, 48, 78) : Color(255, 30, 34, 44));
+                    stroke_round(&g, lf, 7.0f, layer == 1 ? accent : line, 1.0f);
+                    text(&g, "FN", lf, 11.0f, layer == 1 ? Color(255, 207, 225, 255) : dim, StringAlignmentCenter);
+                    add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
+                }
             }
         }
         top += 392;
@@ -363,6 +376,8 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 else if (id == 400) app_restore_keymap();
                 else if (id == 401) app_rescan();
                 else if (id == 402) app_import_effect(h);
+                else if (id == 500) { app_set_layer(0); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
+                else if (id == 501) { app_set_layer(1); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id >= 1000) {
                     g_sel = id - 1000;
                     g_code[0] = 0;

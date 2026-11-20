@@ -146,6 +146,11 @@ static void daemon_main(void) {
     unsigned phase = 0;
     int i;
     build_sin();
+    {
+        char dry[8];
+        if (GetEnvironmentVariableA("HI75C_DAEMON_DRY", dry, sizeof(dry)) > 0)
+            for (;;) { send_profile(); Sleep(33); }   /* measurement only */
+    }
     if (!open_device()) ExitProcess(2);
     for (;;) {
         for (i = 0; i < 126; i++) {
