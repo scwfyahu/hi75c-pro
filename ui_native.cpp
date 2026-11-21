@@ -284,8 +284,10 @@ static int effect_icon(int i, int hw) {
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim)
 {
     /* the plate the keys sit in */
+    RectF plateRect;
     {
         RectF plate(area.X - 6, area.Y - 2, area.Width + 12, area.Height + 10);
+        plateRect = plate;
         LinearGradientBrush pb(PointF(plate.X, plate.Y), PointF(plate.X, plate.Y + plate.Height),
                                Color(255, 30, 34, 43), Color(255, 18, 20, 26));
         GraphicsPath pp; rounded(&pp, plate, 14.0f);
@@ -445,6 +447,14 @@ static void paint(HWND hwnd) {
         }
 
         if (g_dbg) dbg("paint %dx%d", rc.right, rc.bottom);
+        if (rc.right < 700 || rc.bottom < 560) {
+            SolidBrush bb(Color(255, 13, 14, 18));
+            g.FillRectangle(&bb, 0, 0, rc.right, rc.bottom);
+            text(&g, "Window is too small to lay out", RectF(20, (REAL)rc.bottom / 2 - 10, rc.right - 40, 20),
+                 12.0f, C_INK_3, StringAlignmentCenter);
+            g_hot_n = 0;
+            goto rendered;
+        }
         g_anim_t = (float)(GetTickCount64() % 1000000ULL) / 1000.0f;
         const int pad = 26;
         const int headerH = 76;
@@ -666,8 +676,8 @@ static void paint(HWND hwnd) {
                 }
             }
 
-            /* live summary */
-            {
+            /* live summary (omitted when the card is short, rather than clipped) */
+            if (cc.Height > 340.0f) {
                 int sy = (int)cc.Y + 250;
                 RectF box((REAL)(cc.X + 22), (REAL)sy, (REAL)(rightW - 44), 76.0f);
                 fill_round(&g, box, 12.0f, Color(255, 20, 22, 28));
@@ -748,6 +758,7 @@ static void paint(HWND hwnd) {
             }
         }
     }
+rendered:
     if (g_dbg) {
         int hi;
         dbg("hotspots %d", g_hot_n);
@@ -802,6 +813,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 int id = hit(x, y);
                 dbg("click at %d,%d  hotspots=%d  hit=%d", x, y, g_hot_n, id);
                 g_press = id;
+                if (id == 300 || id == 301) SetCapture(h);
                 if (id >= 100 && id < 100 + app_effect_count()) app_set_effect(app_effect_id(id - 100));
                 else if (id >= 200 && id < 207) app_set_colour(id - 200);
                 else if (id == 300) app_set_brightness(slider_value(300, x));
@@ -828,6 +840,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             }
             return 0;
         case WM_LBUTTONUP:
+            if (g_press == 300 || g_press == 301) ReleaseCapture();
             g_press = -1;
             return 0;
         case WM_CHAR:
@@ -867,8 +880,8 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         case WM_GETMINMAXINFO:
             {
                 MINMAXINFO *mm = (MINMAXINFO *)l;
-                mm->ptMinTrackSize.x = 940;
-                mm->ptMinTrackSize.y = 820;
+                mm->ptMinTrackSize.x = 960;
+                mm->ptMinTrackSize.y = 900;
             }
             return 0;
         case WM_TIMER:
@@ -955,15 +968,18 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
     {
         int wx = CW_USEDEFAULT, wy = CW_USEDEFAULT, ww = W_INIT, wh = H_INIT;
-        {   /* --size WxH lets the layout be tested at other dimensions */
+        int forced = 0;
+        app_load_state(&wx, &wy, &ww, &wh);
+        {   /* --size WxH overrides the remembered size, for testing the layout */
             const char *sz = cmdline ? strstr(cmdline, "--size ") : NULL;
             if (sz) {
                 int w = 0, h = 0;
-                if (sscanf(sz + 7, "%dx%d", &w, &h) == 2 && w > 600 && h > 500) { ww = w; wh = h; }
+                if (sscanf(sz + 7, "%dx%d", &w, &h) == 2 && w > 400 && h > 300) {
+                    ww = w; wh = h; wx = 60; wy = 60; forced = 1;
+                }
             }
         }
-        app_load_state(&wx, &wy, &ww, &wh);
-        if (ww < 900 || wh < 700) { ww = W_INIT; wh = H_INIT; wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
+        if (!forced && (ww < 900 || wh < 700)) { ww = W_INIT; wh = H_INIT; wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
         else {
             /* a saved rect from a monitor that is no longer attached would open
                the window off-screen; fall back to the default position */
