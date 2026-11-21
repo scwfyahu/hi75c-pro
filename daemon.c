@@ -34,6 +34,13 @@ static void build_sin(void) {
     }
 }
 
+static int frame_ok(const unsigned char *buf) {
+    int i, sum = 0;
+    if (buf[0] != RPT) return 0;
+    for (i = 0; i < RPT_LEN - 1; i++) sum += buf[i];
+    return buf[RPT_LEN - 1] == (unsigned char)(sum & 0xff);
+}
+
 static void frame_build(unsigned char *f, int cmd, int sub, const unsigned char *p, int len,
                         int index, int count) {
     int i, sum = 0;
@@ -42,7 +49,6 @@ static void frame_build(unsigned char *f, int cmd, int sub, const unsigned char 
     f[2] = (unsigned char)count;
     f[3] = (unsigned char)index;
     f[4] = (unsigned char)(((sub & 0xf) << 4) | (len & 0xf));
-    for (i = 0; i < RPT_LEN; i++) if (i < 5 || i > 18) f[i] = f[i];
     for (i = 0; i < len && i < 14; i++) f[5 + i] = p[i];
     for (i = 5 + len; i < 19; i++) f[i] = 0;
     for (i = 0; i < 19; i++) sum += f[i];
@@ -132,7 +138,7 @@ static int send_profile(void) {
                 }
                 CloseHandle(ov.hEvent);
                 waited += 5;
-                if (got >= RPT_LEN && buf[0] == RPT && (buf[1] & 0x3f) == 0x02 &&
+                if (got >= RPT_LEN && frame_ok(buf) && (buf[1] & 0x3f) == 0x02 &&
                     buf[3] == (unsigned char)index) { acked = 1; break; }
             }
         }
