@@ -10,6 +10,7 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <shellapi.h>
+#include "verify.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -394,6 +395,43 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             /* refuse anything that is not a real executable: an error page from a
                proxy, a stale redirect or a truncated transfer must never be installed */
             if (!is_pe_image(tmp)) { DeleteFileW(tmp); ok = 0; }
+        }
+        if (GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES) {
+            /* and refuse anything whose RSA signature does not match: the network
+               is not trusted, this key is */
+            wchar_t sigurl[2048], sigtmp[MAX_PATH + 8];
+            lstrcpynW(sigurl, url, 2048);
+            lstrcatW(sigurl, L".sig");
+            lstrcpynW(sigtmp, tmp, MAX_PATH);
+            lstrcatW(sigtmp, L".sig");
+            DeleteFileW(sigtmp);
+#ifdef HI75C_ENABLE_OFFLINE
+            if (offline_src[0]) {
+                lstrcpynW(sigtmp, offline_src, MAX_PATH);
+                lstrcatW(sigtmp, L".sig");
+            } else
+#endif
+            if (!download_urlmon(sigurl, sigtmp)) download(sigurl, sigtmp);
+            {
+                unsigned char sig[512];
+                DWORD got = 0;
+                HANDLE f = CreateFileW(sigtmp, GENERIC_READ, FILE_SHARE_READ, NULL,
+                                       OPEN_EXISTING, 0, NULL);
+                int good = 0;
+                if (f != INVALID_HANDLE_VALUE) {
+                    good = ReadFile(f, sig, sizeof(sig), &got, NULL)
+                           && h75c_verify_with_sig(tmp, sig, got);
+                    CloseHandle(f);
+                }
+            if (good) {
+                logf2("signature : ok");
+            } else {
+                logf2("signature : FAILED - refusing to install");
+                DeleteFileW(tmp);
+                ok = 0;
+            }
+            }
+            DeleteFileW(sigtmp);
         }
         logf2("downloaded: %s", GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES ? "yes" : "no");
         /* the target is often on another drive than %TEMP%, so copy rather than

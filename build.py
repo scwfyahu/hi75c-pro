@@ -62,8 +62,8 @@ def main() -> int:
     run([ZIG, "cc", "-target", TARGET, "-Os", "-municode", "-I", str(HERE),
          "-c", str(HERE / "setup2.c"), "-o", "/tmp/build_setup.o"], "setup2.c")
     run([ZIG, "cc", "-target", TARGET, "-Os", "-s", "-municode",
-         "-Wl,--subsystem,windows", "-o", str(setup), "/tmp/build_setup.o",
-         "-lwinhttp", "-lurlmon", "-lole32", "-luuid", "-lshell32", "-ladvapi32", "-luser32"],
+         "-Wl,--subsystem,windows", "-o", str(setup), "/tmp/build_setup.o", "/tmp/build_verify.o",
+         "-lwinhttp", "-lurlmon", "-lole32", "-luuid", "-lshell32", "-ladvapi32", "-luser32", "-lbcrypt"],
         "Hi75CPro-Setup.exe")
 
     print("daemon", flush=True)
