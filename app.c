@@ -119,7 +119,17 @@ static Link *dev(void) {
     return &g_link;
 }
 
+static int device_open_locked(void);
+
 static int device_open(void) {
+    int r;
+    hid_enter();
+    r = device_open_locked();
+    hid_leave();
+    return r;
+}
+
+static int device_open_locked(void) {
     GUID guid;
     HDEVINFO set;
     SP_DEVICE_INTERFACE_DATA ifd;
@@ -412,11 +422,20 @@ int app_update_apply(void) {
     if (!file_is_exe(tmp)) { DeleteFileW(tmp); return 0; }
 
     GetModuleFileNameW(NULL, self, MAX_PATH);
-    lstrcpynW(parked, self, MAX_PATH);
-    lstrcatW(parked, L".old");
-    DeleteFileW(parked);
-    if (!MoveFileW(self, parked)) return 0;          /* running exe can be renamed */
-    if (!CopyFileW(tmp, self, FALSE)) { MoveFileW(parked, self); return 0; }
+    {
+        wchar_t staged[MAX_PATH];
+        lstrcpynW(staged, self, MAX_PATH);
+        lstrcatW(staged, L".new");
+        DeleteFileW(staged);
+        if (!CopyFileW(tmp, staged, FALSE)) { DeleteFileW(tmp); return 0; }
+        /* the copy beside the target is complete and validated, so the window in
+           which no executable exists is two renames wide, not a whole copy */
+        lstrcpynW(parked, self, MAX_PATH);
+        lstrcatW(parked, L".old");
+        DeleteFileW(parked);
+        if (!MoveFileW(self, parked)) { DeleteFileW(staged); DeleteFileW(tmp); return 0; }
+        if (!MoveFileW(staged, self)) { MoveFileW(parked, self); DeleteFileW(tmp); return 0; }
+    }
     DeleteFileW(tmp);
     return 1;
 }
@@ -509,7 +528,11 @@ static int load_effect(const char *path, Effect **out, char *err, int errlen) {
         while (*v == ' ' || *v == '\t') v++;
         { char *nl; while ((nl = strpbrk(v, "\r\n")) != NULL) *nl = 0; }
         if (!_stricmp(k, "name")) lstrcpynA(fx->name, v, sizeof(fx->name));
-        else if (!_stricmp(k, "fps")) fx->fps = atoi(v);
+        else if (!_stricmp(k, "fps")) {
+            fx->fps = atoi(v);
+            if (fx->fps < 1) fx->fps = 30;      /* 1000/0 would fault, 1000/fps<1 spins */
+            if (fx->fps > 120) fx->fps = 120;
+        }
         else if (!_stricmp(k, "r")) lstrcpynA(er, v, sizeof(er));
         else if (!_stricmp(k, "g")) lstrcpynA(eg, v, sizeof(eg));
         else if (!_stricmp(k, "b")) lstrcpynA(eb, v, sizeof(eb));

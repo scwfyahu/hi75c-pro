@@ -115,6 +115,18 @@ static void text(Graphics *g, const char *s, const RectF &r, float size,
 
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim)
 {
+    /* the plate the keys sit in */
+    {
+        RectF plate(area.X - 6, area.Y - 2, area.Width + 12, area.Height + 10);
+        LinearGradientBrush pb(PointF(plate.X, plate.Y), PointF(plate.X, plate.Y + plate.Height),
+                               Color(255, 30, 34, 43), Color(255, 18, 20, 26));
+        GraphicsPath pp; rounded(&pp, plate, 14.0f);
+        g->FillPath(&pb, &pp);
+        Pen outer(Color(255, 48, 53, 66), 1.0f);
+        g->DrawPath(&outer, &pp);
+        Pen gloss(Color(22, 255, 255, 255), 1.0f);
+        g->DrawLine(&gloss, PointF(plate.X + 14, plate.Y + 1.5f), PointF(plate.X + plate.Width - 14, plate.Y + 1.5f));
+    }
     /* scale the board into the card, keeping its aspect ratio */
     float pad = 16.0f;
     float avail_w = area.Width - pad * 2, avail_h = area.Height - pad * 2;
@@ -131,14 +143,44 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
                 KEYS[i].w * s - gap, KEYS[i].h * s - gap);
         {
             int hot = (g_hover == 1000 + i);
-            Color topc = hot ? Color(255, 50, 56, 70) : Color(255, 38, 42, 53);
-            Color botc = hot ? Color(255, 36, 40, 51) : Color(255, 27, 30, 38);
-            LinearGradientBrush grad(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height), topc, botc);
-            GraphicsPath kp;
-            rounded(&kp, k, 4.0f);
-            g->FillPath(&grad, &kp);
-            Pen edge(i == g_sel ? Color(255, 61, 139, 253) : line, i == g_sel ? 1.8f : 1.0f);
-            g->DrawPath(&edge, &kp);
+            /* side wall first, then the lit top face: this is what makes a
+               rectangle read as a keycap */
+            RectF wall(k.X, k.Y + 2.5f, k.Width, k.Height);
+            fill_round(g, wall, 5.0f, Color(255, 10, 12, 16));
+            {
+                Color c = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+                int mix = 14;   /* 0..255 of the chosen colour folded into the cap */
+                Color topc = hot ? Color(255, 68, 76, 94) : Color(255, 52, 58, 72);
+                Color botc = hot ? Color(255, 44, 50, 63) : Color(255, 34, 39, 49);
+                topc = Color(255, (BYTE)((topc.GetR() * (255 - mix) + c.GetR() * mix) / 255),
+                                  (BYTE)((topc.GetG() * (255 - mix) + c.GetG() * mix) / 255),
+                                  (BYTE)((topc.GetB() * (255 - mix) + c.GetB() * mix) / 255));
+                botc = Color(255, (BYTE)((botc.GetR() * (255 - mix) + c.GetR() * mix) / 255),
+                                  (BYTE)((botc.GetG() * (255 - mix) + c.GetG() * mix) / 255),
+                                  (BYTE)((botc.GetB() * (255 - mix) + c.GetB() * mix) / 255));
+                {
+                    LinearGradientBrush grad2(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height), topc, botc);
+                    GraphicsPath kp2;
+                    rounded(&kp2, k, 5.0f);
+                    g->FillPath(&grad2, &kp2);
+                    Pen gl(Color(34, 255, 255, 255), 1.0f);
+                    g->DrawLine(&gl, PointF(k.X + 5, k.Y + 1.2f), PointF(k.X + k.Width - 5, k.Y + 1.2f));
+                    {
+                        Color c2 = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+                        Pen under(Color(70, c2.GetR(), c2.GetG(), c2.GetB()), 2.0f);
+                        g->DrawLine(&under, PointF(k.X + 4, k.Y + k.Height - 1.0f),
+                                    PointF(k.X + k.Width - 4, k.Y + k.Height - 1.0f));
+                    }
+                    if (i == g_sel) {
+                        Pen ring(Color(255, 91, 140, 255), 2.0f);
+                        GraphicsPath rp; rounded(&rp, k, 5.0f);
+                        g->DrawPath(&ring, &rp);
+                    } else {
+                        Pen edge(Color(255, 20, 23, 28), 1.0f);
+                        g->DrawPath(&edge, &kp2);
+                    }
+                }
+            }
         }
         add_hot((int)k.X, (int)k.Y, (int)k.Width, (int)k.Height, 1000 + i, KEYS[i].label);
         if (k.Width > 26.0f) {
@@ -152,6 +194,19 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     }
 }
 
+
+
+/* cheap soft shadow: a few offset rounded rects at low alpha */
+static void shadow(Graphics *g, const RectF &r, float rad) {
+    int i;
+    for (i = 5; i >= 1; i -= 2) {
+        RectF o(r.X - i * 0.5f, r.Y + i, r.Width + i, r.Height + i);
+        GraphicsPath p;
+        rounded(&p, o, rad + i);
+        SolidBrush b(Color(26, 0, 0, 0));
+        g->FillPath(&b, &p);
+    }
+}
 
 static void card_skin(Graphics *g, GraphicsPath *path, const RectF &r,
                       const Color &top, const Color &bot, const Color &line) {
@@ -200,12 +255,20 @@ static void paint(HWND hwnd) {
         const Color cardTop = C_SURFACE_TOP, cardBot = C_SURFACE_BOT;
         const Color line = C_HAIRLINE, lineSoft = C_HAIRLINE_SOFT;
         const Color ink = C_INK, dim = C_INK_2;
-        const Color accent = C_ACCENT, accentSoft = C_ACCENT_DIM;
+        Color pick = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+        const Color accent = app_state()->effect ? pick : C_ACCENT, accentSoft = C_ACCENT_DIM;
         const Color ok = C_OK, bad = C_BAD;
 
         {
             LinearGradientBrush bg(PointF(0, 0), PointF(0, (REAL)rc.bottom), bgTop, bgBot);
             g.FillRectangle(&bg, 0, 0, rc.right, rc.bottom);
+        }
+        {
+            Color c = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+            LinearGradientBrush wash(PointF(0, 0), PointF((REAL)rc.right, (REAL)rc.bottom),
+                                     Color(26, c.GetR(), c.GetG(), c.GetB()),
+                                     Color(0, 0, 0, 0));
+            g.FillRectangle(&wash, 0, 0, rc.right, rc.bottom);
         }
 
         if (g_dbg) dbg("paint %dx%d", rc.right, rc.bottom);
@@ -246,6 +309,23 @@ static void paint(HWND hwnd) {
             if (kbH > 420) kbH = 420;
             if (kbH < 250) kbH = 250;
             RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), (REAL)kbH);
+            {
+                /* the room is lit by the colour on the board */
+                Color c = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+                float cx = kb.X + kb.Width / 2, cy = kb.Y + kb.Height * 0.55f;
+                RectF halo(cx - kb.Width * 0.45f, cy - kb.Height * 0.75f,
+                           kb.Width * 0.9f, kb.Height * 1.6f);
+                GraphicsPath hp;
+                hp.AddEllipse(halo);
+                PathGradientBrush pg(&hp);
+                pg.SetCenterPoint(PointF(cx, cy));
+                pg.SetCenterColor(Color(34, c.GetR(), c.GetG(), c.GetB()));
+                Color surround[1] = { Color(0, c.GetR(), c.GetG(), c.GetB()) };
+                int n = 1;
+                pg.SetSurroundColors(surround, &n);
+                g.FillPath(&pg, &hp);
+            }
+            shadow(&g, kb, 18.0f);
             GraphicsPath p; rounded(&p, kb, 18.0f);
             card_skin(&g, &p, kb, cardTop, cardBot, line);
             {
@@ -276,6 +356,7 @@ static void paint(HWND hwnd) {
         /* ---------------- effects ---------------- */
         {
             RectF ec((REAL)pad, (REAL)y, (REAL)leftW, (REAL)(rc.bottom - y - 46));
+            shadow(&g, ec, 18.0f);
             GraphicsPath p; rounded(&p, ec, 18.0f);
             card_skin(&g, &p, ec, cardTop, cardBot, line);
             {
@@ -304,6 +385,11 @@ static void paint(HWND hwnd) {
                 RectF btn((REAL)cx, (REAL)cy, (REAL)bw, (REAL)bh);
                 Color fillc = active ? accentSoft
                              : (g_hover == id ? Color(255, 36, 40, 50) : Color(255, 26, 29, 37));
+                if (active) {
+                    fillc = Color(255, (BYTE)(24 + accent.GetR() * 0.10f),
+                                       (BYTE)(30 + accent.GetG() * 0.10f),
+                                       (BYTE)(42 + accent.GetB() * 0.10f));
+                }
                 fill_round(&g, btn, 11.0f, fillc);
                 if (active) {
                     Pen glow(Color(48, 74, 144, 255), 4.0f);
@@ -311,7 +397,12 @@ static void paint(HWND hwnd) {
                     g.DrawPath(&glow, &gp);
                 }
                 stroke_round(&g, btn, 11.0f, active ? accent : lineSoft, active ? 1.6f : 1.0f);
-                text(&g, app_effect_name(i), RectF(btn.X, btn.Y, btn.Width, btn.Height), 13.0f,
+                {
+                    Color dot = SWATCH[i % 7];
+                    SolidBrush db(active ? dot : Color(150, dot.GetR(), dot.GetG(), dot.GetB()));
+                    g.FillEllipse(&db, btn.X + 14, btn.Y + btn.Height / 2 - 3, 6.0f, 6.0f);
+                }
+                text(&g, app_effect_name(i), RectF(btn.X + 10, btn.Y, btn.Width - 20, btn.Height), 13.0f,
                      active ? Color(255, 214, 231, 255) : ink, StringAlignmentCenter);
                 add_hot(cx, cy, bw, bh, id, app_effect_name(i));
             }
@@ -321,6 +412,7 @@ static void paint(HWND hwnd) {
         {
             int rx = rc.right - pad - rightW;
             RectF cc((REAL)rx, (REAL)y, (REAL)rightW, (REAL)(rc.bottom - y - 46));
+            shadow(&g, cc, 18.0f);
             GraphicsPath p; rounded(&p, cc, 18.0f);
             card_skin(&g, &p, cc, cardTop, cardBot, line);
             {
