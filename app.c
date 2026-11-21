@@ -244,6 +244,7 @@ static void device_lost(void) {
 }
 
 static int apply_effect(void) {
+    app_stop_background_driver();   /* the window writes; the driver must not compete */
     unsigned char cfg[CFG_LEN];
     int id = g_state.effect;
 
@@ -298,6 +299,7 @@ static int g_map_valid;
 static int g_layer;
 static int g_map_layer = -1;   /* which layer g_map_cache actually holds */
 static void restore_keymap(void) {
+    app_stop_background_driver();
     unsigned char map[KEYMAP_LEN];
     int i;
     memset(map, 0, sizeof(map));
@@ -360,7 +362,7 @@ static void register_shortcut(void) {
  * accepted only if it is a real PE of plausible size; the running exe is then
  * renamed aside (Windows allows that) and replaced, and the app relaunches.
  */
-#define APP_VERSION_STR "1.4.1"
+#define APP_VERSION_STR "1.4.2"
 static char g_latest[64];
 
 const char *app_version(void) { return APP_VERSION_STR; }
@@ -716,6 +718,7 @@ static int g_map_valid;
 static void enqueue(int kind, int a, int b, int c);
 
 static int keymap_load(void) {
+    app_stop_background_driver();
     int layer;
     if (g_map_valid && g_map_layer == g_layer) return 1;
     g_map_valid = 0;
