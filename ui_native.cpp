@@ -522,10 +522,13 @@ static void paint(HWND hwnd) {
             /* layer switch, top right of the card */
             {
                 int layer = app_layer();
-                RectF lb(kb.X + kb.Width - 176, kb.Y + 14, 74, 26);
-                RectF lf(kb.X + kb.Width - 96, kb.Y + 14, 74, 26);
-                fill_round(&g, lb, 8.0f, layer == 0 ? accentSoft : Color(255, 23, 25, 32));
-                stroke_round(&g, lb, 8.0f, layer == 0 ? accent : lineSoft, 1.0f);
+                RectF track(kb.X + kb.Width - 162, kb.Y + 12, 148, 30);
+                fill_round(&g, track, 9.0f, Color(255, 18, 20, 26));
+                stroke_round(&g, track, 9.0f, lineSoft, 1.0f);
+                RectF lb(kb.X + kb.Width - 159, kb.Y + 15, 70, 24);
+                RectF lf(kb.X + kb.Width - 85, kb.Y + 15, 68, 24);
+                if (layer == 0) fill_round(&g, lb, 7.0f, accentSoft);
+                else fill_round(&g, lf, 7.0f, accentSoft);
                 text(&g, "Base", lb, 11.5f, layer == 0 ? Color(255, 210, 228, 255) : dim, StringAlignmentCenter);
                 add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
                 fill_round(&g, lf, 8.0f, layer == 1 ? accentSoft : Color(255, 23, 25, 32));
@@ -534,7 +537,11 @@ static void paint(HWND hwnd) {
                 add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
             }
 
-            draw_keyboard(&g, RectF(kb.X + 10, kb.Y + 42, kb.Width - 20, kb.Height - 52), line, dim);
+            {
+                Pen rule(Color(20, 255, 255, 255), 1.0f);
+                g.DrawLine(&rule, PointF(kb.X + 22, kb.Y + 38), PointF(kb.X + kb.Width - 22, kb.Y + 38));
+            }
+            draw_keyboard(&g, RectF(kb.X + 10, kb.Y + 46, kb.Width - 20, kb.Height - 56), line, dim);
         }
         y += kbH + 18;
 
@@ -548,6 +555,10 @@ static void paint(HWND hwnd) {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(ec.X + 22), ec.Y + 17, 3.0f, 12.0f);
                 text(&g, "ON THE KEYBOARD", RectF(ec.X + 32, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
+            {
+                Pen rule(Color(18, 255, 255, 255), 1.0f);
+                g.DrawLine(&rule, PointF(ec.X + 22, ec.Y + 38), PointF(ec.X + ec.Width - 22, ec.Y + 38));
+            }
             }
             text(&g, "stored in the board", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
                  Color(255, 96, 106, 124), StringAlignmentFar);
@@ -604,6 +615,10 @@ static void paint(HWND hwnd) {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(cc.X + 22), cc.Y + 17, 3.0f, 12.0f);
                 text(&g, "COLOUR", RectF(cc.X + 32, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
+            {
+                Pen rule(Color(18, 255, 255, 255), 1.0f);
+                g.DrawLine(&rule, PointF(cc.X + 22, cc.Y + 38), PointF(cc.X + cc.Width - 22, cc.Y + 38));
+            }
             }
 
             const Color *sw = SWATCH;

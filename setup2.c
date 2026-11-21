@@ -246,6 +246,27 @@ static void logf2(const char *fmt, ...) {
     fflush(g_log);
 }
 
+
+/* Settings > Apps needs an entry, or the install cannot be removed normally */
+static void register_uninstall(const wchar_t *exe) {
+    HKEY k;
+    wchar_t quoted[MAX_PATH * 2 + 4];
+    if (RegCreateKeyExW(HKEY_CURRENT_USER,
+                        L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Hi75CPro",
+                        0, NULL, 0, KEY_WRITE, NULL, &k, NULL) != ERROR_SUCCESS) return;
+    _snwprintf(quoted, MAX_PATH * 2 + 4, L"\"%s\"", exe);
+    RegSetValueExW(k, L"DisplayName", 0, REG_SZ, (const BYTE *)L"LEOBOG Hi75C Pro",
+                   (DWORD)sizeof(L"LEOBOG Hi75C Pro"));
+    RegSetValueExW(k, L"DisplayIcon", 0, REG_SZ, (const BYTE *)exe,
+                   (DWORD)((wcslen(exe) + 1) * sizeof(wchar_t)));
+    RegSetValueExW(k, L"Publisher", 0, REG_SZ, (const BYTE *)L"LEOBOG Hi75C Pro",
+                   (DWORD)sizeof(L"LEOBOG Hi75C Pro"));
+    RegSetValueExW(k, L"UninstallString", 0, REG_SZ, (const BYTE *)quoted,
+                   (DWORD)((wcslen(quoted) + 1) * sizeof(wchar_t)));
+    RegSetValueExW(k, L"NoModify", 0, REG_DWORD, (const BYTE *)&(DWORD){1}, sizeof(DWORD));
+    RegCloseKey(k);
+}
+
 int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     char *json; DWORD len = 0;
     wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH];
@@ -273,7 +294,10 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         if (!g_silent) {
             wchar_t picked[MAX_PATH];
             if (choose_dir(picked, MAX_PATH)) lstrcpynW(dir, picked, MAX_PATH);
-            else return 0;                        /* cancelled */
+            else {
+                MessageBoxW(NULL, L"Nothing was installed.", L"Hi75C Pro", MB_ICONINFORMATION);
+                return 0;
+            }
         }
         CreateDirectoryW(dir, NULL);
         _snwprintf(target, MAX_PATH, L"%s\\Hi75CPro.exe", dir);
