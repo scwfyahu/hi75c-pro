@@ -1191,7 +1191,12 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 wp.length = sizeof(wp);
                 GetWindowPlacement(h, &wp);
                 r = wp.rcNormalPosition;
-                app_save_state(r.left, r.top, r.right - r.left, r.bottom - r.top);
+                /* persist logical units: the loader multiplies by the display
+                   scale, so storing physical pixels would grow the window on
+                   every restart at any scale above 100% */
+                app_save_state((int)(r.left / g_scale), (int)(r.top / g_scale),
+                               (int)((r.right - r.left) / g_scale),
+                               (int)((r.bottom - r.top) / g_scale));
             }
             app_shutdown();
             PostQuitMessage(0);
