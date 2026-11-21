@@ -988,6 +988,64 @@ void app_init(void) {
     LeaveCriticalSection(&g_lock);
 }
 
+
+/* --uninstall: remove the shortcut, the uninstall entry, the background
+   driver's autostart value, our settings, and finally the program itself */
+void app_uninstall(void) {
+    wchar_t exe[MAX_PATH], link[MAX_PATH], dir[MAX_PATH], daemon[MAX_PATH];
+    HKEY k;
+    char state[MAX_PATH];
+
+    if (!GetModuleFileNameW(NULL, exe, MAX_PATH)) return;
+    lstrcpynW(dir, exe, MAX_PATH);
+    { wchar_t *sl = wcsrchr(dir, L'\\'); if (sl) *sl = 0; }
+
+    if (SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROGRAMS, NULL, 0, link))) {
+        lstrcatW(link, L"\\Hi75C Pro.lnk");
+        DeleteFileW(link);
+    }
+    RegDeleteKeyW(HKEY_CURRENT_USER,
+                  L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Hi75CPro");
+    {
+        HKEY run;
+        if (RegOpenKeyExW(HKEY_CURRENT_USER,
+                          L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                          0, KEY_SET_VALUE, &run) == ERROR_SUCCESS) {
+            RegDeleteValueW(run, L"Hi75CProDaemon");
+            RegCloseKey(run);
+        }
+    }
+    {   /* per-user settings */
+        char p2[MAX_PATH];
+        state_path(p2, MAX_PATH);
+        DeleteFileA(p2);
+        {
+            char tmp[MAX_PATH + 8];
+            snprintf(tmp, sizeof(tmp), "%s.new", p2);
+            DeleteFileA(tmp);
+        }
+    }
+    lstrcpynW(daemon, dir, MAX_PATH);
+    lstrcatW(daemon, L"\\hi75c-daemon.exe");
+    DeleteFileW(daemon);
+    {
+        wchar_t old[MAX_PATH + 8];
+        lstrcpynW(old, exe, MAX_PATH);
+        lstrcatW(old, L".old");
+        DeleteFileW(old);
+    }
+    /* the running image cannot delete itself; ask Windows to do it at reboot
+       and also try a detached delete so a normal uninstall finishes now */
+    MoveFileExW(exe, NULL, MOVEFILE_DELAY_UNTIL_REBOOT);
+    {
+        wchar_t cmd[MAX_PATH * 3];
+        _snwprintf(cmd, MAX_PATH * 3,
+                   L"/c ping -n 3 127.0.0.1 >nul & del \"%ls\" & rmdir \"%ls\"", exe, dir);
+        ShellExecuteW(NULL, L"open", L"cmd.exe", cmd, NULL, SW_HIDE);
+    }
+    (void)k; (void)state;
+}
+
 void app_cleanup_old_binary(void) {
     /* the update leaves <exe>.old behind because the file was running; the
        next start can remove it */

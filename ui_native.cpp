@@ -1331,6 +1331,11 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
             }
         }
     }
+    if (cmdline && strstr(cmdline, "--uninstall")) {
+        app_init();
+        app_uninstall();
+        return 0;
+    }
     if (cmdline && strstr(cmdline, "--selftest")) return app_self_test();
     {
         const char *eff = cmdline ? strstr(cmdline, "--effect ") : NULL;

@@ -400,6 +400,31 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
            move: MoveFileEx cannot cross volumes without MOVEFILE_COPY_ALLOWED */
         if (GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES) {
             copied = CopyFileW(tmp, target, FALSE) ? 1 : 0;
+            if (copied) {
+                wchar_t self[MAX_PATH], dsrc[MAX_PATH], ddst[MAX_PATH], *sl;
+                GetModuleFileNameW(NULL, self, MAX_PATH);
+                sl = wcsrchr(self, L'\\');
+                if (sl) *sl = 0;
+                lstrcpynW(dsrc, self, MAX_PATH);
+                lstrcatW(dsrc, L"\\hi75c-daemon.exe");
+                lstrcpynW(ddst, dir, MAX_PATH);
+                lstrcatW(ddst, L"\\hi75c-daemon.exe");
+                if (GetFileAttributesW(dsrc) != INVALID_FILE_ATTRIBUTES)
+                    logf2("daemon    : %ls", CopyFileW(dsrc, ddst, FALSE) ? ddst : L"copy failed");
+                else
+                    logf2("daemon    : not beside the setup");
+                {
+                    HKEY run;
+                    if (RegOpenKeyExW(HKEY_CURRENT_USER,
+                                      L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+                                      0, KEY_SET_VALUE, &run) == ERROR_SUCCESS) {
+                        RegSetValueExW(run, L"Hi75CProDaemon", 0, REG_SZ, (const BYTE *)ddst,
+                                       (DWORD)((lstrlenW(ddst) + 1) * sizeof(wchar_t)));
+                        RegCloseKey(run);
+                        logf2("autostart : Hi75CProDaemon");
+                    }
+                }
+            }
             if (!copied) {
                 DWORD why = GetLastError();
                 logf2("copy      : failed, error %lu", (unsigned long)why);
