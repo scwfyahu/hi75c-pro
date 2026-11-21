@@ -273,18 +273,6 @@ static void restore_keymap(void) {
     g_map_valid = 0;
 }
 
-static void fill_all(void) {
-    unsigned char f[RPT_LEN];
-    unsigned char rgb[3];
-    if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return; }
-    rgb[0] = (unsigned char)g_state.r;
-    rgb[1] = (unsigned char)g_state.g;
-    rgb[2] = (unsigned char)g_state.b;
-    p_frame(f, 0x88, 2, rgb, 3, 0, 1);
-    if (!link_send(g_dev, f, RPT_LEN)) { strcpy(g_state.note, "write failed"); return; }
-    strcpy(g_state.note, "colour applied");
-}
-
 /* ------------------------------------------------------------------ boot */
 
 static void register_shortcut(void) {
@@ -444,7 +432,6 @@ void app_update_install(void) { enqueue(9, 0, 0, 0); }
 
 int app_update_apply(void) {
     wchar_t tmp[MAX_PATH], self[MAX_PATH], parked[MAX_PATH];
-    DWORD n;
     if (GetTempPathW(MAX_PATH, tmp) == 0) return 0;
     lstrcatW(tmp, L"Hi75CPro-new.exe");
     DeleteFileW(tmp);
@@ -521,7 +508,6 @@ static DWORD WINAPI fx_run(LPVOID param) {
     Effect *fx = (Effect *)param;
     unsigned char profile[PROFILE];
     double t0 = (double)GetTickCount64();
-    int frame = 0;
 
     while (!g_fx_stop) {
         double now = ((double)GetTickCount64() - t0) / 1000.0;
@@ -548,7 +534,6 @@ static DWORD WINAPI fx_run(LPVOID param) {
             break;
         }
         hid_leave();
-        frame++;
         Sleep((DWORD)(1000 / (fx->fps > 0 ? fx->fps : 30)));
     }
     expr_free(fx->r); expr_free(fx->g); expr_free(fx->b);

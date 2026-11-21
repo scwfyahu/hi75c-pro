@@ -868,12 +868,14 @@ static void paint(HWND hwnd) {
                 }
                 stroke_round(&g, btn, 11.0f, active ? accent : lineSoft, active ? 1.6f : 1.0f);
                 {
-                    Color dot = SWATCH[i % 7];
-                    SolidBrush db(active ? dot : Color(150, dot.GetR(), dot.GetG(), dot.GetB()));
-                    g.FillEllipse(&db, btn.X + 14, btn.Y + btn.Height / 2 - 3, 6.0f, 6.0f);
+                    /* a distinct glyph per effect, tinted with the palette slot */
+                    Color tint = SWATCH[i % 7];
+                    icon(&g, effect_icon(i, app_effect_id(i)), btn.X + 13,
+                         btn.Y + btn.Height / 2 - 6,
+                         active ? tint : Color(165, tint.GetR(), tint.GetG(), tint.GetB()));
                 }
-                text(&g, app_effect_name(i), RectF(btn.X + 10, btn.Y, btn.Width - 20, btn.Height), 13.0f,
-                     active ? Color(255, 214, 231, 255) : ink, StringAlignmentCenter);
+                text(&g, app_effect_name(i), RectF(btn.X + 32, btn.Y, btn.Width - 42, btn.Height), 13.0f,
+                     active ? Color(255, 214, 231, 255) : ink, StringAlignmentNear);
                 add_hot(cx, cy, bw, bh, id, app_effect_name(i));
             }
         }
