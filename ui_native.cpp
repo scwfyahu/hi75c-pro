@@ -362,6 +362,45 @@ static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top,
                           line, dim);
         }
         {
+            /* detail panel under the board */
+            float py2 = card.Y + 52 + (card.Height - 132) * 0.62f;
+            RectF panel(card.X + 22, py2, card.Width - 44, 104.0f);
+            fill_round(g, panel, 12.0f, Color(255, 22, 25, 32));
+            stroke_round(g, panel, 12.0f, line, 1.0f);
+            text(g, "SELECTED KEY", RectF(panel.X + 16, panel.Y + 10, 200, 16), 9.5f,
+                 Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+            if (g_sel >= 0 && g_sel < KEY_COUNT) {
+                wchar_t lbl[32];
+                MultiByteToWideChar(CP_UTF8, 0, KEYS[g_sel].label, -1, lbl, 32);
+                SolidBrush tb(ink);
+                Font big(g_face, 18.0f, FontStyleBold, UnitPixel);
+                g->DrawString(lbl, -1, &big, PointF(panel.X + 16, panel.Y + 28), &tb);
+                {
+                    char meta[128];
+                    snprintf(meta, sizeof(meta), "index %d   |   position %.2f, %.2f",
+                             KEYS[g_sel].idx, KEYS[g_sel].x, KEYS[g_sel].y);
+                    text(g, meta, RectF(panel.X + 16, panel.Y + 58, 420, 18), 11.0f, dim,
+                         StringAlignmentNear);
+                }
+                {
+                    char typed[64];
+                    if (g_code[0])
+                        snprintf(typed, sizeof(typed), "0x%s", g_code);
+                    else
+                        snprintf(typed, sizeof(typed), "type a hex code");
+                    text(g, typed, RectF(panel.X + panel.Width - 220, panel.Y + 40, 200, 24),
+                         14.0f, g_code[0] ? accent : Color(255, 96, 106, 124),
+                         StringAlignmentFar);
+                    text(g, "Enter applies  |  Backspace clears",
+                         RectF(panel.X + panel.Width - 260, panel.Y + 68, 240, 16), 10.0f,
+                         Color(255, 96, 106, 124), StringAlignmentFar);
+                }
+            } else {
+                text(g, "Click any key on the board above.",
+                     RectF(panel.X + 16, panel.Y + 34, 420, 20), 12.5f, dim, StringAlignmentNear);
+            }
+        }
+        {
             char info[220];
             if (g_sel >= 0 && g_sel < KEY_COUNT) {
                 int cur = app_keymap_cached(KEYS[g_sel].idx);
@@ -1030,6 +1069,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             g_press = -1;
             return 0;
         case WM_CHAR:
+            dbg("char %d sel=%d", (int)w, g_sel);
             if (g_sel >= 0) {
                 int ch = (int)w;
                 if (ch == VK_RETURN || ch == '\r') {
