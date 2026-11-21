@@ -130,8 +130,10 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
         RectF k(ox + KEYS[i].x * s + gap / 2, oy + KEYS[i].y * s + gap / 2,
                 KEYS[i].w * s - gap, KEYS[i].h * s - gap);
         {
-            LinearGradientBrush grad(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height),
-                                     Color(255, 38, 42, 53), Color(255, 27, 30, 38));
+            int hot = (g_hover == 1000 + i);
+            Color topc = hot ? Color(255, 50, 56, 70) : Color(255, 38, 42, 53);
+            Color botc = hot ? Color(255, 36, 40, 51) : Color(255, 27, 30, 38);
+            LinearGradientBrush grad(PointF(k.X, k.Y), PointF(k.X, k.Y + k.Height), topc, botc);
             GraphicsPath kp;
             rounded(&kp, k, 4.0f);
             g->FillPath(&grad, &kp);
@@ -290,7 +292,9 @@ static void paint(HWND hwnd) {
             int bh = (int)((ec.Height - 44 - 14 - gap * (rows - 1)) / rows);
             if (bh > 46) bh = 46;
             if (bh < 28) bh = 28;
-            int x0 = (int)ec.X + 22, y0 = (int)ec.Y + 44;
+            int usedH = rows * bh + (rows - 1) * gap;
+            int spare = (int)(ec.Height - 44 - usedH);
+            int x0 = (int)ec.X + 22, y0 = (int)ec.Y + 44 + (spare > 0 ? spare / 3 : 0);
             int i;
             for (i = 0; i < app_effect_count(); i++) {
                 int cx = x0 + (i % cols) * (bw + gap);
@@ -522,22 +526,15 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 else if (id == 401) app_rescan();
                 else if (id == 402) app_import_effect(h);
                 else if (id == 403) {
-                    if (app_update_apply()) {
-                        wchar_t self[MAX_PATH];
-                        GetModuleFileNameW(NULL, self, MAX_PATH);
-                        ShellExecuteW(NULL, L"open", self, NULL, NULL, SW_SHOWNORMAL);
-                        PostMessageW(h, WM_CLOSE, 0, 0);
-                    } else {
-                        snprintf(app_state()->note, 160, "update failed - download the new build manually");
-                        InvalidateRect(h, NULL, FALSE);
-                    }
+                    app_update_install();          /* worker downloads; UI stays live */
+                    InvalidateRect(h, NULL, FALSE);
                 }
                 else if (id == 500) { app_set_layer(0); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id == 501) { app_set_layer(1); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id >= 1000) {
                     g_sel = id - 1000;
                     g_code[0] = 0;
-                    g_code_cur = app_keymap_get(KEYS[g_sel].idx);
+                    if (app_keymap_cached(KEYS[g_sel].idx) < 0) app_keymap_request();
                     InvalidateRect(h, NULL, FALSE);
                 }
                 InvalidateRect(h, NULL, FALSE);
@@ -552,7 +549,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 if (ch == VK_RETURN || ch == '\r') {
                     if (strlen(g_code) > 0) {
                         int usage = (int)strtol(g_code, NULL, 16);
-                        if (app_keymap_set(KEYS[g_sel].idx, 0, usage)) g_code_cur = usage;
+                        app_keymap_apply(KEYS[g_sel].idx, usage);   /* worker writes it */
                         g_code[0] = 0;
                         InvalidateRect(h, NULL, FALSE);
                     }
@@ -560,9 +557,9 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     size_t n = strlen(g_code);
                     if (n) g_code[n - 1] = 0;
                     InvalidateRect(h, NULL, FALSE);
-                } else if (isxdigit(ch) && strlen(g_code) < 2) {
+                } else if (isxdigit((unsigned char)ch) && strlen(g_code) < 2) {
                     size_t n = strlen(g_code);
-                    g_code[n] = (char)toupper(ch);
+                    g_code[n] = (char)toupper((unsigned char)ch);
                     g_code[n + 1] = 0;
                     InvalidateRect(h, NULL, FALSE);
                 }
@@ -680,6 +677,17 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
         }
         app_load_state(&wx, &wy, &ww, &wh);
         if (ww < 900 || wh < 700) { ww = W_INIT; wh = H_INIT; wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
+        else {
+            /* a saved rect from a monitor that is no longer attached would open
+               the window off-screen; fall back to the default position */
+            RECT saved;
+            MONITORINFO mi;
+            HMONITOR mon;
+            saved.left = wx; saved.top = wy; saved.right = wx + ww; saved.bottom = wy + wh;
+            mon = MonitorFromRect(&saved, MONITOR_DEFAULTTONULL);
+            mi.cbSize = sizeof(mi);
+            if (!mon || !GetMonitorInfoW(mon, &mi)) { wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
+        }
         g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
                                wx, wy, ww, wh, NULL, NULL, inst, NULL);
     }

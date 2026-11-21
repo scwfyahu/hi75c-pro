@@ -33,6 +33,9 @@ void app_set_layer(int layer);
 int  app_layer(void);
 int  app_keymap_set(int key_index, int type, int usage);   /* 1 on success */
 int  app_keymap_get(int key_index);                        /* current usage, -1 on failure */
+int  app_keymap_cached(int key_index);                     /* cache only, never touches the device */
+void app_keymap_request(void);                             /* queue a refresh from the device */
+void app_keymap_apply(int key_index, int usage);            /* queue a remap */
 void app_clear_note(void);
 void app_save_state(int wx, int wy, int ww, int wh);
 void app_load_state(int *wx, int *wy, int *ww, int *wh);
@@ -42,6 +45,7 @@ int app_self_test(void);
 int app_effect_test(const char *path);
 int  app_update_check(void);        /* 1 if a newer build exists */
 int  app_update_apply(void);        /* download + swap; 1 on success */
+void app_update_install(void);      /* queue the update, never blocks the UI */
 const char *app_version(void);
 const char *app_latest_tag(void);
 int app_daemon(const char *path);

@@ -12,6 +12,9 @@
 #include <windows.h>
 #include <shellapi.h>
 #include <shlobj.h>
+
+/* forward: the request queue is used by several sections above its definition */
+static void enqueue(int kind, int a, int b, int c);
 #include <urlmon.h>
 #include <winhttp.h>
 #include <objbase.h>
@@ -100,6 +103,15 @@ static int link_recv(void *ctx, unsigned char *buf, int len, int timeout_ms) {
     return (int)got;
 }
 
+/* the GUI worker, the imported-effect thread and the daemon can all reach for
+   the device; every HID transaction goes through this lock so two writers can
+   never interleave frames on one handle */
+static CRITICAL_SECTION g_hid_lock;
+static int g_hid_lock_ready;
+
+static void hid_enter(void) { if (g_hid_lock_ready) EnterCriticalSection(&g_hid_lock); }
+static void hid_leave(void) { if (g_hid_lock_ready) LeaveCriticalSection(&g_hid_lock); }
+
 static Link g_link = {NULL, link_send, link_recv};
 
 static Link *dev(void) {
@@ -186,14 +198,19 @@ static void apply_effect(void) {
         unsigned char off[3] = {0, 0, 0};
         unsigned char f[RPT_LEN];
         p_frame(f, 0x88, 2, off, 3, 0, 1);
+        hid_enter();
         link_send(g_dev, f, RPT_LEN);
+        hid_leave();
         strcpy(g_state.note, "lighting off");
         return;
     }
+    hid_enter();
     if (!p_read(dev(), 0x44, 0, cfg, CFG_LEN)) {
+        hid_leave();
         strcpy(g_state.note, "could not read the keyboard settings");
         return;
     }
+    hid_leave();
     if (cfg[CFG_MAGIC0] != 0x5a || cfg[CFG_MAGIC1] != 0xa5) {
         strcpy(g_state.note, "unexpected settings - press Restore");
         return;
@@ -202,10 +219,13 @@ static void apply_effect(void) {
         strcpy(g_state.note, "effect id out of range");
         return;
     }
+    hid_enter();
     if (!p_write(dev(), 0x04, 0, cfg, CFG_LEN)) {
+        hid_leave();
         strcpy(g_state.note, "the keyboard did not accept the settings");
         return;
     }
+    hid_leave();
     g_state.note[0] = 0;
 }
 
@@ -225,10 +245,13 @@ static void restore_keymap(void) {
         map[at + 3] = (unsigned char)(KEYS[i].base);
     }
     if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return; }
+    hid_enter();
     if (!p_write(dev(), 0x01, 0, map, KEYMAP_LEN)) {
+        hid_leave();
         strcpy(g_state.note, "keymap restore failed");
         return;
     }
+    hid_leave();
     strcpy(g_state.note, "factory keymap restored");
     g_map_valid = 0;
 }
@@ -282,10 +305,10 @@ static void register_shortcut(void) {
  * accepted only if it is a real PE of plausible size; the running exe is then
  * renamed aside (Windows allows that) and replaced, and the app relaunches.
  */
-#define APP_VERSION L"1.3.0"
+#define APP_VERSION_STR "1.3.0"
 static char g_latest[64];
 
-const char *app_version(void) { return "1.3.0"; }
+const char *app_version(void) { return APP_VERSION_STR; }
 const char *app_latest_tag(void) { return g_latest; }
 
 static int version_gt(const char *a, const char *b) {
@@ -372,8 +395,10 @@ int app_update_check(void) {
             g_latest[e - q] = 0;
         }
     }
-    return version_gt(g_latest, "1.3.0");
+    return version_gt(g_latest, APP_VERSION_STR);
 }
+
+void app_update_install(void) { enqueue(9, 0, 0, 0); }
 
 int app_update_apply(void) {
     wchar_t tmp[MAX_PATH], self[MAX_PATH], parked[MAX_PATH];
@@ -450,10 +475,13 @@ static DWORD WINAPI fx_run(LPVOID param) {
             }
         }
         if (!device_open()) { strcpy(g_state.note, "keyboard not found"); break; }
+        hid_enter();
         if (!p_write(dev(), 0x02, 0, profile, PROFILE)) {
+            hid_leave();
             strcpy(g_state.note, "the keyboard stopped accepting frames");
             break;
         }
+        hid_leave();
         frame++;
         Sleep((DWORD)(1000 / (fx->fps > 0 ? fx->fps : 30)));
     }
@@ -532,16 +560,30 @@ void app_import_effect(void *owner) {
 
 static int g_map_valid;
 
+static void enqueue(int kind, int a, int b, int c);
+
 static int keymap_load(void) {
     if (g_map_valid) return 1;
     if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return 0; }
+    hid_enter();
     if (!p_read(dev(), 0x41, g_layer, g_map_cache, KEYMAP_LEN)) {
+        hid_leave();
         strcpy(g_state.note, "could not read the keymap");
         return 0;
     }
+    hid_leave();
     g_map_valid = 1;
     return 1;
 }
+
+int app_keymap_cached(int idx) {
+    if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN || !g_map_valid) return -1;
+    return g_map_cache[idx * 4 + 3];
+}
+
+void app_keymap_request(void) { enqueue(7, 0, 0, 0); }
+
+void app_keymap_apply(int idx, int usage) { enqueue(8, idx, usage, g_layer); }
 
 int app_keymap_get(int idx) {
     if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN) return -1;
@@ -556,10 +598,13 @@ int app_keymap_set(int idx, int type, int usage) {
     g_map_cache[idx * 4 + 1] = 0;
     g_map_cache[idx * 4 + 2] = 0;
     g_map_cache[idx * 4 + 3] = (unsigned char)(usage & 0xff);
+    hid_enter();
     if (!p_write(dev(), 0x01, g_layer, g_map_cache, KEYMAP_LEN)) {
+        hid_leave();
         strcpy(g_state.note, "the keyboard rejected the keymap");
         return 0;
     }
+    hid_leave();
     snprintf(g_state.note, sizeof(g_state.note), "%s key %d set to 0x%02x",
              g_layer ? "FN" : "base", idx, usage & 0xff);
     return 1;
@@ -623,6 +668,8 @@ void app_load_state(int *wx, int *wy, int *ww, int *wh) {
  */
 typedef struct { int kind, a, b, c; } Req;   /* kind: 1 effect 2 colour 3 bright 4 speed 5 restore 6 rescan */
 
+static int keymap_load(void);
+static void enqueue(int kind, int a, int b, int c);
 static Req g_q[64];
 static int g_q_head, g_q_tail;
 static HANDLE g_wake, g_worker;
@@ -631,6 +678,18 @@ static CRITICAL_SECTION g_q_lock;
 
 static void enqueue(int kind, int a, int b, int c) {
     EnterCriticalSection(&g_q_lock);
+    /* a slider drag produces one request per pixel; keep only the newest value
+       for the four continuous controls, otherwise the queue fills and the last
+       (correct) value can be dropped */
+    if (kind >= 1 && kind <= 4 && g_q_head != g_q_tail) {
+        int last = (g_q_tail + 63) % 64;
+        if (g_q[last].kind == kind) {
+            g_q[last].a = a; g_q[last].b = b; g_q[last].c = c;
+            LeaveCriticalSection(&g_q_lock);
+            if (g_wake) SetEvent(g_wake);
+            return;
+        }
+    }
     if (((g_q_tail + 1) % 64) != g_q_head) {
         g_q[g_q_tail].kind = kind; g_q[g_q_tail].a = a;
         g_q[g_q_tail].b = b; g_q[g_q_tail].c = c;
@@ -663,8 +722,25 @@ static DWORD WINAPI worker_main(LPVOID unused) {
                 case 3: g_state.brightness = r.a; apply_effect(); break;
                 case 4: g_state.speed = r.a; apply_effect(); break;
                 case 5: g_map_valid = 0; restore_keymap(); break;
+                case 7: keymap_load(); break;
+                case 9:   /* download + swap off the UI thread */
+                    if (app_update_apply())
+                        strcpy(g_state.note, "update installed - restart the app");
+                    else
+                        strcpy(g_state.note, "update failed - download the new build manually");
+                    break;   /* refresh the cache off the UI thread */
+                case 8:                                    /* remap without blocking */
+                    {
+                        int want = r.c, save = g_layer;
+                        if (want != save) { g_layer = want; g_map_valid = 0; }
+                        app_keymap_set(r.a, 0, r.b);
+                        if (want != save) { g_layer = save; g_map_valid = 0; }
+                    }
+                    break;
                 case 6:
+                    hid_enter();
                     if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
+                    hid_leave();
                     g_map_valid = 0;
                     g_state.connected = device_open();
                     if (!g_state.connected) strcpy(g_state.note, "keyboard not found");
@@ -689,6 +765,7 @@ void app_pump(void *hwnd) {
 
 void app_init(void) {
     InitializeCriticalSection(&g_lock);
+    if (!g_hid_lock_ready) { InitializeCriticalSection(&g_hid_lock); g_hid_lock_ready = 1; }
     register_shortcut();
     EnterCriticalSection(&g_lock);
     g_state.connected = device_open();
@@ -696,7 +773,9 @@ void app_init(void) {
 }
 
 void app_shutdown(void) {
+    hid_enter();
     if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
+    hid_leave();
     g_state.connected = 0;
 }
 
@@ -777,7 +856,9 @@ int app_daemon(const char *path) {
         }
         if (!g_daemon_dry) {
             if (!device_open()) break;
-            if (!p_write(dev(), 0x02, 0, profile, PROFILE)) break;
+            hid_enter();
+        if (!p_write(dev(), 0x02, 0, profile, PROFILE)) { hid_leave(); break; }
+        hid_leave();
         }
         Sleep((DWORD)(1000 / (fx->fps > 0 ? fx->fps : 30)));
     }
