@@ -515,6 +515,8 @@ typedef struct {
     char name[64];
 } Effect;
 
+static unsigned char to_byte(double v);
+
 static DWORD WINAPI fx_run(LPVOID param) {
     Effect *fx = (Effect *)param;
     unsigned char profile[PROFILE];
@@ -531,11 +533,11 @@ static DWORD WINAPI fx_run(LPVOID param) {
             {
                 double v;
                 v = expr_eval(fx->r, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
-                profile[at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+                profile[at] = to_byte(v);
                 v = expr_eval(fx->g, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
-                profile[126 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+                profile[126 + at] = to_byte(v);
                 v = expr_eval(fx->b, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
-                profile[252 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+                profile[252 + at] = to_byte(v);
             }
         }
         if (!device_open()) { strcpy(g_state.note, "keyboard not found"); break; }
@@ -552,6 +554,15 @@ static DWORD WINAPI fx_run(LPVOID param) {
     expr_free(fx->r); expr_free(fx->g); expr_free(fx->b);
     free(fx);
     return 0;
+}
+
+
+/* an imported expression can produce NaN (0/0, sqrt of a negative) or inf
+   (1/0); casting either to unsigned char is undefined, so decide explicitly */
+static unsigned char to_byte(double v) {
+    if (!(v > 0.0)) return 0;              /* NaN and negatives both land here */
+    if (v > 255.0) return 255;
+    return (unsigned char)v;
 }
 
 static int load_effect(const char *path, Effect **out, char *err, int errlen) {
@@ -994,11 +1005,11 @@ int app_daemon(const char *path) {
             double v;
             if (at < 0 || at >= 126) continue;
             v = expr_eval(fx->r, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
-            profile[at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            profile[at] = to_byte(v);
             v = expr_eval(fx->g, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
-            profile[126 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            profile[126 + at] = to_byte(v);
             v = expr_eval(fx->b, now, KEYS[i].x, KEYS[i].y, i, KEY_COUNT);
-            profile[252 + at] = (unsigned char)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            profile[252 + at] = to_byte(v);
         }
         if (!g_daemon_dry) {
             if (!device_open()) break;
@@ -1071,6 +1082,14 @@ int app_self_test(void) {
         wchar_t self[MAX_PATH];
         if (GetModuleFileNameW(NULL, self, MAX_PATH))
             CHECK(file_is_exe(self), "the running binary passes the download check");
+    }
+    {
+        /* an imported expression can divide by zero; the cast must be defined */
+        volatile double zero = 0.0;
+        CHECK(to_byte(zero / zero) == 0, "NaN from an expression maps to 0");
+        CHECK(to_byte(1.0 / zero) == 255, "infinity from an expression maps to 255");
+        CHECK(to_byte(-5.0) == 0, "negative values map to 0");
+        CHECK(to_byte(300.0) == 255, "values above 255 clamp");
     }
     {
         /* a manual choice must be able to end an imported animation */
