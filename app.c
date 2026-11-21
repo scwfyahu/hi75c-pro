@@ -662,10 +662,28 @@ int app_layer(void) { return g_layer; }
 /* lighting and keymap live in the keyboard; only the app's own view state
    needs remembering, so it goes in a tiny ini under %LOCALAPPDATA% */
 static void state_path(char *out, int cap) {
-    char dir[MAX_PATH];
-    if (!SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) { out[0] = 0; return; }
+    char dir[MAX_PATH] = {0};
+    out[0] = 0;
+
+    /* the shell folder call can fail (seen under a minimal Windows session),
+       and when it does the app used to save nothing at all; try the
+       environment first and fall back to the folder beside the executable */
+    if (!GetEnvironmentVariableA("LOCALAPPDATA", dir, MAX_PATH) || !dir[0]) {
+        if (FAILED(SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) || !dir[0]) {
+            DWORD n = GetModuleFileNameA(NULL, dir, MAX_PATH);
+            if (!n) return;
+            {
+                char *slash = strrchr(dir, '\\');
+                if (slash) *slash = 0; else return;
+            }
+            lstrcatA(dir, "\\state");
+            CreateDirectoryA(dir, NULL);
+            snprintf(out, cap, "%s\\state.ini", dir);
+            return;
+        }
+    }
     lstrcatA(dir, "\\Hi75C Pro");
-    CreateDirectoryA(dir, NULL);              /* the file cannot be written without it */
+    CreateDirectoryA(dir, NULL);
     snprintf(out, cap, "%s\\state.ini", dir);
 }
 

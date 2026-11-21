@@ -1125,6 +1125,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             return 0;
         case WM_TIMER:
             if (w == 1) { InvalidateRect(h, NULL, FALSE); return 0; }
+            if (w == 2) { KillTimer(h, 2); PostMessageW(h, WM_CLOSE, 0, 0); return 0; }
             break;
             InvalidateRect(h, NULL, FALSE);
             return 0;
@@ -1237,6 +1238,13 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     dark_title_bar(g_hwnd);
     app_pump(g_hwnd);
     SetTimer(g_hwnd, 1, 66, NULL);   /* ~15 fps preview */
+    {
+        char ms[16];
+        if (GetEnvironmentVariableA("HI75C_QUIT_MS", ms, sizeof(ms)) > 0) {
+            UINT_PTR d = (UINT_PTR)atoi(ms);
+            if (d >= 500 && d <= 60000) SetTimer(g_hwnd, 2, d, NULL);
+        }
+    }
     ShowWindow(g_hwnd, show);
     UpdateWindow(g_hwnd);
 
