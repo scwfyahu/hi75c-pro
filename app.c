@@ -346,15 +346,28 @@ static int version_gt(const char *a, const char *b) {
 }
 
 static int file_is_exe(const wchar_t *path) {
+    /* a truncated or corrupted download must never replace a working binary,
+       so this checks the PE structure, not just the first two bytes */
     HANDLE h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
     int ok = 0;
-    if (h != INVALID_HANDLE_VALUE) {
-        unsigned char mz[2];
-        DWORD got = 0;
+    if (h == INVALID_HANDLE_VALUE) return 0;
+    {
         LARGE_INTEGER size;
-        if (ReadFile(h, mz, 2, &got, NULL) && got == 2 && mz[0] == 'M' && mz[1] == 'Z' &&
-            GetFileSizeEx(h, &size) && size.QuadPart > 40960)
-            ok = 1;
+        if (GetFileSizeEx(h, &size) && size.QuadPart > 40960 && size.QuadPart < 8 * 1024 * 1024) {
+            DWORD len = (DWORD)size.QuadPart, got = 0;
+            unsigned char *buf = (unsigned char *)malloc(len);
+            if (buf && ReadFile(h, buf, len, &got, NULL) && got == len &&
+                buf[0] == 'M' && buf[1] == 'Z') {
+                DWORD pe = 0;
+                memcpy(&pe, buf + 0x3c, 4);
+                if (pe + 0x40 < len && memcmp(buf + pe, "PE\0\0", 4) == 0) {
+                    WORD subsystem = 0;
+                    memcpy(&subsystem, buf + pe + 24 + 68, 2);
+                    if (subsystem == 2) ok = 1;      /* GUI image */
+                }
+            }
+            free(buf);
+        }
         CloseHandle(h);
     }
     return ok;
@@ -1027,6 +1040,36 @@ int app_self_test(void) {
     CHECK(app_effect_id(2) == 2, "Breathing maps to hardware id 2");
     CHECK(app_effect_id(16) == 32, "Per-Key Custom maps to hardware id 32");
     CHECK(app_effect_id(99) == 0, "out-of-range index is rejected");
+    {
+        wchar_t self[MAX_PATH];
+        if (GetModuleFileNameW(NULL, self, MAX_PATH))
+            CHECK(file_is_exe(self), "the running binary passes the download check");
+    }
+    {
+        /* a file that starts with MZ and is big enough but has no PE header
+           must be rejected - this is the truncated-download case */
+        wchar_t tmp[MAX_PATH], tmpf[MAX_PATH];
+        DWORD n = GetTempPathW(MAX_PATH, tmp);
+        if (n) {
+            HANDLE h;
+            DWORD wrote = 0;
+            lstrcpynW(tmpf, tmp, MAX_PATH);
+            lstrcatW(tmpf, L"hi75c-fake.exe");
+            DeleteFileW(tmpf);
+            h = CreateFileW(tmpf, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+            if (h != INVALID_HANDLE_VALUE) {
+                unsigned char *junk = (unsigned char *)calloc(1, 50000);
+                if (junk) {
+                    junk[0] = 'M'; junk[1] = 'Z';
+                    WriteFile(h, junk, 50000, &wrote, NULL);
+                    free(junk);
+                }
+                CloseHandle(h);
+                CHECK(!file_is_exe(tmpf), "a truncated download is rejected");
+                DeleteFileW(tmpf);
+            }
+        }
+    }
     SAY("");
     SAY("%d checks, %d failures", pass + fail, fail);
     if (log) fclose(log);
