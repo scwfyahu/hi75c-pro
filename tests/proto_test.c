@@ -21,6 +21,7 @@ typedef struct {
     int written[256], written_n;
     unsigned char blob[KEYMAP_LEN];
     int blob_len;
+    int corrupt;      /* emit replies with a broken checksum */
 } Fake;
 
 static int fk_send(void *ctx, const unsigned char *f, int len) {
@@ -47,6 +48,7 @@ static int fk_send(void *ctx, const unsigned char *f, int len) {
             int at = i * 14, n = size - at;
             if (n > 14) n = 14;
             p_frame(d->q[d->tail++], f[1], 0, src + at, n, i, count);
+            if (d->corrupt) d->q[d->tail - 1][19] ^= 0xff;
         }
     }
     return 1;
@@ -59,6 +61,11 @@ static int fk_recv(void *ctx, unsigned char *buf, int len, int timeout_ms) {
     return RPT_LEN;
 }
 static Link link_for(Fake *d) { Link l; l.ctx = d; l.send = fk_send; l.recv = fk_recv; return l; }
+
+static int hp_read_checksum_case(Link *l) {
+    unsigned char buf[CFG_LEN];
+    return p_read(l, 0x44, 0, buf, CFG_LEN);
+}
 
 int main(void) {
     Fake d;
@@ -150,6 +157,18 @@ int main(void) {
             for (i = 0; i < KEYMAP_LEN; i += 4) if (map[i+3]) nonzero++;
             ok(nonzero >= 78, "the keymap is populated, not blank");
         }
+    }
+
+    /* a reply whose checksum is wrong must not be trusted */
+    {
+        Fake fc;
+        Link lc;
+        unsigned char bad[CFG_LEN];
+        memset(&fc, 0, sizeof(fc));
+        fc.cfg[126] = 0x5a; fc.cfg[127] = 0xa5;
+        fc.corrupt = 1;
+        lc = link_for(&fc);
+        ok(p_read(&lc, 0x44, 0, bad, CFG_LEN) == 0, "rejects replies with a bad checksum");
     }
 
     printf("\n%d checks, %d failures\n", checks, fails);

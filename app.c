@@ -288,6 +288,7 @@ static void register_shortcut(void) {
     GetModuleFileNameW(NULL, exe, MAX_PATH);
     if (!SUCCEEDED(SHGetFolderPathW(NULL, CSIDL_PROGRAMS, NULL, 0, prog))) return;
     _snwprintf(link, MAX_PATH, L"%s\\Hi75C Pro.lnk", prog);
+    if (GetFileAttributesW(link) != INVALID_FILE_ATTRIBUTES) return;   /* already there */
 
     if (SUCCEEDED(CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER,
                                    &IID_IShellLinkW, (void **)&lnk))) {

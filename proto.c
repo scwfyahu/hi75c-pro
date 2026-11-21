@@ -29,13 +29,20 @@ void p_frame(unsigned char *f, int cmd, int sub, const unsigned char *payload,
     f[RPT_LEN - 1] = (unsigned char)(sum & 0xff);
 }
 
+static int frame_ok(const unsigned char *buf) {
+    int i, sum = 0;
+    if (buf[0] != RPT) return 0;
+    for (i = 0; i < RPT_LEN - 1; i++) sum += buf[i];
+    return buf[RPT_LEN - 1] == (unsigned char)(sum & 0xff);
+}
+
 static int await_echo(Link *l, int cmd, int index, int timeout_ms) {
     unsigned char buf[64];
     int waited = 0;
     while (waited < timeout_ms) {
         int n = l->recv(l->ctx, buf, (int)sizeof(buf), 10);
         waited += 10;
-        if (n < RPT_LEN || buf[0] != RPT) continue;
+        if (n < RPT_LEN || !frame_ok(buf)) continue;
         if ((buf[1] & 0x3f) != (cmd & 0x3f)) continue;
         if (buf[3] != (unsigned char)index) continue;
         return 1;
@@ -78,7 +85,7 @@ int p_read(Link *l, int cmd, int sub, unsigned char *out, int want) {
         int n = l->recv(l->ctx, buf, (int)sizeof(buf), 10);
         waited += 10;
         if (count > 0 && packets >= count) break;
-        if (n < RPT_LEN || buf[0] != RPT) continue;
+        if (n < RPT_LEN || !frame_ok(buf)) continue;     /* checksum before trust */
         if ((buf[1] & 0x3f) != (cmd & 0x3f) || (buf[2] & 0x80)) continue;
         {
             int len = buf[4] & 0x0f, idx = buf[3], at = idx * 14;

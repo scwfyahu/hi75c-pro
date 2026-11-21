@@ -101,8 +101,9 @@ static void stroke_round(Graphics *g, const RectF &r, float rad, const Color &c,
 }
 
 static void text(Graphics *g, const char *s, const RectF &r, float size,
-                 const Color &c, StringAlignment align, const wchar_t *face = NULL) {
-    Font f(face ? face : g_face, size, FontStyleRegular, UnitPixel);
+                 const Color &c, StringAlignment align, const wchar_t *face = NULL,
+                 bool bold = false) {
+    Font f(face ? face : g_face, size, bold ? FontStyleBold : FontStyleRegular, UnitPixel);
     SolidBrush b(c);
     StringFormat fmt;
     fmt.SetAlignment(align);
@@ -358,7 +359,7 @@ static void paint(HWND hwnd) {
         /* ---------------- header ---------------- */
         {
             RectF title((REAL)pad, 22.0f, 400.0f, 30.0f);
-            text(&g, "LEOBOG Hi75C Pro", title, 22.0f, ink, StringAlignmentNear);
+            text(&g, "LEOBOG Hi75C Pro", title, 25.0f, ink, StringAlignmentNear, NULL, true);
             RectF sub((REAL)pad, 48.0f, 400.0f, 18.0f);
             char subtext[96];
             snprintf(subtext, sizeof(subtext), "%s   |   v%s",
@@ -412,7 +413,7 @@ static void paint(HWND hwnd) {
             {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(kb.X + 22), kb.Y + 17, 3.0f, 12.0f);
-                text(&g, "BOARD", RectF(kb.X + 32, kb.Y + 16, 200, 18), 10.5f, dim, StringAlignmentNear);
+                text(&g, "BOARD", RectF(kb.X + 32, kb.Y + 16, 200, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
             }
 
             /* layer switch, top right of the card */
@@ -443,7 +444,7 @@ static void paint(HWND hwnd) {
             {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(ec.X + 22), ec.Y + 17, 3.0f, 12.0f);
-                text(&g, "ON THE KEYBOARD", RectF(ec.X + 32, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear);
+                text(&g, "ON THE KEYBOARD", RectF(ec.X + 32, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
             }
             text(&g, "stored in the board", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
                  Color(255, 96, 106, 124), StringAlignmentFar);
@@ -499,7 +500,7 @@ static void paint(HWND hwnd) {
             {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(cc.X + 22), cc.Y + 17, 3.0f, 12.0f);
-                text(&g, "COLOUR", RectF(cc.X + 32, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear);
+                text(&g, "COLOUR", RectF(cc.X + 32, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
             }
 
             const Color *sw = SWATCH;
@@ -557,9 +558,24 @@ static void paint(HWND hwnd) {
                 add_hot(bx - 8, by - 14, bw + 16, 30, 301, "speed");
             }
 
+            /* quick presets: a warm look, a cool look, or dark */
+            {
+                int py = (int)cc.Y + 210;
+                const char *names[3] = {"Warm", "Cool", "Off"};
+                int ids[3] = {600, 601, 602};
+                int j, bw3 = (rightW - 44 - 16) / 3;
+                for (j = 0; j < 3; j++) {
+                    RectF b((REAL)(cc.X + 22 + j * (bw3 + 8)), (REAL)py, (REAL)bw3, 30.0f);
+                    fill_round(&g, b, 9.0f, g_hover == ids[j] ? Color(255, 34, 38, 48) : Color(255, 26, 29, 37));
+                    stroke_round(&g, b, 9.0f, lineSoft, 1.0f);
+                    text(&g, names[j], b, 11.5f, ink, StringAlignmentCenter);
+                    add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
+                }
+            }
+
             /* live summary */
             {
-                int sy = (int)cc.Y + 206;
+                int sy = (int)cc.Y + 250;
                 RectF box((REAL)(cc.X + 22), (REAL)sy, (REAL)(rightW - 44), 76.0f);
                 fill_round(&g, box, 12.0f, Color(255, 20, 22, 28));
                 stroke_round(&g, box, 12.0f, lineSoft, 1.0f);
@@ -702,6 +718,9 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     app_update_install();          /* worker downloads; UI stays live */
                     InvalidateRect(h, NULL, FALSE);
                 }
+                else if (id == 600) { app_set_colour(0); app_set_effect(1); }
+                else if (id == 601) { app_set_colour(4); app_set_effect(1); }
+                else if (id == 602) { app_set_effect(0); }
                 else if (id == 500) { app_set_layer(0); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id == 501) { app_set_layer(1); g_sel = -1; InvalidateRect(h, NULL, FALSE); }
                 else if (id >= 1000) {
