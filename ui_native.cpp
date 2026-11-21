@@ -302,66 +302,80 @@ static int effect_icon(int i, int hw) {
 static float g_scale = 1.0f;   /* physical pixels per logical pixel */
 static int g_page;   /* 0 lighting, 1 keymap, 2 about */
 
-static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
-                      const Color &ink, const Color &dim, const Color &faint) {
-    SolidBrush bg(Color(255, 15, 17, 22));
-    g->FillRectangle(&bg, 0, 0, w, rc.bottom);
-    Pen edge(Color(255, 26, 29, 37), 1.0f);
-    g->DrawLine(&edge, PointF((REAL)w, 0), PointF((REAL)w, (REAL)rc.bottom));
-
-    text(g, "SECTIONS", RectF(24, 24, 140, 16), 9.5f, faint, StringAlignmentNear, NULL, true);
-    {
-        const char *names[3] = {"Lighting", "Keymap", "About"};
-        int glyph[3] = {3, 4, 1};
-        int i;
-        for (i = 0; i < 3; i++) {
-            int top = 48 + i * 42;
-            RectF it(12, (REAL)top, (REAL)(w - 24), 34.0f);
-            if (g_page == i) {
-                fill_round(g, it, 10.0f, Color(255, 26, 31, 41));
-                SolidBrush bar(accent);
-                g->FillRectangle(&bar, 12.0f, (REAL)top + 8, 3.0f, 18.0f);
-            }
-            icon(g, glyph[i], 26, (REAL)top + 10, g_page == i ? ink : faint);
-            text(g, names[i], RectF(48, (REAL)top, 120, 34), 13.0f,
-                 g_page == i ? ink : dim, StringAlignmentNear);
-            add_hot(12, top, w - 24, 34, 700 + i, names[i]);
-        }
-    }
-    {
-        SolidBrush dot(app_connected() ? C_OK : C_BAD);
-        g->FillEllipse(&dot, 24.0f, (REAL)rc.bottom - 58, 8.0f, 8.0f);
-        text(g, app_connected() ? "Keyboard ready" : "No keyboard",
-             RectF(40, (REAL)rc.bottom - 64, 140, 20), 11.0f,
-             app_connected() ? C_OK : faint, StringAlignmentNear);
-        {
-            HANDLE d = OpenMutexA(SYNCHRONIZE, FALSE, "Hi75CPro_Daemon_Singleton");
-            if (d) {
-                CloseHandle(d);
-                text(g, "background driver active", RectF(24, (REAL)rc.bottom - 88, 160, 18),
-                     10.0f, C_ACCENT, StringAlignmentNear);
-            }
-        }
-        {
-            char vb[32];
-            snprintf(vb, sizeof(vb), "v%s", app_version());
-            text(g, vb, RectF(24, (REAL)rc.bottom - 34, 120, 16), 10.0f, faint,
-                 StringAlignmentNear);
-        }
-        if (0) text(g, "", RectF(0, 0, 0, 0), 10.0f, faint,
-             StringAlignmentNear);
-    }
-}
-
-
-/* forward declarations: this helper is defined before the paint utilities */
 static void shadow(Graphics *g, const RectF &r, float rad);
 static void card_skin(Graphics *g, GraphicsPath *path, const RectF &r,
                       const Color &top, const Color &bot, const Color &line);
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim);
 
-/* secondary pages share one card; the board is reused so the keymap page is
-   the same keyboard you configure on the lighting page */
+static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
+                      const Color &ink, const Color &dim, const Color &faint) {
+    SolidBrush bg(Color(255, 10, 11, 13));
+    g->FillRectangle(&bg, 0, 0, w, rc.bottom);
+    Pen edge(Color(255, 26, 29, 37), 1.0f);
+    g->DrawLine(&edge, PointF((REAL)w, 0), PointF((REAL)w, (REAL)rc.bottom));
+
+    /* brand lockup */
+    {
+        RectF mark(20, 22, 30, 30);
+        fill_round(g, mark, 9.0f, Color(255, 22, 25, 32));
+        stroke_round(g, mark, 9.0f, Color(255, 42, 47, 58), 1.0f);
+        {
+            SolidBrush b(accent);
+            g->FillEllipse(&b, mark.X + 9, mark.Y + 9, 12.0f, 12.0f);
+        }
+        text(g, "LEOBOG", RectF(58, 20, 120, 18), 12.5f, ink, StringAlignmentNear, NULL, true);
+        text(g, "Hi75C Pro", RectF(58, 35, 120, 16), 10.5f, faint, StringAlignmentNear);
+    }
+
+    text(g, "SECTIONS", RectF(24, 78, 140, 14), 9.0f, Color(255, 74, 80, 92),
+         StringAlignmentNear, NULL, true);
+    {
+        const char *names[3] = {"Lighting", "Keymap", "About"};
+        const char *meta[3] = {"LIVE", "81 KEYS", "1.0.0"};
+        int glyph[3] = {3, 4, 1};
+        int i;
+        for (i = 0; i < 3; i++) {
+            int top = 98 + i * 36;
+            RectF it(10, (REAL)top, (REAL)(w - 20), 32.0f);
+            if (g_page == i) {
+                fill_round(g, it, 9.0f, Color(255, 23, 26, 33));
+                SolidBrush bar(accent);
+                g->FillRectangle(&bar, 10.0f, (REAL)top + 8, 3.0f, 16.0f);
+            }
+            icon(g, glyph[i], 22, (REAL)top + 9, g_page == i ? ink : faint);
+            text(g, names[i], RectF(44, (REAL)top, 96, 32), 12.0f,
+                 g_page == i ? ink : dim, StringAlignmentNear, NULL, g_page == i);
+            text(g, meta[i], RectF((REAL)(w - 62), (REAL)top, 46, 32), 8.5f,
+                 Color(255, 78, 84, 96), StringAlignmentFar);
+            add_hot(10, top, w - 20, 32, 700 + i, names[i]);
+        }
+    }
+
+    /* device block, pinned to the bottom */
+    {
+        int top = rc.bottom - 96;
+        Pen rule(Color(255, 24, 27, 34), 1.0f);
+        g->DrawLine(&rule, PointF(18, (REAL)(top - 12)), PointF((REAL)(w - 18), (REAL)(top - 12)));
+        text(g, "DEVICE", RectF(24, (REAL)(top - 4), 120, 14), 9.0f,
+             Color(255, 74, 80, 92), StringAlignmentNear, NULL, true);
+        {
+            SolidBrush dot(app_connected() ? C_OK : Color(255, 96, 102, 116));
+            g->FillEllipse(&dot, 22.0f, (REAL)(top + 16), 7.0f, 7.0f);
+        }
+        text(g, app_connected() ? "Connected" : "Not connected",
+             RectF(36, (REAL)(top + 11), 120, 18), 11.0f,
+             app_connected() ? C_OK : faint, StringAlignmentNear);
+        text(g, "USB-C   /   2.4 GHz", RectF(24, (REAL)(top + 32), 150, 16), 10.0f, faint,
+             StringAlignmentNear);
+        {
+            char v[32];
+            snprintf(v, sizeof(v), "firmware %s", app_version());
+            text(g, v, RectF(24, (REAL)(top + 48), 150, 16), 9.5f,
+                 Color(255, 70, 76, 88), StringAlignmentNear);
+        }
+    }
+}
+
 static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top, int bottom,
                            const Color &cardTop, const Color &cardBot, const Color &line,
                            const Color &ink, const Color &dim, const Color &accent) {
