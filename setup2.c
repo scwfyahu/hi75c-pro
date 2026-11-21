@@ -270,6 +270,8 @@ static void register_uninstall(const wchar_t *exe) {
 int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     char *json; DWORD len = 0;
     wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH];
+    wchar_t offline_src[MAX_PATH];
+    offline_src[0] = 0;
     int ok = 0;
     (void)i; (void)p; (void)show;
     g_silent = cmd && wcsstr(cmd, L"--silent");
@@ -288,6 +290,14 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
        wrong binary out of a release */
     lstrcpynW(url, L"https://github.com/" REPO L"/releases/latest/download/Hi75CPro.exe", 2048);
     json = NULL;
+    {
+        /* test hook: --offline <exe> skips the download so the rest of the
+           installer can be verified without a network */
+        const wchar_t *off = cmd ? wcsstr(cmd, L"--offline ") : NULL;
+        if (off) {
+            lstrcpynW(offline_src, off + 10, MAX_PATH);
+        }
+    }
     {
         if (!SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) ok = 0;
         lstrcatW(dir, L"\\Hi75C Pro");          /* default */
@@ -353,6 +363,7 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         }
         if (GetFileAttributesW(target) != INVALID_FILE_ATTRIBUTES) {
             logf2("installed : %ls", target);
+            register_uninstall(target);
             shortcut(target);
             ok = 1;
         }
