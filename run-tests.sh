@@ -40,6 +40,10 @@ step "operator precedence (unary minus versus exponent)"
 run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/prec tests/expr_precedence_test.c expr.c -lm
 run /tmp/prec
 
+step "recursion depth (deep nesting must fail, not crash)"
+run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/depth tests/expr_depth_test.c expr.c -lm
+run /tmp/depth
+
 step "shipped self-test — the binary users actually run"
 run /tmp/wine/bin/wine64 ./Hi75CPro.exe --selftest
 

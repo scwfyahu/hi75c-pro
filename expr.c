@@ -55,6 +55,29 @@ static int arity_of(const char *name) {
 }
 
 static Node *parse_bin(int minprec);
+static Node *parse_bin_inner(int minprec);
+static Node *parse_expr_inner(void);
+
+/* every recursive descent goes through these wrappers: the old guard only
+   counted '(' so a long '1^1^...' or '----1' chain still overflowed the stack */
+static Node *parse_bin(int minprec) {
+    Node *r;
+    if (g_depth >= 96) return NULL;
+    g_depth++;
+    r = parse_bin_inner(minprec);
+    g_depth--;
+    return r;
+}
+
+static Node *parse_expr_inner(void) {
+    Node *r;
+    if (g_depth >= 96) return NULL;
+    g_depth++;
+    r = parse_expr_inner();
+    g_depth--;
+    return r;
+}
+
 static Node *parse_primary(void) {
     skip();
     if (*P == '(') {
@@ -162,7 +185,7 @@ static void take_op(int op) {
     else P += 1;
 }
 
-static Node *parse_bin(int minprec) {
+static Node *parse_bin_inner(int minprec) {
     Node *left = parse_primary();
     for (;;) {
         int op = peek_op();
