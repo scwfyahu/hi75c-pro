@@ -536,13 +536,22 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
         Pen gloss(Color(22, 255, 255, 255), 1.0f);
         g->DrawLine(&gloss, PointF(plate.X + 14, plate.Y + 1.5f), PointF(plate.X + plate.Width - 14, plate.Y + 1.5f));
     }
-    /* scale the board into the card, keeping its aspect ratio */
+    /* Scale the board to fill the card. The two axes are allowed to differ a
+       little (up to 30%) so the keyboard uses the width instead of floating in
+       the middle of a wide card; beyond that it starts to look stretched. */
     float pad = 16.0f;
     float avail_w = area.Width - pad * 2, avail_h = area.Height - pad * 2;
     float sx = avail_w / BOARD_WIDTH, sy = avail_h / BOARD_HEIGHT;
-    float s = sx < sy ? sx : sy;
-    float ox = area.X + (area.Width - BOARD_WIDTH * s) / 2;
-    float oy = area.Y + (area.Height - BOARD_HEIGHT * s) / 2;
+    float s = sx < sy ? sx : sy;             /* the undistorted size */
+    if (sx > s * 1.3f) s = sx / 1.3f;        /* widen, capped at 30% stretch */
+    float rx = (sx > s * 1.3f) ? s * 1.3f : sx;   /* horizontal step */
+    float sy2 = sy;                                /* vertical step */
+    if (rx < s) rx = s;
+    if (sy2 > s * 1.3f) sy2 = s * 1.3f;
+    if (sy2 < s) sy2 = s;
+    float boardW = BOARD_WIDTH * rx, boardH = BOARD_HEIGHT * sy2;
+    float ox = area.X + (area.Width - boardW) / 2;
+    float oy = area.Y + (area.Height - boardH) / 2;
     float gap = 2.0f;
     int i;
     /* the legend has to scale with the cap, or text overflows the key when the
