@@ -67,6 +67,7 @@ typedef struct {
 
 static AppState g_state_real;
 static State g_state = {0, 1, 0, 9, 1, 0, 113, 227, ""};
+static volatile LONG g_shutting_down;
 static CRITICAL_SECTION g_lock;
 
 /* -------------------------------------------------------------------- HID */
@@ -268,7 +269,8 @@ static void apply_effect(void) {
 
 static unsigned char g_map_cache[KEYMAP_LEN];
 static int g_map_valid;
-static int g_layer;              /* 0 = base, 1 = FN */
+static int g_layer;
+static int g_map_layer = -1;   /* which layer g_map_cache actually holds */
 static void restore_keymap(void) {
     unsigned char map[KEYMAP_LEN];
     int i;
@@ -462,6 +464,10 @@ int app_update_apply(void) {
     if (!file_is_exe(tmp)) { DeleteFileW(tmp); return 0; }
 
     GetModuleFileNameW(NULL, self, MAX_PATH);
+    if (InterlockedCompareExchange(&g_shutting_down, 0, 0)) {
+        DeleteFileW(tmp);                  /* never swap the binary while closing */
+        return 0;
+    }
     {
         wchar_t staged[MAX_PATH];
         lstrcpynW(staged, self, MAX_PATH);
@@ -667,22 +673,32 @@ static int g_map_valid;
 static void enqueue(int kind, int a, int b, int c);
 
 static int keymap_load(void) {
-    if (g_map_valid) return 1;
+    int layer;
+    if (g_map_valid && g_map_layer == g_layer) return 1;
+    g_map_valid = 0;
     if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return 0; }
+    layer = g_layer;                       /* the layer this read is for */
     hid_enter();
-    if (!p_read(dev(), 0x41, g_layer, g_map_cache, KEYMAP_LEN)) {
+    if (!p_read(dev(), 0x41, layer, g_map_cache, KEYMAP_LEN)) {
         hid_leave();
         device_lost();
         strcpy(g_state.note, "could not read the keymap");
         return 0;
     }
     hid_leave();
+    if (layer != g_layer) {                /* the user switched layers mid-read */
+        g_map_valid = 0;
+        strcpy(g_state.note, "layer changed while reading - try again");
+        return 0;
+    }
+    g_map_layer = layer;
     g_map_valid = 1;
     return 1;
 }
 
 int app_keymap_cached(int idx) {
-    if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN || !g_map_valid) return -1;
+    if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN) return -1;
+    if (!g_map_valid || g_map_layer != g_layer) return -1;
     return g_map_cache[idx * 4 + 3];
 }
 
@@ -736,7 +752,8 @@ int app_keymap_set(int idx, int type, int usage) {
 
 void app_clear_note(void) { g_state.note[0] = 0; }
 
-void app_set_layer(int layer) { g_layer = layer ? 1 : 0; g_map_valid = 0; }
+void app_set_layer(int layer) {
+    g_map_layer = -1; g_layer = layer ? 1 : 0; g_map_valid = 0; }
 int app_layer(void) { return g_layer; }
 
 
@@ -947,6 +964,7 @@ void app_cleanup_old_binary(void) {
 }
 
 void app_shutdown(void) {
+    InterlockedExchange(&g_shutting_down, 1);
     /* stop the queue first: a worker killed mid-write would leave the keyboard
        holding half a profile, and it can reopen the handle after we close it */
     InterlockedExchange(&g_worker_stop, 1);
@@ -1132,6 +1150,15 @@ int app_self_test(void) {
         wchar_t self[MAX_PATH];
         if (GetModuleFileNameW(NULL, self, MAX_PATH))
             CHECK(file_is_exe(self), "the running binary passes the download check");
+    }
+    {
+        /* a cache filled from one layer must never be served for the other */
+        g_map_valid = 1;
+        g_map_layer = 0;
+        app_set_layer(1);
+        CHECK(app_keymap_cached(1) == -1, "a layer switch invalidates the cached keymap");
+        g_map_valid = 0;
+        g_map_layer = -1;
     }
     {
         /* an imported expression can divide by zero; the cast must be defined */
