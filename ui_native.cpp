@@ -1189,7 +1189,12 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             }
             return 0;
         case WM_TIMER:
-            if (w == 1) { InvalidateRect(h, NULL, FALSE); return 0; }
+            if (w == 1) {
+                /* nothing to show while minimised; repainting 15 times a second
+                   for an invisible window is pure waste */
+                if (!IsIconic(h) && IsWindowVisible(h)) InvalidateRect(h, NULL, FALSE);
+                return 0;
+            }
             if (w == 2) { KillTimer(h, 2); PostMessageW(h, WM_CLOSE, 0, 0); return 0; }
             break;
             InvalidateRect(h, NULL, FALSE);
