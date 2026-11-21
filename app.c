@@ -903,6 +903,13 @@ int app_effect_test(const char *path) {
 static int g_daemon_dry;
 
 int app_daemon(const char *path) {
+    /* a second daemon would interleave frames with the first on the same
+       handle; one per machine is the only safe number */
+    HANDLE once = CreateMutexA(NULL, TRUE, "Hi75CPro_Daemon_Singleton");
+    if (once && GetLastError() == ERROR_ALREADY_EXISTS) {
+        CloseHandle(once);
+        return 4;
+    }
     g_daemon_dry = GetEnvironmentVariableA("HI75C_DAEMON_DRY", NULL, 0) > 0;
     Effect *fx = NULL;
     char err[128] = "";
