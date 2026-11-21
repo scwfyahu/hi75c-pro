@@ -4,7 +4,7 @@
 Hi75CPro.exe  - native Win32 + GDI+ controller (app.c, proto.c, ui_native.cpp, expr.c)
 hi75c-daemon  - standalone background effect runner (daemon.c, no CRT, no GDI)
 """
-import pathlib, subprocess, sys
+import pathlib, struct, subprocess, sys
 
 ZIG = "/tmp/zig/zig-linux-x86_64-0.13.0/zig"
 HERE = pathlib.Path(__file__).resolve().parent
@@ -14,6 +14,25 @@ BASE = [ZIG, "cc", "-target", TARGET, "-Os", "-I", str(HERE)]
 GUI_LIBS = ["-lgdiplus", "-lgdi32", "-luser32", "-lshell32", "-lole32", "-ladvapi32",
             "-lsetupapi", "-lhid", "-luuid", "-lcomdlg32", "-lwinhttp", "-lurlmon"]
 DAEMON_LIBS = ["-lhid", "-lsetupapi", "-luser32"]
+
+
+def normalise_pe(path):
+    """Zero the timestamps so two builds of the same source are identical.
+
+    Without this the only difference between successive builds is the PE
+    timestamp, which makes "does this download match the source?" impossible
+    to answer by hash.
+    """
+    d = bytearray(path.read_bytes())
+    pe = struct.unpack_from("<I", d, 0x3C)[0]
+    struct.pack_into("<I", d, pe + 8, 0)                       # COFF time stamp
+    nsec = struct.unpack_from("<H", d, pe + 6)[0]
+    optsz = struct.unpack_from("<H", d, pe + 20)[0]
+    so = pe + 24 + optsz
+    for i in range(nsec):
+        struct.pack_into("<I", d, so + i * 40 + 8, 0)          # section time stamp
+    struct.pack_into("<I", d, pe + 24 + 64, 0)                 # header checksum
+    path.write_bytes(d)
 
 
 def run(args, what):
@@ -40,6 +59,9 @@ def main() -> int:
     print("daemon", flush=True)
     run([ZIG, "cc", "-target", TARGET, "-Os", "-s", "-Wl,--subsystem,windows",
          "-o", str(daemon), str(HERE / "daemon.c")] + DAEMON_LIBS, "hi75c-daemon.exe")
+
+    normalise_pe(gui)
+    normalise_pe(daemon)
 
     print(f"\nHi75CPro.exe      {gui.stat().st_size:,} bytes")
     print(f"hi75c-daemon.exe  {daemon.stat().st_size:,} bytes")
