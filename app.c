@@ -726,6 +726,28 @@ void app_keymap_request(void) { enqueue(7, 0, 0, 0); }
 
 void app_keymap_apply(int idx, int usage) { enqueue(8, idx, usage, g_layer); }
 
+static volatile LONG g_daemon_taken = 0;   /* we stopped it, so we owe it a resume */
+
+/* start the background driver that sits beside the app, if it is there */
+void app_start_background_driver(void) {
+    wchar_t self[MAX_PATH], exe[MAX_PATH], *sl;
+    STARTUPINFOW si;
+    PROCESS_INFORMATION pi;
+    if (!GetModuleFileNameW(NULL, self, MAX_PATH)) return;
+    sl = wcsrchr(self, L'\\');
+    if (!sl) return;
+    *sl = 0;
+    _snwprintf(exe, MAX_PATH, L"%s\\hi75c-daemon.exe", self);
+    if (GetFileAttributesW(exe) == INVALID_FILE_ATTRIBUTES) return;
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+    if (CreateProcessW(exe, NULL, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+        CloseHandle(pi.hThread);
+        CloseHandle(pi.hProcess);
+    }
+}
+
 void app_stop_background_driver(void) {
     /* the daemon and the window cannot both drive the board; the window wins,
        because the user is looking at it */
@@ -737,6 +759,7 @@ void app_stop_background_driver(void) {
         if (stop) {
             SetEvent(stop);
             CloseHandle(stop);
+            InterlockedExchange(&g_daemon_taken, 1);
             Sleep(300);        /* let it finish the frame it is on */
         }
     }
@@ -1067,6 +1090,8 @@ void app_cleanup_old_binary(void) {
 
 void app_shutdown(void) {
     InterlockedExchange(&g_shutting_down, 1);
+    if (InterlockedExchange(&g_daemon_taken, 0))
+        app_start_background_driver();   /* the window took the board; give it back */
     /* stop the queue first: a worker killed mid-write would leave the keyboard
        holding half a profile, and it can reopen the handle after we close it */
     InterlockedExchange(&g_worker_stop, 1);
