@@ -46,7 +46,7 @@ def main() -> int:
 
     print("app (C)", flush=True)
     run(BASE + ["-c", str(HERE / "app.c"), "-o", "/tmp/build_app.o"], "app.c")
-    run(BASE + ["-c", str(HERE / "proto.c"), "-o", "/tmp/build_proto.o"], "proto.c")
+    run(BASE + ["-c", str(HERE / "proto.c"), "-o", "/tmp/build_proto.o, "verify.c""], "proto.c")
     run(BASE + ["-c", str(HERE / "expr.c"), "-o", "/tmp/build_expr.o"], "expr.c")
     print("ui (C++)", flush=True)
     run([ZIG, "c++", "-target", TARGET, "-Os", "-I", str(HERE), "-fno-exceptions",

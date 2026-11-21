@@ -28,6 +28,7 @@ static void enqueue(int kind, int a, int b, int c);
 #include "board.h"
 #include "proto.h"
 #include "app.h"
+#include "verify.h"
 #include "expr.h"
 #include <commdlg.h>
 #include <shlobj.h>
@@ -992,62 +993,9 @@ void app_init(void) {
 /* --uninstall: remove the shortcut, the uninstall entry, the background
    driver's autostart value, our settings, and finally the program itself */
 
-/* ---------- release signature (RSA-2048 / SHA-256, PKCS#1 v1.5) ---------- */
-#include "keys/pubkey.h"
 
-static int bcrypt_ok = 0;
 
-static int verify_signature(const wchar_t *file, const unsigned char *sig, DWORD siglen) {
-    BCRYPT_ALG_HANDLE alg = NULL, rsa = NULL;
-    BCRYPT_HASH_HANDLE hash = NULL;
-    BCRYPT_KEY_HANDLE key = NULL;
-    unsigned char digest[32];
-    unsigned char buf[65536];
-    HANDLE f;
-    DWORD read = 0;
-    BOOL hashed = FALSE;
-    int ok = 0;
-
-    if (siglen != 256) return 0;
-    f = CreateFileW(file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-    if (f == INVALID_HANDLE_VALUE) return 0;
-    if (BCryptOpenAlgorithmProvider(&alg, BCRYPT_SHA256_ALGORITHM, NULL, 0) != 0) goto done;
-    if (BCryptCreateHash(alg, &hash, NULL, 0, NULL, 0, 0) != 0) goto done;
-    while (ReadFile(f, buf, sizeof(buf), &read, NULL) && read > 0)
-        if (BCryptHashData(hash, buf, read, 0) != 0) goto done;
-    if (BCryptFinishHash(hash, digest, sizeof(digest), 0) != 0) goto done;
-
-    if (BCryptOpenAlgorithmProvider(&rsa, BCRYPT_RSA_ALGORITHM, NULL, 0) != 0) goto done;
-    if (BCryptImportKeyPair(rsa, NULL, BCRYPT_RSAPUBLIC_BLOB, &key,
-                            (PUCHAR)H75C_PUBKEY, sizeof(H75C_PUBKEY), 0) != 0) goto done;
-    ok = (BCryptVerifySignature(key, NULL, digest, sizeof(digest),
-                                (PUCHAR)sig, siglen, BCRYPT_PAD_PKCS1) == 0);
-done:
-    if (key) BCryptDestroyKey(key);
-    if (rsa) BCryptCloseAlgorithmProvider(rsa, 0);
-    if (hash) BCryptDestroyHash(hash);
-    if (alg) BCryptCloseAlgorithmProvider(alg, 0);
-    CloseHandle(f);
-    return ok;
-}
-
-/* read an adjacent ".sig" file and check the image against it */
-static int signature_matches(const wchar_t *exe) {
-    wchar_t sig[MAX_PATH + 8];
-    unsigned char buf[512];
-    DWORD got = 0;
-    HANDLE f;
-    int ok;
-    lstrcpynW(sig, exe, MAX_PATH);
-    lstrcatW(sig, L".sig");
-    f = CreateFileW(sig, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-    if (f == INVALID_HANDLE_VALUE) return 0;
-    ok = ReadFile(f, buf, sizeof(buf), &got, NULL) ? verify_signature(exe, buf, got) : 0;
-    CloseHandle(f);
-    return ok;
-}
-
-int app_verify_release(const wchar_t *exe) { return signature_matches(exe); }
+int app_verify_release(const wchar_t *exe) { return h75c_verify_signed_file(exe); }
 
 void app_uninstall(void) {
     wchar_t exe[MAX_PATH], link[MAX_PATH], dir[MAX_PATH], daemon[MAX_PATH];
