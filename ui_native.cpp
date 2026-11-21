@@ -1178,6 +1178,17 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 if (th) CloseHandle(th);
             }
             return 0;
+        case WM_DPICHANGED:
+            {
+                /* the window was moved to a monitor with a different scale;
+                   recompute it and let the layout re-derive from the client
+                   size. The window itself is left alone - resizing here risks
+                   jumping if the suggestion and our minimum disagree. */
+                int dpi = (int)HIWORD(w);
+                if (dpi >= 96 && dpi <= 480) g_scale = (float)dpi / 96.0f;
+                InvalidateRect(h, NULL, FALSE);
+            }
+            return 0;
         case WM_SIZE:
             InvalidateRect(h, NULL, FALSE);   /* layout depends on the client size */
             return 0;
