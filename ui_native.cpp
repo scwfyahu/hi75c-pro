@@ -1205,6 +1205,11 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     size_t n = strlen(g_code);
                     if (n) g_code[n - 1] = 0;
                     InvalidateRect(h, NULL, FALSE);
+                } else if (ch == 'x' || ch == 'X') {
+                    /* the page shows codes as "0x2b"; typing that used to drop the
+                       tail and apply "02", so the prefix clears the leading zero */
+                    if (strlen(g_code) == 1 && g_code[0] == '0') g_code[0] = 0;
+                    InvalidateRect(h, NULL, FALSE);
                 } else if (ch < 128 && isxdigit((unsigned char)ch) && strlen(g_code) < 2) {
                     size_t n = strlen(g_code);
                     g_code[n] = (char)toupper((unsigned char)ch);
