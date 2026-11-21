@@ -16,6 +16,10 @@ printf "started %s\n" "$(date -Iseconds)" | tee -a "$LOG"
 step "build the shipped binary"
 run python3 build.py
 
+step "version comparison suite (update path)"
+run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/vertest tests/version_test.c
+run /tmp/vertest
+
 step "protocol suite (compiles the same proto.c the exe links)"
 run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/prototest tests/proto_test.c proto.c
 run /tmp/prototest

@@ -14,6 +14,7 @@
 
 static HANDLE g_dev = INVALID_HANDLE_VALUE;
 static unsigned char g_profile[PROFILE];
+static HANDLE g_stop_event;
 
 /* a 256-entry sine table keeps libm out of the binary */
 static signed char g_sin[256];
@@ -159,6 +160,7 @@ static void daemon_main(void) {
             g_profile[126 + i] = (unsigned char)(g_sin[(phase + i * 5 + 85) & 255] + 128);
             g_profile[252 + i] = (unsigned char)(g_sin[(phase + i * 7 + 170) & 255] + 128);
         }
+        if (g_stop_event && WaitForSingleObject(g_stop_event, 0) == WAIT_OBJECT_0) break;
         if (!send_profile()) break;
         phase += 4;
         Sleep(33);
@@ -168,6 +170,15 @@ static void daemon_main(void) {
 
 /* normal entry so the mingw startup is satisfied; nothing else uses the CRT */
 int WINAPI WinMain(HINSTANCE a, HINSTANCE b, LPSTR c, int d) {
+    {
+        /* one driver per machine: a second copy would interleave frames */
+        HANDLE once = CreateMutexA(NULL, TRUE, "Hi75CPro_Daemon_Singleton");
+        if (once && GetLastError() == ERROR_ALREADY_EXISTS) {
+            CloseHandle(once);
+            return 4;
+        }
+        g_stop_event = CreateEventA(NULL, TRUE, FALSE, "Hi75CPro_Daemon_Stop");
+    }
     (void)a; (void)b; (void)c; (void)d;
     daemon_main();
     return 0;
