@@ -113,6 +113,80 @@ static void text(Graphics *g, const char *s, const RectF &r, float size,
     g->DrawString(wide, -1, &f, r, &fmt, &b);
 }
 
+
+/* ---- live lighting preview -------------------------------------------------
+   The board shows what the keyboard is doing: per-key colour for the selected
+   effect, animated by the repaint timer. This is the part that makes the app
+   feel like the hardware instead of a settings dialog.
+*/
+static void hsv(double h, double s, double v, BYTE *r, BYTE *g, BYTE *b) {
+    double c = v * s, x = c * (1 - fabs(fmod(h * 6, 2) - 1)), m = v - c;
+    double rr = 0, gg = 0, bb = 0;
+    h = h - floor(h);
+    int seg = (int)(h * 6);
+    switch (seg) {
+        case 0: rr = c; gg = x; break;
+        case 1: rr = x; gg = c; break;
+        case 2: gg = c; bb = x; break;
+        case 3: gg = x; bb = c; break;
+        case 4: rr = x; bb = c; break;
+        default: rr = c; bb = x; break;
+    }
+    *r = (BYTE)((rr + m) * 255);
+    *g = (BYTE)((gg + m) * 255);
+    *b = (BYTE)((bb + m) * 255);
+}
+
+static float g_anim_t;   /* seconds since start, set once per paint */
+
+static Color preview_colour(int i, float x, float y)
+{
+    int fx = app_state()->effect;
+    int br = app_state()->brightness;
+    double lv = (br < 0 ? 0 : (br + 1) / 10.0);
+    Color base = SWATCH[(app_state()->colour >= 0 && app_state()->colour < 7)
+                        ? app_state()->colour : 4];
+    double r = base.GetR(), g = base.GetG(), b = base.GetB();
+    double t = g_anim_t;
+    BYTE hr, hg, hb;
+    double dist = sqrt((x - 8.0) * (x - 8.0) + (y - 3.0) * (y - 3.0));
+
+    switch (fx) {
+        case 0: return Color(0, 0, 0, 0);                 /* off: no tint */
+        case 2: { double k = 0.40 + 0.60 * (0.5 + 0.5 * sin(t * 2.2));
+                  r *= k; g *= k; b *= k; } break;
+        case 3: hsv(fmod(t * 0.12 + i * 0.004, 1.0), 0.85, 1.0, &hr, &hg, &hb);
+                r = hr; g = hg; b = hb; break;
+        case 4: { double k = 0.35 + 0.65 * (0.5 + 0.5 * sin(t * 3.0 - y * 0.9));
+                  r *= k; g *= k; b *= k; } break;
+        case 5: { double h = sin(i * 12.9898) * 43758.5453; h = h - floor(h);
+                  double k = 0.25 + 0.75 * pow(fabs(sin(t * 2.0 + h * 6.28)), 6);
+                  r *= k; g *= k; b *= k; } break;
+        case 6: { double k = 0.35 + 0.65 * (0.5 + 0.5 * sin(x * 0.55 - t * 2.0));
+                  r *= k; g *= k; b *= k; } break;
+        case 7: case 13: { double k = 0.30 + 0.70 * (0.5 + 0.5 * sin(dist * 0.8 - t * 2.4));
+                           r *= k; g *= k; b *= k; } break;
+        case 8: { double k = 0.20 + 0.80 * pow(fabs(sin(t * 2.6 + i * 1.7)), 8);
+                  r *= k; g *= k; b *= k; } break;
+        case 15: hsv(fmod(t * 0.08 + (atan2(y - 3.2, x - 8.1) / 6.2832) + 0.5, 1.0),
+                     0.9, 1.0, &hr, &hg, &hb);
+                 r = hr; g = hg; b = hb; break;
+        case 16: { double k = 0.25 + 0.75 * (0.5 + 0.5 * sin(y * 1.6 - t * 3.2));
+                   r *= k; g *= k; b *= k; } break;
+        case 17: { double h = sin(i * 7.31 + t * 30.0);
+                   double k = h > 0.4 ? 1.0 : 0.25;
+                   r *= k; g *= k; b *= k; } break;
+        case 32: hsv(fmod(i * 0.11 + t * 0.05, 1.0), 0.8, 1.0, &hr, &hg, &hb);
+                 r = hr; g = hg; b = hb; break;
+        default: break;                                    /* solid accent */
+    }
+    r *= lv; g *= lv; b *= lv;
+    if (r < 0) r = 0; if (r > 255) r = 255;
+    if (g < 0) g = 0; if (g > 255) g = 255;
+    if (b < 0) b = 0; if (b > 255) b = 255;
+    return Color(255, (BYTE)r, (BYTE)g, (BYTE)b);
+}
+
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim)
 {
     /* the plate the keys sit in */
@@ -148,8 +222,8 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
             RectF wall(k.X, k.Y + 2.5f, k.Width, k.Height);
             fill_round(g, wall, 5.0f, Color(255, 10, 12, 16));
             {
-                Color c = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
-                int mix = 14;   /* 0..255 of the chosen colour folded into the cap */
+                Color c = preview_colour(i, KEYS[i].x, KEYS[i].y);
+                int mix = c.GetA() ? 150 : 0;   /* how much of the live colour the cap shows */
                 Color topc = hot ? Color(255, 68, 76, 94) : Color(255, 52, 58, 72);
                 Color botc = hot ? Color(255, 44, 50, 63) : Color(255, 34, 39, 49);
                 topc = Color(255, (BYTE)((topc.GetR() * (255 - mix) + c.GetR() * mix) / 255),
@@ -166,7 +240,7 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
                     Pen gl(Color(34, 255, 255, 255), 1.0f);
                     g->DrawLine(&gl, PointF(k.X + 5, k.Y + 1.2f), PointF(k.X + k.Width - 5, k.Y + 1.2f));
                     {
-                        Color c2 = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+                        Color c2 = preview_colour(i, KEYS[i].x, KEYS[i].y);
                         Pen under(Color(70, c2.GetR(), c2.GetG(), c2.GetB()), 2.0f);
                         g->DrawLine(&under, PointF(k.X + 4, k.Y + k.Height - 1.0f),
                                     PointF(k.X + k.Width - 4, k.Y + k.Height - 1.0f));
@@ -184,12 +258,16 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
         }
         add_hot((int)k.X, (int)k.Y, (int)k.Width, (int)k.Height, 1000 + i, KEYS[i].label);
         if (k.Width > 26.0f) {
+            Color pc = preview_colour(i, KEYS[i].x, KEYS[i].y);
+            int lum = pc.GetA() ? (pc.GetR() * 299 + pc.GetG() * 587 + pc.GetB() * 114) / 1000
+                                : 0;
+            SolidBrush tb(lum > 140 ? Color(255, 18, 20, 26) : Color(255, 205, 213, 226));
             StringFormat c;
             c.SetAlignment(StringAlignmentCenter);
             c.SetLineAlignment(StringAlignmentCenter);
             wchar_t lbl[32];
             MultiByteToWideChar(CP_UTF8, 0, KEYS[i].label, -1, lbl, 32);
-            g->DrawString(lbl, -1, &key, k, &c, &textbrush);
+            g->DrawString(lbl, -1, &key, k, &c, &tb);
         }
     }
 }
@@ -264,7 +342,8 @@ static void paint(HWND hwnd) {
             g.FillRectangle(&bg, 0, 0, rc.right, rc.bottom);
         }
         {
-            Color c = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+            Color c = SWATCH[(app_state()->colour >= 0 && app_state()->colour < 7)
+                             ? app_state()->colour : 4];
             LinearGradientBrush wash(PointF(0, 0), PointF((REAL)rc.right, (REAL)rc.bottom),
                                      Color(26, c.GetR(), c.GetG(), c.GetB()),
                                      Color(0, 0, 0, 0));
@@ -272,6 +351,7 @@ static void paint(HWND hwnd) {
         }
 
         if (g_dbg) dbg("paint %dx%d", rc.right, rc.bottom);
+        g_anim_t = (float)(GetTickCount64() % 1000000ULL) / 1000.0f;
         const int pad = 26;
         const int headerH = 76;
 
@@ -311,7 +391,8 @@ static void paint(HWND hwnd) {
             RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), (REAL)kbH);
             {
                 /* the room is lit by the colour on the board */
-                Color c = SWATCH[app_state()->colour < 7 ? app_state()->colour : 4];
+                Color c = SWATCH[(app_state()->colour >= 0 && app_state()->colour < 7)
+                                 ? app_state()->colour : 4];
                 float cx = kb.X + kb.Width / 2, cy = kb.Y + kb.Height * 0.55f;
                 RectF halo(cx - kb.Width * 0.45f, cy - kb.Height * 0.75f,
                            kb.Width * 0.9f, kb.Height * 1.6f);
@@ -785,9 +866,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     }
     if (!g_hwnd) return 1;
     dark_title_bar(g_hwnd);
-    SetTimer(g_hwnd, 1, 250, NULL);
     app_pump(g_hwnd);
-    SetTimer(g_hwnd, 1, 150, NULL);
+    SetTimer(g_hwnd, 1, 66, NULL);   /* ~15 fps preview */
     ShowWindow(g_hwnd, show);
     UpdateWindow(g_hwnd);
 

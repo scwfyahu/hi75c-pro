@@ -17,6 +17,7 @@ struct Node {
 struct Expr { Node *root; };
 
 static const char *P;
+static int g_depth;
 
 static Node *parse_expr(void);
 
@@ -32,8 +33,10 @@ static Node *parse_primary(void) {
     skip();
     if (*P == '(') {
         Node *e;
+        if (++g_depth > 64) { g_depth--; return NULL; }   /* pathological nesting */
         P++;
         e = parse_expr();
+        g_depth--;
         skip();
         if (*P == ')') P++;
         return e;
@@ -150,6 +153,7 @@ Expr *expr_compile(const char *text, char *err, int errlen) {
     Expr *e = (Expr *)calloc(1, sizeof(Expr));
     if (!e) return NULL;
     P = text;
+    g_depth = 0;
     e->root = parse_expr();
     skip();
     if (!e->root) {
@@ -187,6 +191,14 @@ static double call(const char *name, double a, double b, double c) {
     if (!strcmp(name, "fract")) return a - floor(a);
     if (!strcmp(name, "tri")) { double f = a - floor(a); return f < 0.5 ? f * 2 : 2 - f * 2; }
     return 0;
+}
+
+static void node_free(Node *n) {
+    if (!n) return;
+    node_free(n->a);
+    node_free(n->b);
+    node_free(n->c);
+    free(n);
 }
 
 static double eval(Node *n, double t, double x, double y, double i, double cnt) {
@@ -234,4 +246,8 @@ double expr_eval(Expr *e, double t, double x, double y, double i, double n) {
     return e ? eval(e->root, t, x, y, i, n) : 0;
 }
 
-void expr_free(Expr *e) { free(e); }
+void expr_free(Expr *e) {
+    if (!e) return;
+    node_free(e->root);
+    free(e);
+}

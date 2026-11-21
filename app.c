@@ -352,6 +352,13 @@ static int file_is_exe(const wchar_t *path) {
     return ok;
 }
 
+static HINTERNET g_http_session, g_http_connect;
+
+static void http_close_all(void) {
+    if (g_http_connect) { WinHttpCloseHandle(g_http_connect); g_http_connect = NULL; }
+    if (g_http_session) { WinHttpCloseHandle(g_http_session); g_http_session = NULL; }
+}
+
 static HINTERNET http_open(const wchar_t *host, const wchar_t *path) {
     HINTERNET s, c, r;
     s = WinHttpOpen(L"Hi75CPro/1.3", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
@@ -362,6 +369,8 @@ static HINTERNET http_open(const wchar_t *host, const wchar_t *path) {
     if (!c) { WinHttpCloseHandle(s); return NULL; }
     r = WinHttpOpenRequest(c, L"GET", path, NULL, WINHTTP_NO_REFERER,
                            WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
+    g_http_session = s;
+    g_http_connect = c;
     if (r) {
         DWORD policy = WINHTTP_OPTION_REDIRECT_POLICY_ALWAYS;
         WinHttpSetOption(r, WINHTTP_OPTION_REDIRECT_POLICY, &policy, sizeof(policy));
@@ -377,10 +386,11 @@ int app_update_check(void) {
     const char *tag;
 
     g_latest[0] = 0;
-    if (!r) return 0;
+    if (!r) { http_close_all(); return 0; }
     if (!WinHttpSendRequest(r, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) ||
         !WinHttpReceiveResponse(r, NULL)) {
         WinHttpCloseHandle(r);
+        http_close_all();
         return 0;
     }
     while (WinHttpReadData(r, buf + total, (DWORD)(sizeof(buf) - total - 1), &got) && got > 0) {
@@ -389,6 +399,7 @@ int app_update_check(void) {
     }
     buf[total] = 0;
     WinHttpCloseHandle(r);
+    http_close_all();
 
     tag = strstr(buf, "\"tag_name\":");
     if (!tag) return 0;
