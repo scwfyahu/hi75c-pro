@@ -550,13 +550,11 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     float pad = 16.0f;
     float avail_w = area.Width - pad * 2, avail_h = area.Height - pad * 2;
     float sx = avail_w / BOARD_WIDTH, sy = avail_h / BOARD_HEIGHT;
-    float s = sx < sy ? sx : sy;             /* the undistorted size */
-    if (sx > s * 1.3f) s = sx / 1.3f;        /* widen, capped at 30% stretch */
-    float rx = (sx > s * 1.3f) ? s * 1.3f : sx;   /* horizontal step */
-    float sy2 = sy;                                /* vertical step */
-    if (rx < s) rx = s;
-    if (sy2 > s * 1.3f) sy2 = s * 1.3f;
-    if (sy2 < s) sy2 = s;
+    float s = sx < sy ? sx : sy;              /* the size that fits both axes */
+    /* fill the width, but never stretch the keycaps more than 35%: at that
+       point they read as typed keys rather than squashed ones */
+    float rx = (sx <= s * 1.35f) ? sx : s * 1.35f;
+    float sy2 = s;
     float boardW = BOARD_WIDTH * rx, boardH = BOARD_HEIGHT * sy2;
     float ox = area.X + (area.Width - boardW) / 2;
     float oy = area.Y + (area.Height - boardH) / 2;
@@ -789,6 +787,21 @@ static void paint(HWND hwnd) {
                      app_connected() ? "USB / 2.4 GHz" : "no keyboard", app_version());
             text(&g, subtext, sub, 11.5f, dim, StringAlignmentNear);
 
+            /* actions live in the header, right of the title */
+            {
+                const char *names[3] = {"Import", "Restore", "Rescan"};
+                int ids[3] = {402, 400, 401};
+                int j, bwid = 88;
+                for (j = 0; j < 3; j++) {
+                    RectF b((REAL)(rc.right - pad - 200 - (3 - j) * (bwid + 8)), 30.0f,
+                            (REAL)bwid, 30.0f);
+                    fill_round(&g, b, 9.0f, g_hover == ids[j] ? Color(255, 36, 40, 50)
+                                                              : Color(255, 24, 27, 34));
+                    stroke_round(&g, b, 9.0f, lineSoft, 1.0f);
+                    text(&g, names[j], b, 11.0f, ink, StringAlignmentCenter);
+                    add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
+                }
+            }
             const char *st = app_connected() ? "Connected" : "Not connected";
             float pw = 132.0f;
             RectF pill((REAL)(rc.right - pad - pw), 26.0f, pw, 34.0f);
@@ -875,221 +888,157 @@ static void paint(HWND hwnd) {
         }
         y += kbH + 18;
 
-        /* ---------------- effects ---------------- */
+        /* ---------------- effects + controls (one surface) ---------------- */
         {
-            RectF ec((REAL)cx, (REAL)y, (REAL)leftW, (REAL)(cb - y));
+            RectF ec((REAL)cx, (REAL)y, (REAL)cw, (REAL)(cb - y));
             shadow(&g, ec, 18.0f);
             GraphicsPath p; rounded(&p, ec, 18.0f);
             card_skin(&g, &p, ec, cardTop, cardBot, line);
+
             {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(ec.X + 22), ec.Y + 17, 3.0f, 12.0f);
-                text(&g, "ON THE KEYBOARD", RectF(ec.X + 32, ec.Y + 16, 260, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
+            }
+            text(&g, "EFFECTS", RectF(ec.X + 32, ec.Y + 16, 220, 18), 10.5f, dim,
+                 StringAlignmentNear, NULL, true);
+            {
+                char cnt[32];
+                snprintf(cnt, sizeof(cnt), "%d effects", app_effect_count());
+                text(&g, cnt, RectF(ec.X + ec.Width - 190, ec.Y + 16, 168, 18), 10.5f,
+                     Color(255, 96, 106, 124), StringAlignmentFar);
+            }
             {
                 Pen rule(Color(18, 255, 255, 255), 1.0f);
                 g.DrawLine(&rule, PointF(ec.X + 22, ec.Y + 38), PointF(ec.X + ec.Width - 22, ec.Y + 38));
             }
-            }
-            text(&g, "17 firmware effects", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
-                 Color(255, 96, 106, 124), StringAlignmentFar);
 
-            int cols = 3, gap = 12;
-            int bw = (int)((ec.Width - 44 - gap * (cols - 1)) / cols);
-            int rows = (app_effect_count() + cols - 1) / cols;
-            int bh = (int)((ec.Height - 44 - 14 - gap * (rows - 1)) / rows);
-            if (bh > 46) bh = 46;
-            if (bh < 28) bh = 28;
-            int usedH = rows * bh + (rows - 1) * gap;
-            int spare = (int)(ec.Height - 44 - usedH);
-            int x0 = (int)ec.X + 22, y0 = (int)ec.Y + 44 + (spare > 0 ? spare / 3 : 0);
+            const int ctrlW = 300;
+            int gridW = (int)ec.Width - ctrlW - 46;
+            int cols = 5, gap = 8, rows = (app_effect_count() + cols - 1) / cols;
+            int bw = (gridW - gap * (cols - 1)) / cols;
+            int bh = 38;
+            int gx = (int)ec.X + 22, gy = (int)ec.Y + 50;
             int i;
             for (i = 0; i < app_effect_count(); i++) {
-                int cx = x0 + (i % cols) * (bw + gap);
-                int cy = y0 + (i / cols) * (bh + gap);
+                int bx = gx + (i % cols) * (bw + gap);
+                int by = gy + (i / cols) * (bh + gap);
                 int id = 100 + i;
                 int active = (app_state()->effect == app_effect_id(i));
-                RectF btn((REAL)cx, (REAL)cy, (REAL)bw, (REAL)bh);
-                Color fillc = active ? Color(255, 42, 47, 59)
-                             : (g_hover == id ? Color(255, 35, 39, 49) : Color(255, 25, 28, 36));
+                RectF btn((REAL)bx, (REAL)by, (REAL)bw, (REAL)bh);
+                fill_round(&g, btn, 9.0f, active ? Color(255, 40, 45, 56)
+                                        : (g_hover == id ? Color(255, 33, 37, 46)
+                                                         : Color(255, 24, 27, 34)));
+                stroke_round(&g, btn, 9.0f, active ? Color(80, 255, 255, 255) : lineSoft, 1.0f);
                 if (active) {
-                    fillc = Color(255, (BYTE)(24 + accent.GetR() * 0.10f),
-                                       (BYTE)(30 + accent.GetG() * 0.10f),
-                                       (BYTE)(42 + accent.GetB() * 0.10f));
-                }
-                fill_round(&g, btn, 11.0f, fillc);
-                if (active) {
-                    /* a quiet top highlight instead of a coloured glow */
-                    Pen hi(Color(26, 255, 255, 255), 1.0f);
-                    g.DrawLine(&hi, PointF(btn.X + 14, btn.Y + 1.5f),
-                               PointF(btn.X + btn.Width - 14, btn.Y + 1.5f));
-                }
-                stroke_round(&g, btn, 11.0f,
-                             active ? Color(70, 255, 255, 255) : lineSoft,
-                             1.0f);
-                {
-                    /* a distinct glyph per effect, tinted with the palette slot */
                     Color tint = SWATCH[i % 7];
-                    icon(&g, effect_icon(i, app_effect_id(i)), btn.X + 13,
-                         btn.Y + btn.Height / 2 - 6,
-                         active ? tint : Color(165, tint.GetR(), tint.GetG(), tint.GetB()));
+                    icon(&g, effect_icon(i, app_effect_id(i)), btn.X + 10,
+                         btn.Y + btn.Height / 2 - 5, tint);
                 }
-                text(&g, app_effect_name(i), RectF(btn.X + 32, btn.Y, btn.Width - 42, btn.Height), 13.0f,
-                     active ? Color(255, 214, 231, 255) : ink, StringAlignmentNear);
-                add_hot(cx, cy, bw, bh, id, app_effect_name(i));
+                text(&g, app_effect_name(i), RectF(btn.X + (active ? 26 : 10), btn.Y,
+                                                   btn.Width - (active ? 32 : 16), btn.Height),
+                     11.5f, active ? Color(255, 246, 247, 250) : dim,
+                     active ? StringAlignmentNear : StringAlignmentCenter, NULL, active);
+                add_hot(bx, by, bw, bh, id, app_effect_name(i));
             }
-        }
 
-        /* ---------------- right column ---------------- */
-        {
-            int rx = cx + cw - rightW;
-            RectF cc((REAL)rx, (REAL)y, (REAL)rightW, (REAL)(cb - y));
-            shadow(&g, cc, 18.0f);
-            GraphicsPath p; rounded(&p, cc, 18.0f);
-            card_skin(&g, &p, cc, cardTop, cardBot, line);
+            /* controls column */
             {
-                SolidBrush bar(accent);
-                g.FillRectangle(&bar, (REAL)(cc.X + 22), cc.Y + 17, 3.0f, 12.0f);
-                text(&g, "COLOUR", RectF(cc.X + 32, cc.Y + 16, 160, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
+                int rx = (int)ec.X + (int)ec.Width - ctrlW - 22;
+                int ry = (int)ec.Y + 50;
+                text(&g, "COLOUR", RectF((REAL)rx, (REAL)ry, 120, 16), 9.5f,
+                     Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+                {
+                    static const char *hex[7] = {"#FF2B2B","#FF8C1A","#FFE11A","#2EE65C","#1AE5FF","#2E6BFF","#B833FF"};
+                    int k;
+                    for (k = 0; k < 7; k++) {
+                        RectF b2((REAL)(rx + k * 34), (REAL)(ry + 20), 28.0f, 28.0f);
+                        fill_round(&g, b2, 8.0f, SWATCH[k]);
+                        if (app_state()->colour == k)
+                            stroke_round(&g, b2, 8.0f, Color(255, 255, 255, 255), 2.0f);
+                        else
+                            stroke_round(&g, b2, 8.0f, g_hover == 200 + k ? Color(120,255,255,255)
+                                                                          : Color(40,255,255,255), 1.0f);
+                        add_hot((int)b2.X, (int)b2.Y, 28, 28, 200 + k, "swatch");
+                    }
+                    text(&g, hex[app_state()->colour < 7 ? app_state()->colour : 0],
+                         RectF((REAL)rx, (REAL)(ry + 52), 120, 16), 10.5f,
+                         Color(255, 110, 120, 138), StringAlignmentNear);
+                }
+                {
+                    char buf[16];
+                    int sy = ry + 80;
+                    text(&g, "BRIGHTNESS", RectF((REAL)rx, (REAL)sy, 160, 16), 9.5f,
+                         Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+                    snprintf(buf, sizeof(buf), "%d%%", (app_state()->brightness + 1) * 10);
+                    text(&g, buf, RectF((REAL)(rx + ctrlW - 70), (REAL)sy, 70, 16), 10.5f,
+                         Color(255, 190, 200, 216), StringAlignmentFar);
+                    {
+                        int by2 = sy + 22, bw2 = ctrlW - 8;
+                        fill_round(&g, RectF((REAL)rx, (REAL)(by2 - 2), (REAL)bw2, 6.0f), 3.0f, Color(255, 40, 45, 56));
+                        int filled = bw2 * (app_state()->brightness + 1) / 10;
+                        fill_round(&g, RectF((REAL)rx, (REAL)(by2 - 2), (REAL)filled, 6.0f), 3.0f, accent);
+                        SolidBrush knob(Color(255, 248, 251, 255));
+                        g.FillEllipse(&knob, (REAL)(rx + filled - 7), (REAL)(by2 - 7), 14.0f, 14.0f);
+                        add_hot(rx - 8, by2 - 14, bw2 + 16, 28, 300, "brightness");
+                    }
+                }
+                {
+                    char buf[16];
+                    int sy = ry + 138;
+                    text(&g, "SPEED", RectF((REAL)rx, (REAL)sy, 160, 16), 9.5f,
+                         Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+                    snprintf(buf, sizeof(buf), "%dx", app_state()->speed + 1);
+                    text(&g, buf, RectF((REAL)(rx + ctrlW - 70), (REAL)sy, 70, 16), 10.5f,
+                         Color(255, 190, 200, 216), StringAlignmentFar);
+                    {
+                        int by2 = sy + 22, bw2 = ctrlW - 8;
+                        fill_round(&g, RectF((REAL)rx, (REAL)(by2 - 2), (REAL)bw2, 6.0f), 3.0f, Color(255, 40, 45, 56));
+                        int filled = bw2 * (app_state()->speed + 1) / 4;
+                        fill_round(&g, RectF((REAL)rx, (REAL)(by2 - 2), (REAL)filled, 6.0f), 3.0f, accent);
+                        SolidBrush knob(Color(255, 248, 251, 255));
+                        g.FillEllipse(&knob, (REAL)(rx + filled - 7), (REAL)(by2 - 7), 14.0f, 14.0f);
+                        add_hot(rx - 8, by2 - 14, bw2 + 16, 28, 301, "speed");
+                    }
+                }
+                {
+                    int py = ry + 196, j, bw3 = (ctrlW - 16) / 3;
+                    text(&g, "QUICK PRESETS", RectF((REAL)rx, (REAL)(py - 18), 160, 16), 9.5f,
+                         Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+                    for (j = 0; j < 3; j++) {
+                        RectF b((REAL)(rx + j * (bw3 + 8)), (REAL)py, (REAL)bw3, 30.0f);
+                        fill_round(&g, b, 9.0f, g_hover == 600 + j ? Color(255, 36, 40, 50) : Color(255, 24, 27, 34));
+                        stroke_round(&g, b, 9.0f, lineSoft, 1.0f);
+                        text(&g, j == 0 ? "Warm" : (j == 1 ? "Cool" : "Off"), b, 11.0f, ink,
+                             StringAlignmentCenter);
+                        add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, 600 + j, "preset");
+                    }
+                }
+            }
+
+            /* running strip */
             {
+                int sy = (int)ec.Y + (int)ec.Height - 46;
                 Pen rule(Color(18, 255, 255, 255), 1.0f);
-                g.DrawLine(&rule, PointF(cc.X + 22, cc.Y + 38), PointF(cc.X + cc.Width - 22, cc.Y + 38));
-            }
-            }
-
-            const Color *sw = SWATCH;
-            static const char *hex[7] = {"#F0685C", "#F4B04C", "#ECD85C", "#60D08A", "#58B0F4", "#8A7AF6", "#EC7AC6"};
-            int k;
-            for (k = 0; k < 7; k++) {
-                RectF b2((REAL)(cc.X + 22 + k * 38), cc.Y + 44, 32.0f, 32.0f);
-                fill_round(&g, b2, 9.0f, sw[k]);
-                if (app_state()->colour == k) {
-                    RectF ring2(b2.X - 3, b2.Y - 3, b2.Width + 6, b2.Height + 6);
-                    stroke_round(&g, ring2, 12.0f, Color(255, 255, 255, 255), 1.6f);
-                    /* tick mark so the choice is unambiguous at a glance */
-                    Pen tick(Color(255, 18, 20, 26), 2.2f);
-                    g.DrawLine(&tick, PointF(b2.X + 10, b2.Y + 16.5f), PointF(b2.X + 14.5f, b2.Y + 21));
-                    g.DrawLine(&tick, PointF(b2.X + 14.5f, b2.Y + 21), PointF(b2.X + 22, b2.Y + 11.5f));
-                } else {
-                    stroke_round(&g, b2, 9.0f, g_hover == 200 + k ? Color(120, 255, 255, 255)
-                                                                : Color(50, 255, 255, 255), 1.0f);
-                }
-                add_hot((int)b2.X, (int)b2.Y, (int)b2.Width, (int)b2.Height, 200 + k, "swatch");
-            }
-            text(&g, hex[app_state()->colour < 7 ? app_state()->colour : 0],
-                 RectF(cc.X + 22, cc.Y + 82, 120, 16), 11.0f, Color(255, 110, 120, 138), StringAlignmentNear);
-
-            {
-                char buf[16];
-                RectF lab(cc.X + 22, cc.Y + 104, 160, 16);
-                text(&g, "Brightness", lab, 11.5f, dim, StringAlignmentNear);
-                snprintf(buf, sizeof(buf), "%d%%", (app_state()->brightness + 1) * 10);
-                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 104, 70, 16), 11.5f,
-                     Color(255, 190, 200, 216), StringAlignmentFar);
-            }
-            {
-                int by = (int)cc.Y + 128, bx = (int)cc.X + 22, bw = rightW - 44;
-                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 31, 34, 42));
-                int filled = bw * (app_state()->brightness + 1) / 10;
-                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)filled, 6.0f), 3.0f, accent);
-                SolidBrush knob(Color(255, 248, 251, 255));
-                g.FillEllipse(&knob, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
-                Pen ring(Color(255, 120, 170, 255), 1.0f);
-                g.DrawEllipse(&ring, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
-                add_hot(bx - 8, by - 14, bw + 16, 30, 300, "brightness");
-            }
-
-            {
-                char buf[16];
-                text(&g, "Speed", RectF(cc.X + 22, cc.Y + 156, 160, 16), 11.5f, dim, StringAlignmentNear);
-                snprintf(buf, sizeof(buf), "%dx", app_state()->speed + 1);
-                text(&g, buf, RectF(cc.X + cc.Width - 92, cc.Y + 156, 70, 16), 11.5f,
-                     Color(255, 190, 200, 216), StringAlignmentFar);
-            }
-            {
-                int by = (int)cc.Y + 180, bx = (int)cc.X + 22, bw = rightW - 44;
-                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)bw, 6.0f), 3.0f, Color(255, 31, 34, 42));
-                int filled = bw * (app_state()->speed + 1) / 4;
-                fill_round(&g, RectF((REAL)bx, (REAL)(by - 2), (REAL)filled, 6.0f), 3.0f, accent);
-                SolidBrush knob(Color(255, 248, 251, 255));
-                g.FillEllipse(&knob, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
-                Pen ring(Color(255, 120, 170, 255), 1.0f);
-                g.DrawEllipse(&ring, (REAL)(bx + filled - 8), (REAL)(by - 8), 16.0f, 16.0f);
-                add_hot(bx - 8, by - 14, bw + 16, 30, 301, "speed");
-            }
-
-            /* quick presets: a warm look, a cool look, or dark */
-            if (cc.Height > 322.0f) {
-                int py = (int)cc.Y + 210;
-                const char *names[3] = {"Warm", "Cool", "Off"};
-                int ids[3] = {600, 601, 602};
-                int j, bw3 = (rightW - 44 - 16) / 3;
-                for (j = 0; j < 3; j++) {
-                    RectF b((REAL)(cc.X + 22 + j * (bw3 + 8)), (REAL)py, (REAL)bw3, 30.0f);
-                    fill_round(&g, b, 9.0f, g_hover == ids[j] ? Color(255, 34, 38, 48) : Color(255, 26, 29, 37));
-                    stroke_round(&g, b, 9.0f, lineSoft, 1.0f);
-                    text(&g, names[j], b, 11.5f, ink, StringAlignmentCenter);
-                    add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
-                }
-            }
-
-            /* live summary (omitted when the card is short, rather than clipped) */
-            if (cc.Height > 340.0f) {
-                int sy = (int)cc.Y + 250;
-                RectF box((REAL)(cc.X + 22), (REAL)sy, (REAL)(rightW - 44), 76.0f);
-                fill_round(&g, box, 12.0f, Color(255, 20, 22, 28));
-                stroke_round(&g, box, 12.0f, lineSoft, 1.0f);
-                text(&g, "RUNNING", RectF(box.X + 14, box.Y + 10, 120, 16), 9.5f,
-                     Color(255, 110, 120, 138), StringAlignmentNear);
-                text(&g, app_effect_name(0) && app_state()->effect == 0 ? "Off" : "",
-                     RectF(box.X + 14, box.Y + 26, 200, 18), 12.0f, ink, StringAlignmentNear);
+                g.DrawLine(&rule, PointF(ec.X + 22, (REAL)sy), PointF(ec.X + ec.Width - 22, (REAL)sy));
                 {
-                    int i, found = -1;
-                    for (i = 0; i < app_effect_count(); i++)
-                        if (app_effect_id(i) == app_state()->effect) found = i;
-                    if (found >= 0)
-                        text(&g, app_effect_name(found), RectF(box.X + 14, box.Y + 26, 200, 18),
-                             12.0f, ink, StringAlignmentNear);
-                    else if (app_state()->effect == 0)
-                        text(&g, "Off", RectF(box.X + 14, box.Y + 26, 200, 18), 12.0f, ink, StringAlignmentNear);
+                    SolidBrush dot(accent);
+                    g.FillEllipse(&dot, (REAL)(ec.X + 22), (REAL)(sy + 15), 7.0f, 7.0f);
                 }
                 {
-                    char line2[64];
-                    snprintf(line2, sizeof(line2), "brightness %d%%   |   speed %dx",
-                             (app_state()->brightness + 1) * 10, app_state()->speed + 1);
-                    text(&g, line2, RectF(box.X + 14, box.Y + 50, rightW - 70, 16), 11.0f, dim,
+                    char run[220];
+                    int i2, found = -1;
+                    for (i2 = 0; i2 < app_effect_count(); i2++)
+                        if (app_effect_id(i2) == app_state()->effect) found = i2;
+                    snprintf(run, sizeof(run), "RUNNING    %s    |    colour %d/7    |    brightness %d%%    |    speed %dx",
+                             found >= 0 ? app_effect_name(found) : "Off",
+                             app_state()->colour + 1, (app_state()->brightness + 1) * 10,
+                             app_state()->speed + 1);
+                    text(&g, run, RectF(ec.X + 38, (REAL)(sy + 10), ec.Width - 260, 20), 11.0f, ink,
                          StringAlignmentNear);
                 }
-                SolidBrush chip(app_state()->colour < 7 ? sw[app_state()->colour] : sw[0]);
-                g.FillEllipse(&chip, (REAL)(box.X + box.Width - 40), (REAL)(box.Y + 22), 16.0f, 16.0f);
-            }
-
-            /* actions */
-            int ay = (int)cc.Y + (int)cc.Height - 54;
-            {
-                int bw3 = (rightW - 20) / 3;
-                const char *names[3] = {"Import", "Restore", "Rescan"};
-                int ids[3] = {402, 400, 401};
-                int j;
-                for (j = 0; j < 3; j++) {
-                    RectF b((REAL)(rx + j * (bw3 + 10)), (REAL)ay, (REAL)bw3, 38.0f);
-                    fill_round(&g, b, 11.0f, g_hover == ids[j] ? Color(255, 34, 38, 48) : Color(255, 26, 29, 37));
-                    stroke_round(&g, b, 11.0f, lineSoft, 1.0f);
-                    icon(&g, 9 + j, b.X + 10, b.Y + b.Height / 2 - 6, dim);
-                    text(&g, names[j], RectF(b.X + 26, b.Y, b.Width - 30, b.Height), 12.0f, ink,
-                         StringAlignmentNear);
-                    add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
-                }
-            }
-
-            if (InterlockedCompareExchange(&g_update, 0, 0)) {
-                RectF up((REAL)rx, (REAL)(ay - 46), (REAL)rightW, 36.0f);
-                fill_round(&g, up, 11.0f, accentSoft);
-                stroke_round(&g, up, 11.0f, accent, 1.2f);
-                char ub[64];
-                if (app_latest_tag()[0]) snprintf(ub, sizeof(ub), "Update to %s", app_latest_tag());
-                else lstrcpynA(ub, "Update available", (int)sizeof(ub));
-                text(&g, ub, up, 12.5f, Color(255, 214, 231, 255), StringAlignmentCenter);
-                add_hot((int)up.X, (int)up.Y, (int)up.Width, (int)up.Height, 403, "update");
+                text(&g, app_connected() ? "written to board" : "preview only",
+                     RectF(ec.X + ec.Width - 200, (REAL)(sy + 10), 178, 20), 10.5f,
+                     app_connected() ? C_OK : Color(255, 110, 120, 138), StringAlignmentFar);
             }
         }
 
