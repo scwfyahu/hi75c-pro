@@ -31,6 +31,7 @@ void app_restore_keymap(void);
 void app_rescan(void);
 void app_import_effect(void *owner);   /* opens a file dialog and runs the effect */
 void app_stop_effect(void);
+void app_request_stop_effect(void);   /* non-blocking: end an imported animation */
 void app_set_layer(int layer);
 int  app_layer(void);
 int  app_keymap_set(int key_index, int type, int usage);   /* 1 on success */

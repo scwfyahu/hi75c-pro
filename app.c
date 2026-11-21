@@ -494,6 +494,12 @@ static char g_fx_name[64] = "";
 
 const char *app_import_name(void) { return g_fx_name; }
 
+void app_request_stop_effect(void) {
+    /* safe to call from the UI thread: asks the animation to end at its next
+       frame instead of waiting for it */
+    InterlockedExchange(&g_fx_stop, 1);
+}
+
 void app_stop_effect(void) {
     InterlockedExchange(&g_fx_stop, 1);
     if (g_fx_thread) {
@@ -786,6 +792,7 @@ static HWND g_notify;
 static CRITICAL_SECTION g_q_lock;
 
 static void enqueue(int kind, int a, int b, int c) {
+    if (kind >= 1 && kind <= 5) app_request_stop_effect();   /* a manual choice wins */
     EnterCriticalSection(&g_q_lock);
     /* a slider drag produces one request per pixel; keep only the newest value
        for the four continuous controls, otherwise the queue fills and the last
@@ -1064,6 +1071,13 @@ int app_self_test(void) {
         wchar_t self[MAX_PATH];
         if (GetModuleFileNameW(NULL, self, MAX_PATH))
             CHECK(file_is_exe(self), "the running binary passes the download check");
+    }
+    {
+        /* a manual choice must be able to end an imported animation */
+        InterlockedExchange(&g_fx_stop, 0);
+        app_request_stop_effect();
+        CHECK(g_fx_stop == 1, "a manual choice stops an imported animation");
+        InterlockedExchange(&g_fx_stop, 0);
     }
     {
         /* a file that starts with MZ and is big enough but has no PE header
