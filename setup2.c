@@ -93,7 +93,7 @@ static int download(const wchar_t *url, const wchar_t *dest) {
     URL_COMPONENTS uc;
     wchar_t host[256], path[1024];
     HANDLE f;
-    int ok = 0;
+    int ok = 0, copied = 0;
     DWORD secure = 0;
 
     memset(&uc, 0, sizeof(uc));
@@ -230,9 +230,24 @@ static int is_pe_image(const wchar_t *path) {
                 DWORD pe = 0;
                 memcpy(&pe, buf + 0x3c, 4);
                 if (pe + 0x40 < len && memcmp(buf + pe, "PE\0\0", 4) == 0) {
-                    WORD subsystem = 0;
+                    WORD subsystem = 0, nsec = 0, optsz = 0;
+                    DWORD want = 0, i;
                     memcpy(&subsystem, buf + pe + 24 + 68, 2);
-                    if (subsystem == 2) ok = 1;
+                    memcpy(&nsec, buf + pe + 6, 2);
+                    memcpy(&optsz, buf + pe + 20, 2);
+                    /* the header alone proves nothing: a download cut short still
+                       has MZ and PE at the front, so require every section to be
+                       present in the file */
+                    for (i = 0; i < nsec; i++) {
+                        DWORD base = pe + 24 + optsz + i * 40;
+                        DWORD raw = 0, rawsize = 0, end;
+                        if (base + 40 > len) { ok = 0; break; }
+                        memcpy(&rawsize, buf + base + 16, 4);
+                        memcpy(&raw, buf + base + 20, 4);
+                        end = raw + rawsize;
+                        if (end > want) want = end;
+                    }
+                    if (subsystem == 2 && want && want <= len) ok = 1;
                 }
             }
             free(buf);
@@ -291,7 +306,7 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH];
     wchar_t offline_src[MAX_PATH];
     offline_src[0] = 0;
-    int ok = 0;
+    int ok = 0, copied = 0;
     (void)i; (void)p; (void)show;
     g_silent = cmd && wcsstr(cmd, L"--silent");
     {
@@ -370,7 +385,7 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         /* the target is often on another drive than %TEMP%, so copy rather than
            move: MoveFileEx cannot cross volumes without MOVEFILE_COPY_ALLOWED */
         if (GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES) {
-            BOOL copied = CopyFileW(tmp, target, FALSE);
+            copied = CopyFileW(tmp, target, FALSE) ? 1 : 0;
             if (!copied) {
                 DWORD why = GetLastError();
                 logf2("copy      : failed, error %lu", (unsigned long)why);
@@ -380,7 +395,7 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             }
             DeleteFileW(tmp);
         }
-        if (GetFileAttributesW(target) != INVALID_FILE_ATTRIBUTES) {
+        if (copied && GetFileAttributesW(target) != INVALID_FILE_ATTRIBUTES) {
             logf2("installed : %ls", target);
             register_uninstall(target);
             shortcut(target);

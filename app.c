@@ -226,8 +226,15 @@ static void apply_effect(void) {
         unsigned char f[RPT_LEN];
         p_frame(f, 0x88, 2, off, 3, 0, 1);
         hid_enter();
-        link_send(g_dev, f, RPT_LEN);
-        hid_leave();
+        {
+            int sent = link_send(g_dev, f, RPT_LEN);
+            hid_leave();
+            if (!sent) {                 /* the write result was being discarded */
+                device_lost();
+                strcpy(g_state.note, "could not switch the lighting off");
+                return;
+            }
+        }
         strcpy(g_state.note, "lighting off");
         return;
     }
@@ -278,6 +285,7 @@ static void restore_keymap(void) {
     if (!p_write(dev(), 0x01, 0, map, KEYMAP_LEN)) {
         hid_leave();
         strcpy(g_state.note, "keymap restore failed");
+        device_lost();              /* this path was missed: its retry could never work */
         return;
     }
     hid_leave();
@@ -708,7 +716,9 @@ int app_keymap_set(int idx, int type, int usage) {
     if (!p_write(dev(), 0x01, g_layer, g_map_cache, KEYMAP_LEN)) {
         hid_leave();
         device_lost();
+        g_map_valid = 0;            /* the board did not take these bytes */
         strcpy(g_state.note, "the keyboard rejected the keymap");
+        g_map_valid = 0;
         return 0;
     }
     hid_leave();
@@ -900,7 +910,9 @@ void app_pump(void *hwnd) {
     if (g_wake) return;
     InitializeCriticalSection(&g_q_lock);
     g_wake = CreateEventW(NULL, FALSE, FALSE, NULL);
+    if (!g_wake) strcpy(g_state.note, "could not start the request queue");
     g_worker = CreateThread(NULL, 0, worker_main, NULL, 0, NULL);
+    if (!g_worker) strcpy(g_state.note, "could not start the worker thread");
 }
 
 /* ------------------------------------------------------------ interface */

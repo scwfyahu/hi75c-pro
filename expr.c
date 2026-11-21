@@ -116,17 +116,15 @@ static Node *parse_bin(int minprec) {
         prec = precedence(op);
         if (prec < minprec) break;
         take_op(op);
-        if (op == 9) {                     /* right assoc */
-            Node *n = node(2);
+        {
+            Node *right = parse_bin(op == 9 ? prec : prec + 1);   /* 9 = right assoc */
+            Node *n;
+            if (!left || !right) return NULL;   /* a half-parsed expression is an error */
+            n = node(2);
+            if (!n) return NULL;
             n->op = op;
             n->a = left;
-            n->b = parse_bin(prec);
-            left = n;
-        } else {
-            Node *n = node(2);
-            n->op = op;
-            n->a = left;
-            n->b = parse_bin(prec + 1);
+            n->b = right;
             left = n;
         }
     }

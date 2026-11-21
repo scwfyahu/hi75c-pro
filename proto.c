@@ -36,15 +36,17 @@ static int frame_ok(const unsigned char *buf) {
     return buf[RPT_LEN - 1] == (unsigned char)(sum & 0xff);
 }
 
-static int await_echo(Link *l, int cmd, int index, int timeout_ms) {
+static int await_echo(Link *l, const unsigned char *sent, int timeout_ms) {
     unsigned char buf[64];
     int waited = 0;
     while (waited < timeout_ms) {
         int n = l->recv(l->ctx, buf, (int)sizeof(buf), 10);
         waited += 10;
         if (n < RPT_LEN || !frame_ok(buf)) continue;
-        if ((buf[1] & 0x3f) != (cmd & 0x3f)) continue;
-        if (buf[3] != (unsigned char)index) continue;
+        /* only the device echoing this exact packet counts as an acknowledgement:
+           matching cmd+index alone lets a stale or foreign frame advance the
+           transfer while the packet it supposedly confirms was never applied */
+        if (memcmp(buf, sent, RPT_LEN) != 0) continue;
         return 1;
     }
     return 0;
@@ -61,7 +63,7 @@ int p_write(Link *l, int cmd, int sub, const unsigned char *data, int len) {
         p_frame(f, cmd, sub, data ? data + off : 0, chunk, index, count);
         for (attempt = 0; attempt < 3 && !acked; attempt++) {
             if (!l->send(l->ctx, f, RPT_LEN)) return 0;
-            acked = await_echo(l, cmd, index, 350);
+            acked = await_echo(l, f, 350);
         }
         if (!acked) return 0;
         off += chunk;
@@ -86,11 +88,22 @@ int p_read(Link *l, int cmd, int sub, unsigned char *out, int want) {
         waited += 10;
         if (count > 0 && packets >= count) break;
         if (n < RPT_LEN || !frame_ok(buf)) continue;     /* checksum before trust */
-        if ((buf[1] & 0x3f) != (cmd & 0x3f) || (buf[2] & 0x80)) continue;
+        /* exact command and the layer that was asked for: masking the command
+           let a write-ACK satisfy a read, and ignoring the layer let a base-layer
+           reply be installed as the FN layer */
+        if (buf[1] != (unsigned char)cmd) continue;
+        if ((buf[4] >> 4) != (sub & 0x0f)) continue;
         {
-            int len = buf[4] & 0x0f, idx = buf[3], at = idx * 14;
-            count = buf[2];
+            int len = buf[4] & 0x0f, idx = buf[3], at = idx * 14, c = buf[2];
+            /* validate the frame before its count is allowed to size the transfer */
+            if (c < 1 || c > 127) continue;
             if (len > 14 || idx >= 128 || at + len > want) continue;
+            if (count < 0) {
+                count = c;
+                /* the device must say how many packets the whole blob needs; a
+                   reply that cannot cover the request is a failed read */
+                if (count * 14 < want) return 0;
+            } else if (c != count) continue;
             if (!seen[idx]) {
                 memcpy(out + at, buf + 5, (size_t)len);
                 seen[idx] = 1;

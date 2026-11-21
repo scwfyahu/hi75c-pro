@@ -538,9 +538,9 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     int i;
     /* the legend has to scale with the cap, or text overflows the key when the
        board is drawn small */
-    float legendPx = s * 0.30f;
+    float legendPx = s * 0.22f;
     if (legendPx < 6.0f) legendPx = 6.0f;
-    if (legendPx > 13.0f) legendPx = 13.0f;
+    if (legendPx > 10.5f) legendPx = 10.5f;
     Font key(g_face, legendPx, FontStyleRegular, UnitPixel);
     SolidBrush textbrush(dim);
     for (i = 0; i < KEY_COUNT; i++) {
@@ -621,7 +621,7 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
             c.SetTrimming(StringTrimmingEllipsisCharacter);
             {
                 const char *text = KEYS[i].label;
-                float room = (k.Width - 6.0f) / (legendPx * 0.58f);   /* chars that fit */
+                float room = (k.Width - 6.0f) / (legendPx * 0.50f);   /* chars that fit */
                 if ((float)strlen(text) > room) text = short_label(text);
                 {
                     wchar_t lbl[32];
@@ -1313,9 +1313,9 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
         FontFamily probe(L"Segoe UI");
         g_face = (probe.GetLastStatus() == Ok) ? L"Segoe UI" : L"Tahoma";
     }
+    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     app_init();
     /* the update probe is deferred until after the first paint */
-    PostMessageW(g_hwnd, WM_APP + 1, 0, 0);
 
     memset(&wc, 0, sizeof(wc));
     wc.lpfnWndProc = proc;
@@ -1387,6 +1387,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     dark_title_bar(g_hwnd);
     app_pump(g_hwnd);
     app_cleanup_old_binary();
+    PostMessageW(g_hwnd, WM_APP + 1, 0, 0);   /* window exists now; the check can report back */
     SetTimer(g_hwnd, 1, 66, NULL);   /* ~15 fps preview */
     {
         char ms[16];

@@ -20,14 +20,18 @@ static HANDLE g_stop_event;
 static signed char g_sin[256];
 
 static void build_sin(void) {
-    /* Taylor-free: y = sin via a small polynomial, scaled to -127..127 */
+    /* sin(a) ~ (4/pi)*a - (4/pi^2)*a*|a| on [-pi, pi], scaled to -127..127.
+       The constants matter: using pi/4 and 1/(2pi) here produced a 227-step
+       jump at the zero crossing, which made the board strobe instead of fade. */
+    const double PI = 3.14159265358979323846;
+    const double K1 = 1.2732395447351627;   /* 4/pi     */
+    const double K2 = 0.4052847345693511;   /* 4/pi^2   */
     int i;
     for (i = 0; i < 256; i++) {
-        double a = (double)i * 6.283185307179586 / 256.0;
-        /* use a cheap approximation: sin(a) ~ 4/pi * a - 4/pi^2 * a*|a| on [-pi,pi] */
-        double x = a > 3.14159265 ? a - 6.283185307179586 : a;
-        double y = 0.7853981634 * x - 0.125 * x * (x < 0 ? -x : x) * 1.27323954;
-        int v = (int)(y * 127.0);
+        double a = (double)i * 2.0 * PI / 256.0;
+        double x = a > PI ? a - 2.0 * PI : a;
+        double y = K1 * x - K2 * x * (x < 0 ? -x : x);
+        int v = (int)(y * 127.0 + (y < 0 ? -0.5 : 0.5));
         if (v > 127) v = 127;
         if (v < -127) v = -127;
         g_sin[i] = (signed char)v;
@@ -125,6 +129,7 @@ static int send_profile(void) {
             DWORD got = 0;
             OVERLAPPED ov;
             int waited = 0;
+            memset(&ov, 0, sizeof(ov));
             if (!send_frame(f)) return 0;
             /* the board echoes each packet; wait briefly for it */
             while (waited < 60) {
