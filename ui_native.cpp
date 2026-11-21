@@ -353,6 +353,21 @@ static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top,
              RectF(card.X + 120, card.Y + 16, 420, 18), 10.5f, Color(255, 96, 106, 124),
              StringAlignmentNear);
         {
+            /* the layer being remapped matters as much here as on the board */
+            int layer = app_layer();
+            RectF track(card.X + card.Width - 162, card.Y + 10, 148, 30);
+            fill_round(g, track, 9.0f, Color(255, 18, 20, 26));
+            stroke_round(g, track, 9.0f, line, 1.0f);
+            RectF lb(card.X + card.Width - 159, card.Y + 13, 70, 24);
+            RectF lf(card.X + card.Width - 85, card.Y + 13, 68, 24);
+            if (layer == 0) fill_round(g, lb, 7.0f, Color(255, 22, 35, 61));
+            else fill_round(g, lf, 7.0f, Color(255, 22, 35, 61));
+            text(g, "Base", lb, 11.5f, layer == 0 ? ink : dim, StringAlignmentCenter);
+            text(g, "FN", lf, 11.5f, layer == 1 ? ink : dim, StringAlignmentCenter);
+            add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
+            add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
+        }
+        {
             float availW = card.Width - 44;
             float wantH = availW * (BOARD_HEIGHT / BOARD_WIDTH);
             float availH = card.Height - 132;
@@ -416,6 +431,29 @@ static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top,
             }
             text(g, info, RectF(card.X + 22, card.Y + card.Height - 58, card.Width - 44, 20),
                  12.0f, ink, StringAlignmentNear);
+
+            /* the hex-code workflow needs somewhere to look the codes up */
+            {
+                RectF ref(card.X + 22, card.Y + card.Height - 152, card.Width - 44, 78.0f);
+                fill_round(g, ref, 12.0f, Color(255, 19, 21, 27));
+                stroke_round(g, ref, 12.0f, Color(255, 30, 34, 42), 1.0f);
+                text(g, "COMMON USAGE CODES", RectF(ref.X + 16, ref.Y + 10, 260, 16), 9.5f,
+                     Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+                {
+                    const char *codes[2][6] = {
+                        {"0x04 A", "0x05 B", "0x28 Enter", "0x29 Esc", "0x2c Space", "0xe0 LCtrl"},
+                        {"0x06 C", "0x07 D", "0x2b Tab", "0x4f Right", "0x50 Left", "0x52 Up"}
+                    };
+                    int r2, c2;
+                    for (r2 = 0; r2 < 2; r2++) {
+                        for (c2 = 0; c2 < 6; c2++) {
+                            float x2 = ref.X + 16 + c2 * ((ref.Width - 32) / 6.0f);
+                            text(g, codes[r2][c2], RectF(x2, ref.Y + 30 + r2 * 22, 120, 18), 11.0f,
+                                 r2 ? Color(255, 120, 128, 144) : dim, StringAlignmentNear);
+                        }
+                    }
+                }
+            }
         }
     } else {
         text(g, "ABOUT", RectF(card.X + 22, card.Y + 16, 200, 18), 10.5f, dim,
