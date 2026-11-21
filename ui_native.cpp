@@ -655,9 +655,15 @@ static void paint(HWND hwnd) {
                 RectF b2((REAL)(cc.X + 22 + k * 38), cc.Y + 44, 32.0f, 32.0f);
                 fill_round(&g, b2, 9.0f, sw[k]);
                 if (app_state()->colour == k) {
-                    stroke_round(&g, b2, 9.0f, Color(255, 255, 255, 255), 2.0f);
+                    RectF ring2(b2.X - 3, b2.Y - 3, b2.Width + 6, b2.Height + 6);
+                    stroke_round(&g, ring2, 12.0f, Color(255, 255, 255, 255), 1.6f);
+                    /* tick mark so the choice is unambiguous at a glance */
+                    Pen tick(Color(255, 18, 20, 26), 2.2f);
+                    g.DrawLine(&tick, PointF(b2.X + 10, b2.Y + 16.5f), PointF(b2.X + 14.5f, b2.Y + 21));
+                    g.DrawLine(&tick, PointF(b2.X + 14.5f, b2.Y + 21), PointF(b2.X + 22, b2.Y + 11.5f));
                 } else {
-                    stroke_round(&g, b2, 9.0f, Color(60, 255, 255, 255), 1.0f);
+                    stroke_round(&g, b2, 9.0f, g_hover == 200 + k ? Color(120, 255, 255, 255)
+                                                                : Color(50, 255, 255, 255), 1.0f);
                 }
                 add_hot((int)b2.X, (int)b2.Y, (int)b2.Width, (int)b2.Height, 200 + k, "swatch");
             }
