@@ -43,10 +43,15 @@ static int await_echo(Link *l, const unsigned char *sent, int timeout_ms) {
         int n = l->recv(l->ctx, buf, (int)sizeof(buf), 10);
         waited += 10;
         if (n < RPT_LEN || !frame_ok(buf)) continue;
-        /* only the device echoing this exact packet counts as an acknowledgement:
-           matching cmd+index alone lets a stale or foreign frame advance the
-           transfer while the packet it supposedly confirms was never applied */
-        if (memcmp(buf, sent, RPT_LEN) != 0) continue;
+        /* The keyboard acknowledges a packet by returning a frame with the same
+           command, count, index and sub/length nibble. It does NOT necessarily
+           repeat the payload byte-for-byte (some firmware echoes, some answers
+           with a status frame), so requiring a full memcmp rejected every write
+           on real hardware while passing against the simulated device. */
+        if (buf[1] != sent[1]) continue;
+        if (buf[3] != sent[3]) continue;
+        if (buf[2] != sent[2]) continue;
+        if (buf[4] != sent[4]) continue;
         return 1;
     }
     return 0;

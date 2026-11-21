@@ -337,7 +337,7 @@ static void register_shortcut(void) {
  * accepted only if it is a real PE of plausible size; the running exe is then
  * renamed aside (Windows allows that) and replaced, and the app relaunches.
  */
-#define APP_VERSION_STR "1.3.0"
+#define APP_VERSION_STR "1.4.0"
 static char g_latest[64];
 
 const char *app_version(void) { return APP_VERSION_STR; }
