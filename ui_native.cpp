@@ -182,6 +182,7 @@ static Color preview_colour(int i, float x, float y)
         default: break;                                    /* solid accent */
     }
     r *= lv; g *= lv; b *= lv;
+    if (!app_connected() && fx != 0) { r *= 0.42; g *= 0.42; b *= 0.42; }
     if (r < 0) r = 0; if (r > 255) r = 255;
     if (g < 0) g = 0; if (g > 255) g = 255;
     if (b < 0) b = 0; if (b > 255) b = 255;
@@ -538,6 +539,11 @@ static void paint(HWND hwnd) {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(kb.X + 22), kb.Y + 17, 3.0f, 12.0f);
                 text(&g, "BOARD", RectF(kb.X + 32, kb.Y + 16, 200, 18), 10.5f, dim, StringAlignmentNear, NULL, true);
+            if (!app_connected()) {
+                RectF hint(kb.X + 84, kb.Y + 16, 320, 18);
+                text(&g, "preview only \xE2\x80\x94 no keyboard attached",
+                     hint, 10.5f, Color(255, 120, 126, 140), StringAlignmentNear);
+            }
             }
 
             /* layer switch, top right of the card */
