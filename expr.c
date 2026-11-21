@@ -29,6 +29,31 @@ static Node *node(int kind) {
     return n;
 }
 
+
+/* arity of each callable name: a wrong count used to be filled with zeros and
+   silently change the result (clamp(5) made every key black) */
+
+/* only these names are variables; anything else is a typo that used to
+   evaluate to 0 and silently change the result */
+static int is_variable(const char *n) {
+    return !strcmp(n, "t") || !strcmp(n, "x") || !strcmp(n, "y") ||
+           !strcmp(n, "i") || !strcmp(n, "n") || !strcmp(n, "pi") ||
+           !strcmp(n, "tau") || !strcmp(n, "e");
+}
+
+static int arity_of(const char *name) {
+    static const struct { const char *n; int a; } fns[] = {
+        {"sin",1},{"cos",1},{"tan",1},{"abs",1},{"floor",1},{"ceil",1},
+        {"round",1},{"sqrt",1},{"log",1},{"exp",1},{"fract",1},{"tri",1},
+        {"pow",2},{"min",2},{"max",2},{"mod",2},{"step",2},
+        {"clamp",3},{"mix",3},{"smoothstep",3}
+    };
+    int i;
+    for (i = 0; i < (int)(sizeof(fns)/sizeof(fns[0])); i++)
+        if (!strcmp(name, fns[i].n)) return fns[i].a;
+    return -1;                       /* unknown name */
+}
+
 static Node *parse_primary(void) {
     skip();
     if (*P == '(') {
@@ -68,22 +93,34 @@ static Node *parse_primary(void) {
         skip();
         if (*P == '(') {
             Node *n = node(4);
+            int argc;
             if (!n) return NULL;
             strncpy(n->name, name, 15);
             P++;
             skip();
+            argc = 0;
             if (*P != ')') {                 /* a call needs its closing paren */
                 n->a = parse_expr();
+                argc = 1;
                 skip();
-                if (*P == ',') { P++; skip(); n->b = parse_expr(); skip(); }
-                if (*P == ',') { P++; skip(); n->c = parse_expr(); skip(); }
+                if (*P == ',') { P++; skip(); n->b = parse_expr(); argc = 2; skip(); }
+                if (*P == ',') { P++; skip(); n->c = parse_expr(); argc = 3; skip(); }
             }
             if (*P != ')') return NULL;
             P++;
+            {
+                int want = arity_of(name);
+                if (want < 0) return NULL;              /* unknown function */
+                if (want != argc) return NULL;          /* wrong argument count */
+            }
+            if (!n->a) return NULL;
             return n;
         }
         {
-            Node *n = node(1);
+            Node *n;
+            if (!is_variable(name)) return NULL;   /* unknown name, not a variable */
+            n = node(1);
+            if (!n) return NULL;
             strncpy(n->name, name, 15);
             return n;
         }

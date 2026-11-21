@@ -32,6 +32,10 @@ step "expression rejection suite (malformed formulas must not silently evaluate)
 run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/rejects tests/expr_reject_test.c expr.c -lm
 run /tmp/rejects
 
+step "function arity and name resolution (typos must not evaluate)"
+run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/arity tests/expr_arity_test.c expr.c -lm
+run /tmp/arity
+
 step "shipped self-test — the binary users actually run"
 run /tmp/wine/bin/wine64 ./Hi75CPro.exe --selftest
 
