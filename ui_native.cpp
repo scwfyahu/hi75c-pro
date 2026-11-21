@@ -307,6 +307,27 @@ static void card_skin(Graphics *g, GraphicsPath *path, const RectF &r,
                       const Color &top, const Color &bot, const Color &line);
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim);
 
+
+/* the fonts here have no U+00B7, so separators are drawn rather than typed:
+   this keeps the template's "a · b · c" rhythm without substituting symbols */
+static float measure(Graphics *g, const char *s, float size, const wchar_t *face = NULL) {
+    wchar_t w[256];
+    Font f(face ? face : g_face, size, FontStyleRegular, UnitPixel);
+    MultiByteToWideChar(CP_UTF8, 0, s, -1, w, 256);
+    RectF box;
+    g->MeasureString(w, -1, &f, PointF(0, 0), &box);
+    return box.Width;
+}
+
+static void text_dot(Graphics *g, const char *s, float *x, float y, float size,
+                     const Color &c, const Color &dotc) {
+    text(g, s, RectF(*x, y, 260.0f, 18.0f), size, c, StringAlignmentNear);
+    *x += measure(g, s, size) + 8.0f;
+    SolidBrush b(dotc);
+    g->FillEllipse(&b, *x, y + size * 0.42f, 3.0f, 3.0f);
+    *x += 11.0f;
+}
+
 static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
                       const Color &ink, const Color &dim, const Color &faint) {
     SolidBrush bg(Color(255, 10, 11, 13));
@@ -365,8 +386,12 @@ static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
         text(g, app_connected() ? "Connected" : "Not connected",
              RectF(36, (REAL)(top + 11), 120, 18), 11.0f,
              app_connected() ? C_OK : faint, StringAlignmentNear);
-        text(g, "USB-C   /   2.4 GHz", RectF(24, (REAL)(top + 32), 150, 16), 10.0f, faint,
-             StringAlignmentNear);
+        {
+            float x = 24.0f;
+            text_dot(g, "USB-C", &x, (float)(top + 32), 10.0f, faint, Color(255, 70, 76, 88));
+            text(g, "2.4 GHz", RectF(x, (REAL)(top + 32), 120.0f, 16.0f), 10.0f, faint,
+                 StringAlignmentNear);
+        }
         {
             char v[32];
             snprintf(v, sizeof(v), "firmware %s", app_version());
@@ -1041,15 +1066,23 @@ static void paint(HWND hwnd) {
                     g.FillEllipse(&dot, (REAL)(ec.X + 22), (REAL)(sy + 15), 7.0f, 7.0f);
                 }
                 {
-                    char run[220];
+                    float x = ec.X + 38.0f, ty2 = (float)(sy + 10);
+                    char buf[64];
                     int i2, found = -1;
+                    Color sep(255, 82, 88, 102);
                     for (i2 = 0; i2 < app_effect_count(); i2++)
                         if (app_effect_id(i2) == app_state()->effect) found = i2;
-                    snprintf(run, sizeof(run), "RUNNING    %s    |    colour %d/7    |    brightness %d%%    |    speed %dx",
-                             found >= 0 ? app_effect_name(found) : "Off",
-                             app_state()->colour + 1, (app_state()->brightness + 1) * 10,
-                             app_state()->speed + 1);
-                    text(&g, run, RectF(ec.X + 38, (REAL)(sy + 10), ec.Width - 260, 20), 11.0f, ink,
+                    text(&g, "RUNNING", RectF(x, ty2, 90, 20), 9.0f, Color(255, 110, 120, 138),
+                         StringAlignmentNear, NULL, true);
+                    x += 74.0f;
+                    text_dot(&g, found >= 0 ? app_effect_name(found) : "Off", &x, ty2, 11.0f,
+                             Color(255, 240, 242, 246), sep);
+                    snprintf(buf, sizeof(buf), "colour %d/7", app_state()->colour + 1);
+                    text_dot(&g, buf, &x, ty2, 11.0f, Color(255, 176, 183, 196), sep);
+                    snprintf(buf, sizeof(buf), "brightness %d%%", (app_state()->brightness + 1) * 10);
+                    text_dot(&g, buf, &x, ty2, 11.0f, Color(255, 176, 183, 196), sep);
+                    snprintf(buf, sizeof(buf), "speed %dx", app_state()->speed + 1);
+                    text(&g, buf, RectF(x, ty2, 120, 20), 11.0f, Color(255, 176, 183, 196),
                          StringAlignmentNear);
                 }
                 text(&g, app_connected() ? "written to board" : "preview only",
