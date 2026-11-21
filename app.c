@@ -219,11 +219,11 @@ static void device_lost(void) {
     g_state.connected = 0;
 }
 
-static void apply_effect(void) {
+static int apply_effect(void) {
     unsigned char cfg[CFG_LEN];
     int id = g_state.effect;
 
-    if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return; }
+    if (!device_open()) { strcpy(g_state.note, "keyboard not found"); return 0; }
     if (id == 0) {
         unsigned char off[3] = {0, 0, 0};
         unsigned char f[RPT_LEN];
@@ -235,37 +235,38 @@ static void apply_effect(void) {
             if (!sent) {                 /* the write result was being discarded */
                 device_lost();
                 strcpy(g_state.note, "could not switch the lighting off");
-                return;
+                return 0;
             }
         }
         strcpy(g_state.note, "lighting off");
-        return;
+        return 0;
     }
     hid_enter();
     if (!p_read(dev(), 0x44, 0, cfg, CFG_LEN)) {
         hid_leave();
         device_lost();
         strcpy(g_state.note, "could not read the keyboard settings");
-        return;
+        return 0;
     }
     hid_leave();
     if (cfg[CFG_MAGIC0] != 0x5a || cfg[CFG_MAGIC1] != 0xa5) {
         strcpy(g_state.note, "unexpected settings - press Restore");
-        return;
+        return 0;
     }
     if (!p_set_effect(cfg, id, g_state.colour, g_state.brightness, g_state.speed)) {
         strcpy(g_state.note, "effect id out of range");
-        return;
+        return 0;
     }
     hid_enter();
     if (!p_write(dev(), 0x04, 0, cfg, CFG_LEN)) {
         hid_leave();
         device_lost();
         strcpy(g_state.note, "the keyboard did not accept the settings");
-        return;
+        return 0;
     }
     hid_leave();
     g_state.note[0] = 0;
+    return 1;
 }
 
 static unsigned char g_map_cache[KEYMAP_LEN];
@@ -926,10 +927,14 @@ static DWORD WINAPI worker_main(LPVOID unused) {
             if (!have) break;
             if (InterlockedCompareExchange(&g_worker_stop, 0, 0)) return 0;
             switch (r.kind) {
-                case 1: g_state.effect = r.a; apply_effect(); break;
-                case 2: g_state.colour = r.a; apply_effect(); break;
-                case 3: g_state.brightness = r.a; apply_effect(); break;
-                case 4: g_state.speed = r.a; apply_effect(); break;
+                case 1: { int old = g_state.effect; g_state.effect = r.a;
+                          if (!apply_effect()) g_state.effect = old; } break;
+                case 2: { int old = g_state.colour; g_state.colour = r.a;
+                          if (!apply_effect()) g_state.colour = old; } break;
+                case 3: { int old = g_state.brightness; g_state.brightness = r.a;
+                          if (!apply_effect()) g_state.brightness = old; } break;
+                case 4: { int old = g_state.speed; g_state.speed = r.a;
+                          if (!apply_effect()) g_state.speed = old; } break;
                 case 5: g_map_valid = 0; restore_keymap(); break;
                 case 7: keymap_load(); break;
                 case 9:   /* download + swap off the UI thread */
