@@ -46,6 +46,30 @@ static const Color SWATCH[7] = {
     Color(255, 0xB8, 0x33, 0xFF)
 };   /* Segoe UI where it exists */
 static int g_hover = -1, g_press = -1;
+static int g_hover_prev = -1;
+static ULONGLONG g_anim_t0 = 0;
+static const ULONGLONG ANIM_MS = 155;      /* the template's 150-160ms */
+
+static float anim_t(void) {
+    ULONGLONG d;
+    if (!g_anim_t0) return 1.0f;
+    d = GetTickCount64() - g_anim_t0;
+    return d >= ANIM_MS ? 1.0f : (float)d / (float)ANIM_MS;
+}
+static float hover_amount(int id) {
+    float t = anim_t();
+    if (g_hover == id) return t;
+    if (g_hover_prev == id) return 1.0f - t;
+    return 0.0f;
+}
+static Color mixc(const Color &a, const Color &b, float t) {
+    if (t <= 0.0f) return a;
+    if (t >= 1.0f) return b;
+    return Color(255,
+                 (BYTE)(a.GetR() + (b.GetR() - a.GetR()) * t),
+                 (BYTE)(a.GetG() + (b.GetG() - a.GetG()) * t),
+                 (BYTE)(a.GetB() + (b.GetB() - a.GetB()) * t));
+}
 static FILE *g_dbg;
 static void dbg(const char *fmt, ...) {
     va_list ap;
@@ -838,8 +862,8 @@ static void paint(HWND hwnd) {
                 for (j = 0; j < 3; j++) {
                     RectF b((REAL)(rc.right - pad - 200 - (3 - j) * (bwid + 8)), 30.0f,
                             (REAL)bwid, 30.0f);
-                    fill_round(&g, b, 9.0f, g_hover == ids[j] ? Color(255, 36, 40, 50)
-                                                              : Color(255, 24, 27, 34));
+                    fill_round(&g, b, 9.0f, mixc(Color(255, 24, 27, 34),
+                                                 Color(255, 36, 40, 50), hover_amount(ids[j])));
                     stroke_round(&g, b, 9.0f, lineSoft, 1.0f);
                     text(&g, names[j], b, 11.0f, ink, StringAlignmentCenter);
                     add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
@@ -969,8 +993,8 @@ static void paint(HWND hwnd) {
                 int active = (app_state()->effect == app_effect_id(i));
                 RectF btn((REAL)bx, (REAL)by, (REAL)bw, (REAL)bh);
                 fill_round(&g, btn, 9.0f, active ? Color(255, 40, 45, 56)
-                                        : (g_hover == id ? Color(255, 33, 37, 46)
-                                                         : Color(255, 24, 27, 34)));
+                                        : mixc(Color(255, 24, 27, 34),
+                                               Color(255, 33, 37, 46), hover_amount(id)));
                 stroke_round(&g, btn, 9.0f, active ? Color(80, 255, 255, 255) : lineSoft, 1.0f);
 
                 text(&g, app_effect_name(i), RectF(btn.X + 8, btn.Y + 6, btn.Width - 16, 16),
@@ -1049,7 +1073,7 @@ static void paint(HWND hwnd) {
                          Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
                     for (j = 0; j < 3; j++) {
                         RectF b((REAL)(rx + j * (bw3 + 8)), (REAL)py, (REAL)bw3, 30.0f);
-                        fill_round(&g, b, 9.0f, g_hover == 600 + j ? Color(255, 36, 40, 50) : Color(255, 24, 27, 34));
+                        fill_round(&g, b, 9.0f, mixc(Color(255, 24, 27, 34), Color(255, 36, 40, 50), hover_amount(600 + j)));
                         stroke_round(&g, b, 9.0f, lineSoft, 1.0f);
                         text(&g, j == 0 ? "Warm" : (j == 1 ? "Cool" : "Off"), b, 11.0f, ink,
                              StringAlignmentCenter);
@@ -1164,7 +1188,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         case WM_MOUSEMOVE:
             {
                 int id = hit((int)(short)LOWORD(l), (int)(short)HIWORD(l));
-                if (id != g_hover) { g_hover = id; SetCursor(LoadCursor(NULL, id == -1 ? IDC_ARROW : IDC_HAND)); InvalidateRect(h, NULL, FALSE); }
+                if (id != g_hover) { g_hover_prev = g_hover; g_hover = id; g_anim_t0 = GetTickCount64(); SetTimer(h, 1, 16, NULL); SetCursor(LoadCursor(NULL, id == -1 ? IDC_ARROW : IDC_HAND)); InvalidateRect(h, NULL, FALSE); }
                 if (g_press == 300) app_set_brightness(slider_value(300, (int)(short)LOWORD(l)));
                 if (g_press == 301) app_set_speed(slider_value(301, (int)(short)LOWORD(l)));
             }
@@ -1277,6 +1301,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
             }
             return 0;
         case WM_TIMER:
+            if (anim_t() >= 1.0f) { KillTimer(h, 1); g_anim_t0 = 0; g_hover_prev = -1; }
             if (w == 1) {
                 /* nothing to show while minimised; repainting 15 times a second
                    for an invisible window is pure waste */

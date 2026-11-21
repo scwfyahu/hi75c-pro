@@ -46,7 +46,8 @@ def main() -> int:
 
     print("app (C)", flush=True)
     run(BASE + ["-c", str(HERE / "app.c"), "-o", "/tmp/build_app.o"], "app.c")
-    run(BASE + ["-c", str(HERE / "proto.c"), "-o", "/tmp/build_proto.o, "verify.c""], "proto.c")
+    run(BASE + ["-c", str(HERE / "proto.c"), "-o", "/tmp/build_proto.o"], "proto.c")
+    run(BASE + ["-c", str(HERE / "verify.c"), "-o", "/tmp/build_verify.o"], "verify.c")
     run(BASE + ["-c", str(HERE / "expr.c"), "-o", "/tmp/build_expr.o"], "expr.c")
     print("ui (C++)", flush=True)
     run([ZIG, "c++", "-target", TARGET, "-Os", "-I", str(HERE), "-fno-exceptions",
@@ -54,7 +55,7 @@ def main() -> int:
     print("link", flush=True)
     run([ZIG, "c++", "-target", TARGET, "-Os", "-s", "-Wl,--subsystem,windows",
          "-o", str(gui), "/tmp/build_app.o", "/tmp/build_proto.o", "/tmp/build_ui.o",
-         "/tmp/build_expr.o", "-fno-exceptions"] + GUI_LIBS, "Hi75CPro.exe")
+         "/tmp/build_expr.o", "/tmp/build_verify.o", "-fno-exceptions"] + GUI_LIBS, "Hi75CPro.exe")
 
     print("installer", flush=True)
     setup = HERE / "Hi75CPro-Setup.exe"
