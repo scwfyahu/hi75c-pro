@@ -799,6 +799,7 @@ static void enqueue(int kind, int a, int b, int c);
 static Req g_q[64];
 static int g_q_head, g_q_tail;
 static HANDLE g_wake, g_worker;
+static volatile LONG g_worker_stop;
 static HWND g_notify;
 static CRITICAL_SECTION g_q_lock;
 
@@ -832,6 +833,7 @@ static DWORD WINAPI worker_main(LPVOID unused) {
         Req r;
         int have = 0;
         WaitForSingleObject(g_wake, INFINITE);
+        if (InterlockedCompareExchange(&g_worker_stop, 0, 0)) break;
         for (;;) {
             EnterCriticalSection(&g_q_lock);
             if (g_q_head != g_q_tail) {
@@ -843,6 +845,7 @@ static DWORD WINAPI worker_main(LPVOID unused) {
             }
             LeaveCriticalSection(&g_q_lock);
             if (!have) break;
+            if (InterlockedCompareExchange(&g_worker_stop, 0, 0)) return 0;
             switch (r.kind) {
                 case 1: g_state.effect = r.a; apply_effect(); break;
                 case 2: g_state.colour = r.a; apply_effect(); break;
@@ -913,6 +916,22 @@ void app_cleanup_old_binary(void) {
 }
 
 void app_shutdown(void) {
+    /* stop the queue first: a worker killed mid-write would leave the keyboard
+       holding half a profile, and it can reopen the handle after we close it */
+    InterlockedExchange(&g_worker_stop, 1);
+    if (g_wake) SetEvent(g_wake);
+    if (g_worker) {
+        if (WaitForSingleObject(g_worker, 2500) == WAIT_OBJECT_0) {
+            CloseHandle(g_worker);
+            g_worker = NULL;
+        }
+    }
+    app_request_stop_effect();
+    if (g_fx_thread) {
+        WaitForSingleObject(g_fx_thread, 1500);
+        CloseHandle(g_fx_thread);
+        g_fx_thread = NULL;
+    }
     hid_enter();
     if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
     hid_leave();
