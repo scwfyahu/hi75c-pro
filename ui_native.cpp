@@ -25,24 +25,25 @@ static HWND g_hwnd;
 static const wchar_t *g_face = L"Tahoma";
 
 /* ---- design tokens: near-black canvas, one accent, hierarchy by weight ---- */
-static const Color C_CANVAS_TOP(255, 13, 14, 18);
-static const Color C_CANVAS_BOT(255, 8, 9, 12);
-static const Color C_SURFACE_TOP(255, 22, 24, 31);
-static const Color C_SURFACE_BOT(255, 17, 19, 24);
-static const Color C_HAIRLINE(255, 40, 44, 54);
-static const Color C_HAIRLINE_SOFT(255, 30, 33, 41);
-static const Color C_INK(255, 236, 238, 242);
-static const Color C_INK_2(255, 155, 161, 174);
-static const Color C_INK_3(255, 110, 116, 128);
+static const Color C_CANVAS_TOP(255, 0x08, 0x09, 0x0A);
+static const Color C_CANVAS_BOT(255, 0x06, 0x07, 0x08);
+static const Color C_SURFACE_TOP(255, 0x0D, 0x0E, 0x10);
+static const Color C_SURFACE_BOT(255, 0x0B, 0x0C, 0x0E);
+static const Color C_HAIRLINE(255, 0x1A, 0x1C, 0x1F);
+static const Color C_HAIRLINE_SOFT(255, 0x15, 0x17, 0x1A);
+static const Color C_INK(255, 0xEC, 0xED, 0xEF);
+static const Color C_INK_2(255, 0x9A, 0x9D, 0xA3);
+static const Color C_INK_3(255, 0x6A, 0x6E, 0x75);
 static const Color C_ACCENT(255, 91, 140, 255);
 static const Color C_ACCENT_DIM(255, 22, 35, 61);
 static const Color C_OK(255, 62, 207, 142);
 static const Color C_BAD(255, 240, 104, 92);
 
+/* the template's palette, verbatim: #FF2B2B #FF8C1A #FFE11A #2EE65C #1AE5FF #2E6BFF #B833FF */
 static const Color SWATCH[7] = {
-    Color(255, 240, 104, 92), Color(255, 244, 176, 76), Color(255, 236, 216, 92),
-    Color(255, 96, 208, 138), Color(255, 88, 176, 244), Color(255, 138, 122, 246),
-    Color(255, 236, 122, 198)
+    Color(255, 0xFF, 0x2B, 0x2B), Color(255, 0xFF, 0x8C, 0x1A), Color(255, 0xFF, 0xE1, 0x1A),
+    Color(255, 0x2E, 0xE6, 0x5C), Color(255, 0x1A, 0xE5, 0xFF), Color(255, 0x2E, 0x6B, 0xFF),
+    Color(255, 0xB8, 0x33, 0xFF)
 };   /* Segoe UI where it exists */
 static int g_hover = -1, g_press = -1;
 static FILE *g_dbg;
@@ -791,14 +792,6 @@ static void paint(HWND hwnd) {
             int nEdge = 1;
             vg.SetSurroundColors(edgeC, &nEdge);
             g.FillRectangle(&vg, 0, 0, rc.right, rc.bottom);
-        }
-        {
-            Color c = SWATCH[(app_state()->colour >= 0 && app_state()->colour < 7)
-                             ? app_state()->colour : 4];
-            LinearGradientBrush wash(PointF(0, 0), PointF((REAL)rc.right, (REAL)rc.bottom),
-                                     Color(26, c.GetR(), c.GetG(), c.GetB()),
-                                     Color(0, 0, 0, 0));
-            g.FillRectangle(&wash, 0, 0, rc.right, rc.bottom);
         }
 
         if (g_dbg) dbg("paint %dx%d scale %.3f", rc.right, rc.bottom, g_scale);

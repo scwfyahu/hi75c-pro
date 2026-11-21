@@ -67,7 +67,7 @@ typedef struct {
 } State;
 
 static AppState g_state_real;
-static State g_state = {0, 1, 0, 9, 1, 0, 113, 227, ""};
+static State g_state = {0, 2, 1, 6, 1, 255, 0x8C, 0x1A, ""};
 static volatile LONG g_shutting_down;
 static CRITICAL_SECTION g_lock;
 
