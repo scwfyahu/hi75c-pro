@@ -360,9 +360,8 @@ static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
             int top = 98 + i * 36;
             RectF it(10, (REAL)top, (REAL)(w - 20), 32.0f);
             if (g_page == i) {
-                fill_round(g, it, 9.0f, Color(255, 23, 26, 33));
-                SolidBrush bar(accent);
-                g->FillRectangle(&bar, 10.0f, (REAL)top + 8, 3.0f, 16.0f);
+                fill_round(g, it, 9.0f, Color(255, 0x14, 0x15, 0x19));
+                stroke_round(g, it, 9.0f, Color(255, 0x1A, 0x1C, 0x1F), 1.0f);
             }
             icon(g, glyph[i], 22, (REAL)top + 9, g_page == i ? ink : faint);
             text(g, names[i], RectF(44, (REAL)top, 96, 32), 12.0f,
@@ -814,7 +813,7 @@ static void paint(HWND hwnd) {
         /* ---------------- header ---------------- */
         {
             RectF title((REAL)cx, 22.0f, 400.0f, 30.0f);
-            text(&g, "LEOBOG Hi75C Pro", title, 25.0f, ink, StringAlignmentNear, NULL, true);
+            text(&g, "LEOBOG Hi75C Pro", title, 22.0f, ink, StringAlignmentNear, NULL, true);
             RectF sub((REAL)cx, 48.0f, 400.0f, 18.0f);
             char subtext[96];
             snprintf(subtext, sizeof(subtext), "%s   |   v%s",
@@ -963,15 +962,10 @@ static void paint(HWND hwnd) {
                                         : (g_hover == id ? Color(255, 33, 37, 46)
                                                          : Color(255, 24, 27, 34)));
                 stroke_round(&g, btn, 9.0f, active ? Color(80, 255, 255, 255) : lineSoft, 1.0f);
-                if (active) {
-                    Color tint = SWATCH[i % 7];
-                    icon(&g, effect_icon(i, app_effect_id(i)), btn.X + 10,
-                         btn.Y + btn.Height / 2 - 5, tint);
-                }
-                text(&g, app_effect_name(i), RectF(btn.X + (active ? 26 : 10), btn.Y,
-                                                   btn.Width - (active ? 32 : 16), btn.Height),
+
+                text(&g, app_effect_name(i), RectF(btn.X + 8, btn.Y, btn.Width - 16, btn.Height),
                      11.5f, active ? Color(255, 246, 247, 250) : dim,
-                     active ? StringAlignmentNear : StringAlignmentCenter, NULL, active);
+                     StringAlignmentCenter, NULL, active);
                 add_hot(bx, by, bw, bh, id, app_effect_name(i));
             }
 
@@ -987,8 +981,10 @@ static void paint(HWND hwnd) {
                     for (k = 0; k < 7; k++) {
                         RectF b2((REAL)(rx + k * 34), (REAL)(ry + 20), 28.0f, 28.0f);
                         fill_round(&g, b2, 8.0f, SWATCH[k]);
-                        if (app_state()->colour == k)
-                            stroke_round(&g, b2, 8.0f, Color(255, 255, 255, 255), 2.0f);
+                        if (app_state()->colour == k) {
+                            RectF ring(b2.X - 3.0f, b2.Y - 3.0f, b2.Width + 6.0f, b2.Height + 6.0f);
+                            stroke_round(&g, ring, 11.0f, Color(255, 236, 237, 239), 1.0f);
+                        }
                         else
                             stroke_round(&g, b2, 8.0f, g_hover == 200 + k ? Color(120,255,255,255)
                                                                           : Color(40,255,255,255), 1.0f);
