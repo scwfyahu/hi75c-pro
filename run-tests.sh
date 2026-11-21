@@ -46,8 +46,13 @@ print(f"exe        : {len(d):,} bytes")
 print(f"PE header  : {'ok' if d[:2]==b'MZ' else 'BAD'}   subsystem {struct.unpack_from('<H', d, pe+24+68)[0]} (2=GUI)")
 print(f"overlay    : {len(d)-end} bytes")
 print(f"sha256     : {hashlib.sha256(d).hexdigest()}")
-z = zipfile.ZipFile("/DATA/AppData/dsh-raw/home/Testing/hi75c/Hi75CPro.zip")
-print("zip holds  :", ", ".join(i.filename for i in z.infolist()))
+setup = "/DATA/AppData/dsh-raw/home/Testing/hi75c/Hi75CPro-Setup.exe"
+sd = open(setup, "rb").read()
+spe = struct.unpack_from("<I", sd, 0x3c)[0]
+print(f"setup      : {len(sd):,} bytes  PE {'ok' if sd[:2]==b'MZ' else 'BAD'}  sha256 {hashlib.sha256(sd).hexdigest()[:16]}")
+dmn = "/DATA/AppData/dsh-raw/home/Testing/hi75c/hi75c-daemon.exe"
+dd = open(dmn, "rb").read()
+print(f"daemon     : {len(dd):,} bytes  PE {'ok' if dd[:2]==b'MZ' else 'BAD'}  sha256 {hashlib.sha256(dd).hexdigest()[:16]}")
 PY
 
 printf "\nfinished %s\n" "$(date -Iseconds)" | tee -a "$LOG"
