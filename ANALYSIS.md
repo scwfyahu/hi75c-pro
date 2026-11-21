@@ -19,7 +19,7 @@ was captured from the virtual display with ImageMagick.
 
 | Metric | Value | Note |
 |---|---|---|
-| exe size | 153,600 bytes | native GDI+, no WebView2 |
+| exe size | 212,480 bytes | native GDI+, no WebView2 |
 | private working set under Wine | 24.1 MB | Wine inflates this; Windows not measurable here |
 | hard DLL dependencies | kernel32, user32, gdi32, gdiplus, ole32, shell32, advapi32, setupapi, hid | no browser loader |
 | frames per config write | 10 | each acknowledged by the device |

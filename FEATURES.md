@@ -5,7 +5,7 @@ Razer Synapse 4.
 
 | Feature | VIA/QMK | Vial | Wootility | Synapse | **This** |
 |---|---|---|---|---|---|
-| Runs with no install | web only | desktop app | web + app | installer | **single 178 KB exe** |
+| Runs with no install | web only | desktop app | web + app | installer | **single 212 KB exe** |
 | Key remap on a picture of the board | yes | yes | yes | yes | **yes** |
 | Layers editable | 4 dynamic | yes | yes | 5 onboard | **base + FN** |
 | Macros | yes | yes | limited | yes | **no** |
@@ -17,7 +17,7 @@ Razer Synapse 4.
 | Rapid trigger / SOCD | QMK only | limited | yes | Snap Tap | **hardware feature** |
 | Cloud account required | no | no | no | yes | **no** |
 | Telemetry | none | none | minimal | yes | **none** |
-| Update signature checked | n/a | n/a | no | no | **yes — RSA against a key in the binary** |
+| Update signature checked | n/a | n/a | no | no | **no — HTTPS + PE validation only** |
 | Runtime footprint | browser tab | ~100 MB | browser | 300 MB+ | **GUI 24 MB measured / daemon 34 KB on disk** |
 
 ## Where this is genuinely ahead
