@@ -94,6 +94,7 @@ static int download(const wchar_t *url, const wchar_t *dest) {
     wchar_t host[256], path[1024];
     HANDLE f;
     int ok = 0, copied = 0;
+    DWORD copy_error = 0;
     DWORD secure = 0;
 
     memset(&uc, 0, sizeof(uc));
@@ -303,10 +304,11 @@ static void register_uninstall(const wchar_t *exe) {
 
 int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     char *json; DWORD len = 0;
-    wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH];
+    wchar_t url[2048], dir[MAX_PATH], target[MAX_PATH], tmp[MAX_PATH + 32];
     wchar_t offline_src[MAX_PATH];
     offline_src[0] = 0;
     int ok = 0, copied = 0;
+    DWORD copy_error = 0;
     (void)i; (void)p; (void)show;
     g_silent = cmd && wcsstr(cmd, L"--silent");
     {
@@ -349,7 +351,13 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             }
         }
         CreateDirectoryW(dir, NULL);
-        _snwprintf(target, MAX_PATH, L"%s\\Hi75CPro.exe", dir);
+        if (_snwprintf(target, MAX_PATH, L"%s\\Hi75CPro.exe", dir) >= MAX_PATH) {
+            logf2("target too long");
+            if (!g_silent) MessageBoxW(NULL, L"That folder path is too long to install into.",
+                                       L"Hi75C Pro", MB_ICONERROR);
+            ok = 0;
+            goto finish;
+        }
         GetTempPathW(MAX_PATH, tmp);
         lstrcatW(tmp, L"hi75c-download.exe");
         logf2("target dir: %ls", dir);
@@ -412,6 +420,9 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         }
     }
     logf2("result    : %s", ok ? "installed" : "FAILED");
+    if (g_log) { fclose(g_log); g_log = NULL; }
+
+finish:
     if (g_log) { fclose(g_log); g_log = NULL; }
     free(json);
     if (g_silent) return ok ? 0 : 2;

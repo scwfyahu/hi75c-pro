@@ -74,12 +74,13 @@ int p_write(Link *l, int cmd, int sub, const unsigned char *data, int len) {
 }
 
 int p_read(Link *l, int cmd, int sub, unsigned char *out, int want) {
-    unsigned char req[RPT_LEN], buf[64], seen[128];
+    unsigned char req[RPT_LEN], buf[64], seen[128], covered[520];
     int count = -1, packets = 0, waited = 0;
     int i;
 
     memset(out, 0, (size_t)want);
     memset(seen, 0, sizeof(seen));
+    memset(covered, 0, sizeof(covered));
     p_frame(req, cmd, sub, 0, 0, 0, 1);
     if (!l->send(l->ctx, req, RPT_LEN)) return 0;
 
@@ -88,11 +89,10 @@ int p_read(Link *l, int cmd, int sub, unsigned char *out, int want) {
         waited += 10;
         if (count > 0 && packets >= count) break;
         if (n < RPT_LEN || !frame_ok(buf)) continue;     /* checksum before trust */
-        /* exact command and the layer that was asked for: masking the command
-           let a write-ACK satisfy a read, and ignoring the layer let a base-layer
-           reply be installed as the FN layer */
+        /* exact command: masking it let a write-ACK satisfy a read. The layer
+           nibble is NOT compared: replies are not guaranteed to echo it, and
+           requiring it made every FN-layer read fail. */
         if (buf[1] != (unsigned char)cmd) continue;
-        if ((buf[4] >> 4) != (sub & 0x0f)) continue;
         {
             int len = buf[4] & 0x0f, idx = buf[3], at = idx * 14, c = buf[2];
             /* validate the frame before its count is allowed to size the transfer */
@@ -104,8 +104,12 @@ int p_read(Link *l, int cmd, int sub, unsigned char *out, int want) {
                    reply that cannot cover the request is a failed read */
                 if (count * 14 < want) return 0;
             } else if (c != count) continue;
-            if (!seen[idx]) {
+            {
+                int j;
                 memcpy(out + at, buf + 5, (size_t)len);
+                for (j = 0; j < len; j++) if (at + j < (int)sizeof(covered)) covered[at + j] = 1;
+            }
+            if (!seen[idx]) {
                 seen[idx] = 1;
                 packets++;
             }
@@ -113,6 +117,9 @@ int p_read(Link *l, int cmd, int sub, unsigned char *out, int want) {
     }
     if (count <= 0 || packets < count) return 0;
     for (i = 0; i < count; i++) if (!seen[i]) return 0;
+    /* every byte the caller asked for must actually have arrived: a short
+       packet used to mark its slot done and leave zeros to be written back */
+    for (i = 0; i < want && i < (int)sizeof(covered); i++) if (!covered[i]) return 0;
     return 1;
 }
 

@@ -392,6 +392,7 @@ static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top,
             add_hot((int)lb.X, (int)lb.Y, (int)lb.Width, (int)lb.Height, 500, "base");
             add_hot((int)lf.X, (int)lf.Y, (int)lf.Width, (int)lf.Height, 501, "fn");
         }
+        RectF panel;
         {
             float availW = card.Width - 44;
             float wantH = availW * (BOARD_HEIGHT / BOARD_WIDTH);
@@ -403,8 +404,16 @@ static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top,
         }
         {
             /* detail panel under the board */
-            float py2 = card.Y + 52 + (card.Height - 132) * 0.62f;
-            RectF panel(card.X + 22, py2, card.Width - 44, 104.0f);
+            {
+                float availW = card.Width - 44;
+                float wantH = availW * (BOARD_HEIGHT / BOARD_WIDTH);
+                float availH = card.Height - 132;
+                float bh = wantH > availH ? availH : wantH;
+                float py2 = card.Y + 52 + bh + 10;
+                if (py2 + 104 > card.Y + card.Height - 8)
+                    py2 = card.Y + card.Height - 112;   /* keep it inside the card */
+                panel = RectF(card.X + 22, py2, card.Width - 44, 104.0f);
+            }
             fill_round(g, panel, 12.0f, Color(255, 22, 25, 32));
             stroke_round(g, panel, 12.0f, line, 1.0f);
             text(g, "SELECTED KEY", RectF(panel.X + 16, panel.Y + 10, 200, 16), 9.5f,
@@ -1174,6 +1183,9 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 InvalidateRect(h, NULL, FALSE);
             }
             return 0;
+        case WM_CAPTURECHANGED:
+            g_press = -1;                 /* without this a cancelled drag keeps scrubbing */
+            return 0;
         case WM_LBUTTONUP:
             if (g_press == 300 || g_press == 301) ReleaseCapture();
             g_press = -1;
@@ -1193,7 +1205,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     size_t n = strlen(g_code);
                     if (n) g_code[n - 1] = 0;
                     InvalidateRect(h, NULL, FALSE);
-                } else if (isxdigit((unsigned char)ch) && strlen(g_code) < 2) {
+                } else if (ch < 128 && isxdigit((unsigned char)ch) && strlen(g_code) < 2) {
                     size_t n = strlen(g_code);
                     g_code[n] = (char)toupper((unsigned char)ch);
                     g_code[n + 1] = 0;
@@ -1218,6 +1230,14 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                    jumping if the suggestion and our minimum disagree. */
                 int dpi = (int)HIWORD(w);
                 if (dpi >= 96 && dpi <= 480) g_scale = (float)dpi / 96.0f;
+                if (l) {
+                    /* Windows supplies the size that keeps the layout sane at the
+                       new scale; ignoring it left the logical client too small */
+                    RECT *sug = (RECT *)l;
+                    SetWindowPos(h, NULL, sug->left, sug->top,
+                                 sug->right - sug->left, sug->bottom - sug->top,
+                                 SWP_NOZORDER | SWP_NOACTIVATE);
+                }
                 InvalidateRect(h, NULL, FALSE);
             }
             return 0;
