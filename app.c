@@ -126,6 +126,7 @@ static int device_open(void) {
     hid_enter();
     r = device_open_locked();
     hid_leave();
+    if (r) g_state.connected = 1;      /* a reopen is a connection, not a one-way latch */
     return r;
 }
 
@@ -141,7 +142,7 @@ static int device_open_locked(void) {
     wchar_t fallback[1024];
     int have_fallback = 0;
 
-    if (g_dev != INVALID_HANDLE_VALUE) return 1;
+    if (g_dev != INVALID_HANDLE_VALUE) { g_state.connected = 1; return 1; }
     HidD_GetHidGuid(&guid);
     set = SetupDiGetClassDevsW(&guid, NULL, NULL, DIGCF_PRESENT | DIGCF_DEVICEINTERFACE);
     if (set == INVALID_HANDLE_VALUE) return 0;
@@ -623,7 +624,13 @@ void app_import_effect(void *owner) {
        the old 1.5 s join froze the window on every Import click */
     app_request_stop_effect();
     if (g_fx_thread) {
-        WaitForSingleObject(g_fx_thread, 300);
+        if (WaitForSingleObject(g_fx_thread, 800) != WAIT_OBJECT_0) {
+            /* still writing: starting a second thread would leave two writers
+               alive with the stop flag cleared, so refuse instead */
+            snprintf(g_state.note, sizeof(g_state.note),
+                     "previous animation is still stopping - try again");
+            return;
+        }
         CloseHandle(g_fx_thread);
         g_fx_thread = NULL;
     }

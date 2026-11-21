@@ -143,8 +143,9 @@ static int send_profile(void) {
                 }
                 CloseHandle(ov.hEvent);
                 waited += 5;
-                if (got >= RPT_LEN && frame_ok(buf) && (buf[1] & 0x3f) == 0x02 &&
-                    buf[3] == (unsigned char)index) { acked = 1; break; }
+                if (got >= RPT_LEN && frame_ok(buf) && memcmp(buf, f, RPT_LEN) == 0) {
+                    acked = 1; break;      /* only the echo of this packet counts */
+                }
             }
         }
         if (!acked) return 0;
