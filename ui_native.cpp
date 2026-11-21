@@ -138,6 +138,22 @@ static void hsv(double h, double s, double v, BYTE *r, BYTE *g, BYTE *b) {
     *b = (BYTE)((bb + m) * 255);
 }
 
+
+/* when a key is too narrow for its full legend, use the abbreviation a real
+   board would print rather than an ellipsis */
+static const char *short_label(const char *label) {
+    static const char *pairs[][2] = {
+        {"Backspace", "Bksp"}, {"Enter", "Ent"}, {"PgUp", "PgUp"}, {"PgDn", "PgDn"},
+        {"RCtrl", "RCtl"}, {"Right", "Rgt"}, {"Down", "Dn"}, {"Left", "Lft"},
+        {"RShift", "RSft"}, {"LShift", "LSft"}, {"Delete", "Del"}, {"Space", "Space"},
+        {"Knob", "Knob"}, {"Caps", "Caps"}, {"Tab", "Tab"}, {"Esc", "Esc"}
+    };
+    int i;
+    for (i = 0; i < (int)(sizeof(pairs) / sizeof(pairs[0])); i++)
+        if (!strcmp(label, pairs[i][0])) return pairs[i][1];
+    return label;
+}
+
 static float g_anim_t;   /* seconds since start, set once per paint */
 
 static Color preview_colour(int i, float x, float y)
@@ -520,7 +536,12 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     float oy = area.Y + (area.Height - BOARD_HEIGHT * s) / 2;
     float gap = 2.0f;
     int i;
-    Font key(g_face, 10.5f, FontStyleRegular, UnitPixel);
+    /* the legend has to scale with the cap, or text overflows the key when the
+       board is drawn small */
+    float legendPx = s * 0.30f;
+    if (legendPx < 6.0f) legendPx = 6.0f;
+    if (legendPx > 13.0f) legendPx = 13.0f;
+    Font key(g_face, legendPx, FontStyleRegular, UnitPixel);
     SolidBrush textbrush(dim);
     for (i = 0; i < KEY_COUNT; i++) {
         RectF k(ox + KEYS[i].x * s + gap / 2, oy + KEYS[i].y * s + gap / 2,
@@ -588,7 +609,7 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
             }
         }
         add_hot((int)k.X, (int)k.Y, (int)k.Width, (int)k.Height, 1000 + i, KEYS[i].label);
-        if (k.Width > 26.0f) {
+        if (k.Width > 15.0f) {
             Color pc = preview_colour(i, KEYS[i].x, KEYS[i].y);
             int lum = pc.GetA() ? (pc.GetR() * 299 + pc.GetG() * 587 + pc.GetB() * 114) / 1000
                                 : 0;
@@ -596,9 +617,18 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
             StringFormat c;
             c.SetAlignment(StringAlignmentCenter);
             c.SetLineAlignment(StringAlignmentCenter);
-            wchar_t lbl[32];
-            MultiByteToWideChar(CP_UTF8, 0, KEYS[i].label, -1, lbl, 32);
-            g->DrawString(lbl, -1, &key, k, &c, &tb);
+            c.SetFormatFlags(StringFormatFlagsNoWrap);   /* a wrapped "Backspace" is unreadable */
+            c.SetTrimming(StringTrimmingEllipsisCharacter);
+            {
+                const char *text = KEYS[i].label;
+                float room = (k.Width - 6.0f) / (legendPx * 0.58f);   /* chars that fit */
+                if ((float)strlen(text) > room) text = short_label(text);
+                {
+                    wchar_t lbl[32];
+                    MultiByteToWideChar(CP_UTF8, 0, text, -1, lbl, 32);
+                    g->DrawString(lbl, -1, &key, k, &c, &tb);
+                }
+            }
         }
     }
 }
@@ -959,7 +989,7 @@ static void paint(HWND hwnd) {
             }
 
             /* quick presets: a warm look, a cool look, or dark */
-            {
+            if (cc.Height > 322.0f) {
                 int py = (int)cc.Y + 210;
                 const char *names[3] = {"Warm", "Cool", "Off"};
                 int ids[3] = {600, 601, 602};
@@ -1197,8 +1227,8 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         case WM_GETMINMAXINFO:
             {
                 MINMAXINFO *mm = (MINMAXINFO *)l;
-                mm->ptMinTrackSize.x = (LONG)(960 * g_scale);
-                mm->ptMinTrackSize.y = (LONG)(900 * g_scale);
+                mm->ptMinTrackSize.x = (LONG)(900 * g_scale);
+                mm->ptMinTrackSize.y = (LONG)(700 * g_scale);
             }
             return 0;
         case WM_TIMER:
