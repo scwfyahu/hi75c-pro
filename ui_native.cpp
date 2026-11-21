@@ -319,6 +319,14 @@ static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
              RectF(40, (REAL)rc.bottom - 64, 140, 20), 11.0f,
              app_connected() ? C_OK : faint, StringAlignmentNear);
         {
+            HANDLE d = OpenMutexA(SYNCHRONIZE, FALSE, "Hi75CPro_Daemon_Singleton");
+            if (d) {
+                CloseHandle(d);
+                text(g, "background driver active", RectF(24, (REAL)rc.bottom - 88, 160, 18),
+                     10.0f, C_ACCENT, StringAlignmentNear);
+            }
+        }
+        {
             char vb[32];
             snprintf(vb, sizeof(vb), "v%s", app_version());
             text(g, vb, RectF(24, (REAL)rc.bottom - 34, 120, 16), 10.0f, faint,
@@ -1304,6 +1312,20 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
             /* the window is created in physical pixels; the layout stays logical */
             ww = (int)(ww * g_scale);
             wh = (int)(wh * g_scale);
+        }
+        {
+            /* one window per machine: a second copy would write to the same
+               handle as the first, with no cross-process lock to stop it */
+            HANDLE once = CreateMutexA(NULL, TRUE, "Hi75CPro_GUI_Singleton");
+            if (once && GetLastError() == ERROR_ALREADY_EXISTS) {
+                HWND existing = FindWindowA("Hi75CApp", NULL);
+                if (existing) {
+                    ShowWindow(existing, SW_RESTORE);
+                    SetForegroundWindow(existing);
+                }
+                CloseHandle(once);
+                return 0;
+            }
         }
         g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
                                wx, wy, ww, wh, NULL, NULL, inst, NULL);
