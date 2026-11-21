@@ -77,12 +77,30 @@ static CRITICAL_SECTION g_lock;
 static HANDLE g_dev = INVALID_HANDLE_VALUE;
 
 /* transport for the tested core (proto.c) */
-static int link_send(void *ctx, const unsigned char *f, int len) {
+/* Some HID collections want a leading report-ID byte (21 bytes), others take the
+   20-byte report as-is. Getting it wrong makes every transfer vanish silently,
+   which shows up as "no reply". Try both, remember what works. */
+static int g_report_id = 0;       /* 0 = raw, 1 = 0x00 prefix */
+
+static int link_write_raw(HANDLE h, const unsigned char *f, int len, int with_id) {
+    unsigned char b[64];
     DWORD written = 0;
-    HANDLE h = (HANDLE)ctx;
-    if (h == INVALID_HANDLE_VALUE) return 0;
+    if (with_id) {
+        b[0] = 0x00;
+        memcpy(b + 1, f, (size_t)len);
+        if (HidD_SetOutputReport(h, b, (ULONG)len + 1)) return 1;
+        return WriteFile(h, b, (DWORD)len + 1, &written, NULL) && written == (DWORD)len + 1;
+    }
     if (HidD_SetOutputReport(h, (PVOID)f, (ULONG)len)) return 1;
     return WriteFile(h, f, (DWORD)len, &written, NULL) && written == (DWORD)len;
+}
+
+static int link_send(void *ctx, const unsigned char *f, int len) {
+    HANDLE h = (HANDLE)ctx;
+    if (h == INVALID_HANDLE_VALUE) return 0;
+    if (link_write_raw(h, f, len, g_report_id)) return 1;
+    if (link_write_raw(h, f, len, !g_report_id)) { g_report_id = !g_report_id; return 1; }
+    return 0;
 }
 
 static int link_recv(void *ctx, unsigned char *buf, int len, int timeout_ms) {
@@ -103,6 +121,11 @@ static int link_recv(void *ctx, unsigned char *buf, int len, int timeout_ms) {
         got = 0;
     }
     CloseHandle(ov.hEvent);
+    if (got == 21 && buf[0] == 0) {           /* device prefixed the report ID */
+        memmove(buf, buf + 1, 20);
+        got = 20;
+        g_report_id = 1;
+    }
     return (int)got;
 }
 
@@ -337,7 +360,7 @@ static void register_shortcut(void) {
  * accepted only if it is a real PE of plausible size; the running exe is then
  * renamed aside (Windows allows that) and replaced, and the app relaunches.
  */
-#define APP_VERSION_STR "1.4.0"
+#define APP_VERSION_STR "1.4.1"
 static char g_latest[64];
 
 const char *app_version(void) { return APP_VERSION_STR; }
