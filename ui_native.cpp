@@ -460,6 +460,20 @@ static void paint(HWND hwnd) {
             g.FillRectangle(&bg, 0, 0, rc.right, rc.bottom);
         }
         {
+            /* soft vignette; keeps the eye in the middle of the window */
+            GraphicsPath vp;
+            RectF vr(-(REAL)rc.right * 0.1f, -(REAL)rc.bottom * 0.1f,
+                     (REAL)rc.right * 1.2f, (REAL)rc.bottom * 1.2f);
+            vp.AddEllipse(vr);
+            PathGradientBrush vg(&vp);
+            vg.SetCenterPoint(PointF((REAL)rc.right / 2, (REAL)rc.bottom / 2));
+            vg.SetCenterColor(Color(0, 0, 0, 0));
+            Color edgeC[1] = { Color(150, 0, 0, 0) };
+            int nEdge = 1;
+            vg.SetSurroundColors(edgeC, &nEdge);
+            g.FillRectangle(&vg, 0, 0, rc.right, rc.bottom);
+        }
+        {
             Color c = SWATCH[(app_state()->colour >= 0 && app_state()->colour < 7)
                              ? app_state()->colour : 4];
             LinearGradientBrush wash(PointF(0, 0), PointF((REAL)rc.right, (REAL)rc.bottom),
@@ -587,7 +601,7 @@ static void paint(HWND hwnd) {
                 g.DrawLine(&rule, PointF(ec.X + 22, ec.Y + 38), PointF(ec.X + ec.Width - 22, ec.Y + 38));
             }
             }
-            text(&g, "stored in the board", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
+            text(&g, "17 firmware effects", RectF(ec.X + ec.Width - 180, ec.Y + 16, 158, 18), 10.5f,
                  Color(255, 96, 106, 124), StringAlignmentFar);
 
             int cols = 3, gap = 12;
