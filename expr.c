@@ -38,10 +38,20 @@ static Node *parse_primary(void) {
         e = parse_expr();
         g_depth--;
         skip();
-        if (*P == ')') P++;
+        if (*P != ')') return NULL;      /* an unclosed group is a syntax error */
+        P++;
         return e;
     }
-    if (*P == '-') { Node *n; P++; n = node(3); n->op = '-'; n->a = parse_primary(); return n; }
+    if (*P == '-') {
+        Node *n;
+        P++;
+        n = node(3);
+        if (!n) return NULL;
+        n->op = '-';
+        n->a = parse_primary();
+        if (!n->a) return NULL;
+        return n;
+    }
     if (isdigit((unsigned char)*P) || *P == '.') {
         char *end = NULL;
         double v = strtod(P, &end);
@@ -58,13 +68,18 @@ static Node *parse_primary(void) {
         skip();
         if (*P == '(') {
             Node *n = node(4);
+            if (!n) return NULL;
             strncpy(n->name, name, 15);
             P++;
-            n->a = parse_expr();
             skip();
-            if (*P == ',') { P++; n->b = parse_expr(); skip(); }
-            if (*P == ',') { P++; n->c = parse_expr(); skip(); }
-            if (*P == ')') P++;
+            if (*P != ')') {                 /* a call needs its closing paren */
+                n->a = parse_expr();
+                skip();
+                if (*P == ',') { P++; skip(); n->b = parse_expr(); skip(); }
+                if (*P == ',') { P++; skip(); n->c = parse_expr(); skip(); }
+            }
+            if (*P != ')') return NULL;
+            P++;
             return n;
         }
         {
@@ -137,15 +152,20 @@ static Node *parse_expr(void) {
     if (*P == '?') {
         Node *n = node(5);
         P++;
+        if (!n) return NULL;
         n->a = cond;
         n->b = parse_expr();
         skip();
-        if (*P == ':') P++;
+        if (*P != ':') return NULL;      /* '?:' needs both halves */
+        P++;
         n->c = parse_expr();
+        if (!n->a || !n->b || !n->c) return NULL;
         return n;
     }
     return cond;
 }
+
+static void node_free(Node *n);
 
 Expr *expr_compile(const char *text, char *err, int errlen) {
     Expr *e = (Expr *)calloc(1, sizeof(Expr));
@@ -159,6 +179,13 @@ Expr *expr_compile(const char *text, char *err, int errlen) {
         free(e);
         return NULL;
     }
+    if (*P) {                     /* trailing junk means the formula is wrong */
+        node_free(e->root);
+        free(e);
+        if (err) snprintf(err, errlen, "unexpected text at %.16s", P);
+        return NULL;
+    }
+    if (err && errlen > 0) err[0] = 0;
     return e;
 }
 
