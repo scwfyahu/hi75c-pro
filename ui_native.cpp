@@ -188,6 +188,99 @@ static Color preview_colour(int i, float x, float y)
     return Color(255, (BYTE)r, (BYTE)g, (BYTE)b);
 }
 
+
+/* 12x12 vector icons, drawn rather than shipped as resources */
+static void icon(Graphics *g, int kind, float x, float y, const Color &c) {
+    Pen pen(c, 1.4f);
+    SolidBrush br(c);
+    switch (kind) {
+        case 0:   /* off: circle with a slash */
+            g->DrawEllipse(&pen, x + 1, y + 1, 10.0f, 10.0f);
+            g->DrawLine(&pen, x + 3, y + 9, x + 9, y + 3);
+            break;
+        case 1:   /* solid */
+            g->FillEllipse(&br, x + 2, y + 2, 8.0f, 8.0f);
+            break;
+        case 2:   /* breathing: rings */
+            g->DrawEllipse(&pen, x + 1, y + 1, 10.0f, 10.0f);
+            g->DrawEllipse(&pen, x + 4, y + 4, 4.0f, 4.0f);
+            break;
+        case 3:   /* spectrum: three arcs */
+            g->DrawArc(&pen, x + 1, y + 2, 10.0f, 10.0f, 200.0f, 140.0f);
+            g->DrawArc(&pen, x + 2.5f, y + 3.5f, 7.0f, 7.0f, 200.0f, 140.0f);
+            g->DrawArc(&pen, x + 4, y + 5, 4.0f, 4.0f, 200.0f, 140.0f);
+            break;
+        case 4:   /* rows */
+            g->DrawLine(&pen, x + 1, y + 3, x + 11, y + 3);
+            g->DrawLine(&pen, x + 1, y + 6, x + 11, y + 6);
+            g->DrawLine(&pen, x + 1, y + 9, x + 11, y + 9);
+            break;
+        case 5:   /* drops */
+            g->FillEllipse(&br, x + 2, y + 2, 3.0f, 3.0f);
+            g->FillEllipse(&br, x + 7, y + 5, 3.0f, 3.0f);
+            g->FillEllipse(&br, x + 4, y + 8, 2.4f, 2.4f);
+            break;
+        case 6:   /* wave */
+            g->DrawArc(&pen, x + 0, y + 3, 6.0f, 6.0f, 180.0f, 180.0f);
+            g->DrawArc(&pen, x + 6, y + 3, 6.0f, 6.0f, 0.0f, 180.0f);
+            break;
+        case 7:   /* ripples */
+            g->DrawEllipse(&pen, x + 1, y + 3, 10.0f, 6.0f);
+            g->DrawEllipse(&pen, x + 4, y + 5, 4.0f, 2.5f);
+            break;
+        case 8:   /* star */
+            g->DrawLine(&pen, x + 6, y + 1, x + 6, y + 11);
+            g->DrawLine(&pen, x + 1, y + 6, x + 11, y + 6);
+            g->DrawLine(&pen, x + 3, y + 3, x + 9, y + 9);
+            g->DrawLine(&pen, x + 9, y + 3, x + 3, y + 9);
+            break;
+        case 9:   /* folder (import) */
+            g->DrawRectangle(&pen, x + 1, y + 3.5f, 10.0f - 1, 6.5f);
+            g->DrawLine(&pen, x + 1, y + 3.5f, x + 5, y + 3.5f);
+            g->DrawLine(&pen, x + 5, y + 3.5f, x + 5, y + 2);
+            g->DrawLine(&pen, x + 5, y + 2, x + 9, y + 2);
+            g->DrawLine(&pen, x + 9, y + 2, x + 9, y + 3.5f);
+            break;
+        case 10:  /* restore: counter-clockwise arrow */
+            g->DrawArc(&pen, x + 1.5f, y + 1.5f, 9.0f, 9.0f, 40.0f, 280.0f);
+            g->DrawLine(&pen, x + 1.5f, y + 4.5f, x + 1.5f, y + 1.5f);
+            g->DrawLine(&pen, x + 1.5f, y + 1.5f, x + 4.5f, y + 1.5f);
+            break;
+        case 11:  /* rescan: magnifier */
+            g->DrawEllipse(&pen, x + 1.5f, y + 1.5f, 7.0f, 7.0f);
+            g->DrawLine(&pen, x + 8, y + 8, x + 11, y + 11);
+            break;
+        default:
+            g->FillEllipse(&br, x + 4, y + 4, 4.0f, 4.0f);
+            break;
+    }
+}
+
+/* effect index -> icon */
+static int effect_icon(int i, int hw) {
+    switch (hw) {
+        case 0: return 0;
+        case 1: return 1;
+        case 2: return 2;
+        case 3: return 3;
+        case 4: return 4;
+        case 5: return 5;
+        case 6: return 6;
+        case 7: return 7;
+        case 8: return 8;
+        case 10: return 6;
+        case 11: return 3;
+        case 12: return 5;
+        case 13: return 7;
+        case 15: return 3;
+        case 16: return 4;
+        case 17: return 8;
+        case 32: return 5;
+    }
+    (void)i;
+    return 1;
+}
+
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim)
 {
     /* the plate the keys sit in */
@@ -615,7 +708,9 @@ static void paint(HWND hwnd) {
                     RectF b((REAL)(rx + j * (bw3 + 10)), (REAL)ay, (REAL)bw3, 38.0f);
                     fill_round(&g, b, 11.0f, g_hover == ids[j] ? Color(255, 34, 38, 48) : Color(255, 26, 29, 37));
                     stroke_round(&g, b, 11.0f, lineSoft, 1.0f);
-                    text(&g, names[j], b, 12.0f, ink, StringAlignmentCenter);
+                    icon(&g, 9 + j, b.X + 10, b.Y + b.Height / 2 - 6, dim);
+                    text(&g, names[j], RectF(b.X + 26, b.Y, b.Width - 30, b.Height), 12.0f, ink,
+                         StringAlignmentNear);
                     add_hot((int)b.X, (int)b.Y, (int)b.Width, (int)b.Height, ids[j], names[j]);
                 }
             }
