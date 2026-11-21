@@ -1082,9 +1082,13 @@ static int hit(int px, int py) {
 static int slider_value(int id, int x) {
     RECT rc;
     GetClientRect(g_hwnd, &rc);
-    int right_w = 300, rx = rc.right - PAD - right_w;
+    /* the layout is in logical pixels; the mouse arrives in physical ones, so
+       both sides have to be converted or the value drifts on a scaled display */
+    int W = (int)(rc.right / (g_scale > 0.001f ? g_scale : 1.0f));
+    int xl = (int)(x / (g_scale > 0.001f ? g_scale : 1.0f));
+    int right_w = 300, rx = W - PAD - right_w;
     int bx = rx + 18, bw = right_w - 36;
-    int v = (x - bx) * (id == 300 ? 10 : 4) / bw;
+    int v = (xl - bx) * (id == 300 ? 10 : 4) / bw;
     int max = id == 300 ? 9 : 3;
     if (v < 0) v = 0;
     if (v > max) v = max;
