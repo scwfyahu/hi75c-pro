@@ -290,14 +290,19 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
        wrong binary out of a release */
     lstrcpynW(url, L"https://github.com/" REPO L"/releases/latest/download/Hi75CPro.exe", 2048);
     json = NULL;
+#ifdef HI75C_ENABLE_OFFLINE
     {
         /* test hook: --offline <exe> skips the download so the rest of the
-           installer can be verified without a network */
+           installer can be verified without a network. Never built into a
+           shipped binary: it would copy any local file the caller names. */
         const wchar_t *off = cmd ? wcsstr(cmd, L"--offline ") : NULL;
         if (off) {
             lstrcpynW(offline_src, off + 10, MAX_PATH);
         }
     }
+#else
+    (void)cmd;
+#endif
     {
         if (!SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) ok = 0;
         lstrcatW(dir, L"\\Hi75C Pro");          /* default */
