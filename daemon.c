@@ -149,8 +149,14 @@ static void daemon_main(void) {
     build_sin();
     {
         char dry[8];
-        if (GetEnvironmentVariableA("HI75C_DAEMON_DRY", dry, sizeof(dry)) > 0)
-            for (;;) { send_profile(); Sleep(33); }   /* measurement only */
+        if (GetEnvironmentVariableA("HI75C_DAEMON_DRY", dry, sizeof(dry)) > 0) {
+            for (;;) {                                  /* measurement only */
+                if (g_stop_event && WaitForSingleObject(g_stop_event, 0) == WAIT_OBJECT_0)
+                    ExitProcess(0);                     /* stoppable like the real loop */
+                send_profile();
+                Sleep(33);
+            }
+        }
     }
     if (!open_device()) ExitProcess(2);
     for (;;) {
