@@ -213,23 +213,42 @@ static int choose_dir(wchar_t *out, int cap) {
  * and TLS settings as the browser. If the user's browser can open the release
  * page, this can fetch the file. The WinHTTP path below is only a fallback.
  */
+
+/* an MZ header plus a size is not proof of an executable: a truncated or
+   corrupted download passes that and then gets installed over a working app */
+static int is_pe_image(const wchar_t *path) {
+    HANDLE h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    int ok = 0;
+    if (h == INVALID_HANDLE_VALUE) return 0;
+    {
+        LARGE_INTEGER size;
+        if (GetFileSizeEx(h, &size) && size.QuadPart > 40960 && size.QuadPart < 8 * 1024 * 1024) {
+            DWORD len = (DWORD)size.QuadPart, got = 0;
+            unsigned char *buf = (unsigned char *)malloc(len);
+            if (buf && ReadFile(h, buf, len, &got, NULL) && got == len &&
+                buf[0] == 'M' && buf[1] == 'Z') {
+                DWORD pe = 0;
+                memcpy(&pe, buf + 0x3c, 4);
+                if (pe + 0x40 < len && memcmp(buf + pe, "PE\0\0", 4) == 0) {
+                    WORD subsystem = 0;
+                    memcpy(&subsystem, buf + pe + 24 + 68, 2);
+                    if (subsystem == 2) ok = 1;
+                }
+            }
+            free(buf);
+        }
+        CloseHandle(h);
+    }
+    return ok;
+}
+
 static int download_urlmon(const wchar_t *url, const wchar_t *dest) {
     HRESULT hr;
     DeleteFileW(dest);
     hr = URLDownloadToFileW(NULL, url, dest, 0, NULL);
     if (FAILED(hr)) return 0;
     {
-        HANDLE h = CreateFileW(dest, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-        unsigned char hdr[2];
-        DWORD got = 0;
-        LARGE_INTEGER size;
-        int ok = 0;
-        if (h != INVALID_HANDLE_VALUE) {
-            if (ReadFile(h, hdr, 2, &got, NULL) && got == 2 && hdr[0] == 'M' && hdr[1] == 'Z' &&
-                GetFileSizeEx(h, &size) && size.QuadPart > 40960)
-                ok = 1;
-            CloseHandle(h);
-        }
+        int ok = is_pe_image(dest);
         if (!ok) DeleteFileW(dest);
         return ok;
     }
@@ -320,6 +339,12 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         lstrcatW(tmp, L"hi75c-download.exe");
         logf2("target dir: %ls", dir);
         logf2("url       : %ls", url);
+#ifdef HI75C_ENABLE_OFFLINE
+        if (offline_src[0]) {
+            logf2("offline   : %ls", offline_src);
+            if (!CopyFileW(offline_src, tmp, FALSE)) logf2("offline copy failed");
+        } else
+#endif
         {
             int a = download_urlmon(url, tmp);
             logf2("urlmon    : %s", a ? "ok" : "failed");
@@ -338,19 +363,8 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
         }
         {
             /* refuse anything that is not a real executable: an error page from a
-               proxy or a stale redirect must never be installed */
-            HANDLE h = CreateFileW(tmp, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-            int looks_ok = 0;
-            if (h != INVALID_HANDLE_VALUE) {
-                unsigned char hdr[2];
-                LARGE_INTEGER size;
-                DWORD got2 = 0;
-                if (ReadFile(h, hdr, 2, &got2, NULL) && got2 == 2 && hdr[0] == 'M' && hdr[1] == 'Z' &&
-                    GetFileSizeEx(h, &size) && size.QuadPart > 40960)
-                    looks_ok = 1;
-                CloseHandle(h);
-            }
-            if (!looks_ok) { DeleteFileW(tmp); ok = 0; }
+               proxy, a stale redirect or a truncated transfer must never be installed */
+            if (!is_pe_image(tmp)) { DeleteFileW(tmp); ok = 0; }
         }
         logf2("downloaded: %s", GetFileAttributesW(tmp) != INVALID_FILE_ATTRIBUTES ? "yes" : "no");
         /* the target is often on another drive than %TEMP%, so copy rather than
@@ -372,7 +386,8 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
             shortcut(target);
             ok = 1;
         }
-        if (g_silent) {
+        if (g_silent && ok) {
+            /* only claim an install when there is one */
             wchar_t done[MAX_PATH];
             _snwprintf(done, MAX_PATH, L"%s\\installed.txt", dir);
             HANDLE h = CreateFileW(done, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
