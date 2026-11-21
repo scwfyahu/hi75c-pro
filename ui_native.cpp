@@ -315,8 +315,13 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
             int hot = (g_hover == 1000 + i);
             /* side wall first, then the lit top face: this is what makes a
                rectangle read as a keycap */
-            RectF wall(k.X, k.Y + 2.5f, k.Width, k.Height);
-            fill_round(g, wall, 5.0f, Color(255, 10, 12, 16));
+            /* physical keycap: wall -> top face -> specular edge -> inner shadow */
+            RectF wall(k.X, k.Y + 3.2f, k.Width, k.Height);
+            fill_round(g, wall, 5.0f, Color(255, 8, 9, 13));
+            {
+                RectF under(k.X + 0.5f, k.Y + k.Height - 1.2f, k.Width - 1.0f, 2.0f);
+                fill_round(g, under, 1.0f, Color(90, 0, 0, 0));
+            }
             {
                 Color c = preview_colour(i, KEYS[i].x, KEYS[i].y);
                 int mix = c.GetA() ? 150 : 0;   /* how much of the live colour the cap shows */
@@ -333,8 +338,24 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
                     GraphicsPath kp2;
                     rounded(&kp2, k, 5.0f);
                     g->FillPath(&grad2, &kp2);
-                    Pen gl(Color(34, 255, 255, 255), 1.0f);
+                    Pen gl(Color(46, 255, 255, 255), 1.0f);
                     g->DrawLine(&gl, PointF(k.X + 5, k.Y + 1.2f), PointF(k.X + k.Width - 5, k.Y + 1.2f));
+                    {
+                        /* specular streak, short and off-centre, like a real cap */
+                        Pen spec(Color(30, 255, 255, 255), 1.0f);
+                        float sw2 = k.Width * 0.34f;
+                        if (sw2 > 10.0f) {
+                            g->DrawLine(&spec, PointF(k.X + 4, k.Y + 3.0f),
+                                        PointF(k.X + 4 + sw2, k.Y + 3.0f));
+                        }
+                    }
+                    {
+                        Pen inner(Color(70, 0, 0, 0), 1.0f);
+                        GraphicsPath ip;
+                        RectF ir(k.X + 1.0f, k.Y + 1.0f, k.Width - 2.0f, k.Height - 2.0f);
+                        rounded(&ip, ir, 4.0f);
+                        g->DrawPath(&inner, &ip);
+                    }
                     {
                         Color c2 = preview_colour(i, KEYS[i].x, KEYS[i].y);
                         Pen under(Color(70, c2.GetR(), c2.GetG(), c2.GetB()), 2.0f);
