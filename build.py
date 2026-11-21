@@ -56,15 +56,26 @@ def main() -> int:
          "-o", str(gui), "/tmp/build_app.o", "/tmp/build_proto.o", "/tmp/build_ui.o",
          "/tmp/build_expr.o", "-fno-exceptions"] + GUI_LIBS, "Hi75CPro.exe")
 
+    print("installer", flush=True)
+    setup = HERE / "Hi75CPro-Setup.exe"
+    run([ZIG, "cc", "-target", TARGET, "-Os", "-municode", "-I", str(HERE),
+         "-c", str(HERE / "setup2.c"), "-o", "/tmp/build_setup.o"], "setup2.c")
+    run([ZIG, "cc", "-target", TARGET, "-Os", "-s", "-municode",
+         "-Wl,--subsystem,windows", "-o", str(setup), "/tmp/build_setup.o",
+         "-lwinhttp", "-lurlmon", "-lole32", "-luuid", "-lshell32", "-ladvapi32", "-luser32"],
+        "Hi75CPro-Setup.exe")
+
     print("daemon", flush=True)
     run([ZIG, "cc", "-target", TARGET, "-Os", "-s", "-Wl,--subsystem,windows",
          "-o", str(daemon), str(HERE / "daemon.c")] + DAEMON_LIBS, "hi75c-daemon.exe")
 
     normalise_pe(gui)
     normalise_pe(daemon)
+    normalise_pe(setup)
 
     print(f"\nHi75CPro.exe      {gui.stat().st_size:,} bytes")
     print(f"hi75c-daemon.exe  {daemon.stat().st_size:,} bytes")
+    print(f"Hi75CPro-Setup.exe {setup.stat().st_size:,} bytes")
     return 0
 
 
