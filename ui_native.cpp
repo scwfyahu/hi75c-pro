@@ -282,6 +282,120 @@ static int effect_icon(int i, int hw) {
     return 1;
 }
 
+
+static int g_page;   /* 0 lighting, 1 keymap, 2 about */
+
+static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
+                      const Color &ink, const Color &dim, const Color &faint) {
+    SolidBrush bg(Color(255, 15, 17, 22));
+    g->FillRectangle(&bg, 0, 0, w, rc.bottom);
+    Pen edge(Color(255, 26, 29, 37), 1.0f);
+    g->DrawLine(&edge, PointF((REAL)w, 0), PointF((REAL)w, (REAL)rc.bottom));
+
+    text(g, "SECTIONS", RectF(24, 24, 140, 16), 9.5f, faint, StringAlignmentNear, NULL, true);
+    {
+        const char *names[3] = {"Lighting", "Keymap", "About"};
+        int glyph[3] = {3, 4, 1};
+        int i;
+        for (i = 0; i < 3; i++) {
+            int top = 48 + i * 42;
+            RectF it(12, (REAL)top, (REAL)(w - 24), 34.0f);
+            if (g_page == i) {
+                fill_round(g, it, 10.0f, Color(255, 26, 31, 41));
+                SolidBrush bar(accent);
+                g->FillRectangle(&bar, 12.0f, (REAL)top + 8, 3.0f, 18.0f);
+            }
+            icon(g, glyph[i], 26, (REAL)top + 10, g_page == i ? ink : faint);
+            text(g, names[i], RectF(48, (REAL)top, 120, 34), 13.0f,
+                 g_page == i ? ink : dim, StringAlignmentNear);
+            add_hot(12, top, w - 24, 34, 700 + i, names[i]);
+        }
+    }
+    {
+        SolidBrush dot(app_connected() ? C_OK : C_BAD);
+        g->FillEllipse(&dot, 24.0f, (REAL)rc.bottom - 58, 8.0f, 8.0f);
+        text(g, app_connected() ? "Keyboard ready" : "No keyboard",
+             RectF(40, (REAL)rc.bottom - 64, 140, 20), 11.0f,
+             app_connected() ? C_OK : faint, StringAlignmentNear);
+        {
+            char vb[32];
+            snprintf(vb, sizeof(vb), "v%s", app_version());
+            text(g, vb, RectF(24, (REAL)rc.bottom - 34, 120, 16), 10.0f, faint,
+                 StringAlignmentNear);
+        }
+        if (0) text(g, "", RectF(0, 0, 0, 0), 10.0f, faint,
+             StringAlignmentNear);
+    }
+}
+
+
+/* forward declarations: this helper is defined before the paint utilities */
+static void shadow(Graphics *g, const RectF &r, float rad);
+static void card_skin(Graphics *g, GraphicsPath *path, const RectF &r,
+                      const Color &top, const Color &bot, const Color &line);
+static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim);
+
+/* secondary pages share one card; the board is reused so the keymap page is
+   the same keyboard you configure on the lighting page */
+static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top, int bottom,
+                           const Color &cardTop, const Color &cardBot, const Color &line,
+                           const Color &ink, const Color &dim, const Color &accent) {
+    RectF card((REAL)cx, (REAL)top, (REAL)cw, (REAL)(bottom - top));
+    shadow(g, card, 18.0f);
+    GraphicsPath p;
+    rounded(&p, card, 18.0f);
+    card_skin(g, &p, card, cardTop, cardBot, line);
+
+    if (g_page == 1) {
+        text(g, "KEYMAP", RectF(card.X + 22, card.Y + 16, 200, 18), 10.5f, dim,
+             StringAlignmentNear, NULL, true);
+        text(g, "click a key, then type a hex usage code", 
+             RectF(card.X + 120, card.Y + 16, 420, 18), 10.5f, Color(255, 96, 106, 124),
+             StringAlignmentNear);
+        {
+            float availW = card.Width - 44;
+            float wantH = availW * (BOARD_HEIGHT / BOARD_WIDTH);
+            float availH = card.Height - 132;
+            if (wantH > availH) wantH = availH;
+            float bx = card.X + 22 + (availW - wantH * (BOARD_WIDTH / BOARD_HEIGHT)) / 2;
+            draw_keyboard(g, RectF(bx, card.Y + 52, wantH * (BOARD_WIDTH / BOARD_HEIGHT), wantH),
+                          line, dim);
+        }
+        {
+            char info[220];
+            if (g_sel >= 0 && g_sel < KEY_COUNT) {
+                int cur = app_keymap_cached(KEYS[g_sel].idx);
+                if (cur >= 0)
+                    snprintf(info, sizeof(info),
+                             "%s   |   index %d   |   usage 0x%02x   |   type a hex code and press Enter",
+                             KEYS[g_sel].label, KEYS[g_sel].idx, cur);
+                else
+                    snprintf(info, sizeof(info), "%s   |   index %d   |   reading from the board...",
+                             KEYS[g_sel].label, KEYS[g_sel].idx);
+            } else {
+                snprintf(info, sizeof(info), "No key selected.");
+            }
+            text(g, info, RectF(card.X + 22, card.Y + card.Height - 58, card.Width - 44, 20),
+                 12.0f, ink, StringAlignmentNear);
+        }
+    } else {
+        text(g, "ABOUT", RectF(card.X + 22, card.Y + 16, 200, 18), 10.5f, dim,
+             StringAlignmentNear, NULL, true);
+        text(g, "LEOBOG Hi75C Pro", RectF(card.X + 22, card.Y + 54, 420, 32), 21.0f, ink,
+             StringAlignmentNear, NULL, true);
+        text(g, "A native Windows driver. No WebView, no Electron, no background service.",
+             RectF(card.X + 22, card.Y + 96, 620, 20), 12.5f, dim, StringAlignmentNear);
+        text(g, "https://github.com/scwfyahu/hi75c-pro",
+             RectF(card.X + 22, card.Y + 126, 620, 20), 12.5f, accent, StringAlignmentNear);
+        text(g, "17 firmware effects   |   7 colours   |   2 layers   |   per-key remap",
+             RectF(card.X + 22, card.Y + 166, 620, 20), 12.5f, dim, StringAlignmentNear);
+        text(g, "Version", RectF(card.X + 22, card.Y + 210, 80, 18), 10.5f,
+             Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+        text(g, app_version(), RectF(card.X + 22, card.Y + 228, 200, 20), 13.0f, ink,
+             StringAlignmentNear);
+    }
+}
+
 static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, const Color &dim)
 {
     /* the plate the keys sit in */
@@ -494,12 +608,16 @@ static void paint(HWND hwnd) {
         g_anim_t = (float)(GetTickCount64() % 1000000ULL) / 1000.0f;
         const int pad = 26;
         const int headerH = 76;
+        const int navW = 190;                       /* navigation rail */
+        const int cx = navW + pad;                  /* content left */
+        const int cw = rc.right - navW - pad * 2;   /* content width */
+        const int cb = rc.bottom - 46;              /* content bottom */
 
         /* ---------------- header ---------------- */
         {
-            RectF title((REAL)pad, 22.0f, 400.0f, 30.0f);
+            RectF title((REAL)cx, 22.0f, 400.0f, 30.0f);
             text(&g, "LEOBOG Hi75C Pro", title, 25.0f, ink, StringAlignmentNear, NULL, true);
-            RectF sub((REAL)pad, 48.0f, 400.0f, 18.0f);
+            RectF sub((REAL)cx, 48.0f, 400.0f, 18.0f);
             char subtext[96];
             snprintf(subtext, sizeof(subtext), "%s   |   v%s",
                      app_connected() ? "USB / 2.4 GHz" : "no keyboard", app_version());
@@ -518,8 +636,13 @@ static void paint(HWND hwnd) {
 
         g_hot_n = 0;
         int y = headerH;
+        draw_rail(&g, rc, navW, accent, ink, dim, C_INK_3);
+        if (g_page != 0) {
+            draw_secondary(&g, rc, cx, cw, headerH, cb, cardTop, cardBot, line, ink, dim, accent);
+            goto rendered;
+        }
         int rightW = 320;
-        int leftW = rc.right - pad * 2 - rightW - 20;
+        int leftW = cw - rightW - 20;
 
         /* ---------------- keyboard ---------------- */
         int kbH = 250;
@@ -528,7 +651,7 @@ static void paint(HWND hwnd) {
             kbH = (int)(availH * 0.46);
             if (kbH > 420) kbH = 420;
             if (kbH < 250) kbH = 250;
-            RectF kb((REAL)pad, (REAL)y, (REAL)(rc.right - pad * 2), (REAL)kbH);
+            RectF kb((REAL)cx, (REAL)y, (REAL)cw, (REAL)kbH);
             {
                 /* the room is lit by the colour on the board */
                 Color c = SWATCH[(app_state()->colour >= 0 && app_state()->colour < 7)
@@ -588,7 +711,7 @@ static void paint(HWND hwnd) {
 
         /* ---------------- effects ---------------- */
         {
-            RectF ec((REAL)pad, (REAL)y, (REAL)leftW, (REAL)(rc.bottom - y - 46));
+            RectF ec((REAL)cx, (REAL)y, (REAL)leftW, (REAL)(cb - y));
             shadow(&g, ec, 18.0f);
             GraphicsPath p; rounded(&p, ec, 18.0f);
             card_skin(&g, &p, ec, cardTop, cardBot, line);
@@ -647,8 +770,8 @@ static void paint(HWND hwnd) {
 
         /* ---------------- right column ---------------- */
         {
-            int rx = rc.right - pad - rightW;
-            RectF cc((REAL)rx, (REAL)y, (REAL)rightW, (REAL)(rc.bottom - y - 46));
+            int rx = cx + cw - rightW;
+            RectF cc((REAL)rx, (REAL)y, (REAL)rightW, (REAL)(cb - y));
             shadow(&g, cc, 18.0f);
             GraphicsPath p; rounded(&p, cc, 18.0f);
             card_skin(&g, &p, cc, cardTop, cardBot, line);
@@ -802,7 +925,7 @@ static void paint(HWND hwnd) {
         /* ---------------- footer / status ---------------- */
         {
             const char *note = app_state()->note;
-            RectF strip((REAL)pad, (REAL)(rc.bottom - 32), (REAL)(rc.right - pad * 2), 18.0f);
+            RectF strip((REAL)cx, (REAL)(rc.bottom - 32), (REAL)cw, 18.0f);
             if (note[0])
                 text(&g, note, strip, 11.5f, bad, StringAlignmentNear);
             else if (g_sel >= 0 && g_sel < KEY_COUNT) {
@@ -887,6 +1010,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                     app_update_install();          /* worker downloads; UI stays live */
                     InvalidateRect(h, NULL, FALSE);
                 }
+                else if (id >= 700 && id <= 702) { g_page = id - 700; g_sel = -1; }
                 else if (id == 600) { app_set_colour(0); app_set_effect(1); }
                 else if (id == 601) { app_set_colour(4); app_set_effect(1); }
                 else if (id == 602) { app_set_effect(0); }
