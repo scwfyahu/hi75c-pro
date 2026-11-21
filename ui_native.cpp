@@ -275,6 +275,16 @@ static void icon(Graphics *g, int kind, float x, float y, const Color &c) {
 }
 
 /* effect index -> icon */
+static const char *effect_hint(int i) {
+    static const char *h[17] = {
+        "dark board", "one colour", "slow pulse", "hue sweep", "row by row",
+        "flickering dots", "travelling wave", "ripple outward", "twinkling",
+        "snake trail", "streaming hue", "reactive", "wave from centre",
+        "hue by angle", "falling bars", "fast blink", "per-key colours"
+    };
+    return (i >= 0 && i < 17) ? h[i] : "";
+}
+
 static int effect_icon(int i, int hw) {
     switch (hw) {
         case 0: return 0;
@@ -932,7 +942,7 @@ static void paint(HWND hwnd) {
                 SolidBrush bar(accent);
                 g.FillRectangle(&bar, (REAL)(ec.X + 22), ec.Y + 17, 3.0f, 12.0f);
             }
-            text(&g, "EFFECTS", RectF(ec.X + 32, ec.Y + 16, 220, 18), 10.5f, dim,
+            text(&g, "EFFECTS", RectF(ec.X + 32, ec.Y + 16, 220, 18), 9.5f, dim,
                  StringAlignmentNear, NULL, true);
             {
                 char cnt[32];
@@ -949,7 +959,7 @@ static void paint(HWND hwnd) {
             int gridW = (int)ec.Width - ctrlW - 46;
             int cols = 5, gap = 8, rows = (app_effect_count() + cols - 1) / cols;
             int bw = (gridW - gap * (cols - 1)) / cols;
-            int bh = 38;
+            int bh = 46;
             int gx = (int)ec.X + 22, gy = (int)ec.Y + 50;
             int i;
             for (i = 0; i < app_effect_count(); i++) {
@@ -963,9 +973,12 @@ static void paint(HWND hwnd) {
                                                          : Color(255, 24, 27, 34)));
                 stroke_round(&g, btn, 9.0f, active ? Color(80, 255, 255, 255) : lineSoft, 1.0f);
 
-                text(&g, app_effect_name(i), RectF(btn.X + 8, btn.Y, btn.Width - 16, btn.Height),
+                text(&g, app_effect_name(i), RectF(btn.X + 8, btn.Y + 6, btn.Width - 16, 16),
                      11.5f, active ? Color(255, 246, 247, 250) : dim,
                      StringAlignmentCenter, NULL, active);
+                text(&g, effect_hint(i), RectF(btn.X + 8, btn.Y + 24, btn.Width - 16, 14),
+                     9.0f, active ? Color(255, 138, 145, 160) : Color(255, 0x6A, 0x6E, 0x75),
+                     StringAlignmentCenter);
                 add_hot(bx, by, bw, bh, id, app_effect_name(i));
             }
 
@@ -973,7 +986,7 @@ static void paint(HWND hwnd) {
             {
                 int rx = (int)ec.X + (int)ec.Width - ctrlW - 22;
                 int ry = (int)ec.Y + 50;
-                text(&g, "COLOUR", RectF((REAL)rx, (REAL)ry, 120, 16), 9.5f,
+                text(&g, "COLOUR", RectF((REAL)rx, (REAL)ry, 120, 16), 9.0f,
                      Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
                 {
                     static const char *hex[7] = {"#FF2B2B","#FF8C1A","#FFE11A","#2EE65C","#1AE5FF","#2E6BFF","#B833FF"};
