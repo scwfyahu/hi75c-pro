@@ -230,7 +230,7 @@ static int is_pe_image(const wchar_t *path) {
                 buf[0] == 'M' && buf[1] == 'Z') {
                 DWORD pe = 0;
                 memcpy(&pe, buf + 0x3c, 4);
-                if (pe + 0x40 < len && memcmp(buf + pe, "PE\0\0", 4) == 0) {
+                if (pe < len && len - pe > 0x40 && memcmp(buf + pe, "PE\0\0", 4) == 0) {
                     WORD subsystem = 0, nsec = 0, optsz = 0;
                     DWORD want = 0, i;
                     memcpy(&subsystem, buf + pe + 24 + 68, 2);
@@ -340,7 +340,13 @@ int WINAPI wWinMain(HINSTANCE i, HINSTANCE p, LPWSTR cmd, int show) {
     (void)cmd;
 #endif
     {
-        if (!SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) ok = 0;
+        dir[0] = 0;
+        if (FAILED(SHGetFolderPathW(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, dir)) || !dir[0]) {
+            if (!g_silent)
+                MessageBoxW(NULL, L"Could not find your profile folder.", L"Hi75C Pro", MB_ICONERROR);
+            logf2("no local appdata folder");
+            return 2;
+        }
         lstrcatW(dir, L"\\Hi75C Pro");          /* default */
         if (!g_silent) {
             wchar_t picked[MAX_PATH];
