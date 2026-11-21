@@ -580,13 +580,23 @@ static unsigned char to_byte(double v) {
 static int load_effect(const char *path, Effect **out, char *err, int errlen) {
     FILE *f = fopen(path, "rb");
     char line[512];
-    char er[128] = "", eg[128] = "", eb[128] = "";
+    char er[512] = "", eg[512] = "", eb[512] = "";
     Effect *fx;
     if (!f) { snprintf(err, errlen, "cannot open that file"); return 0; }
     fx = (Effect *)calloc(1, sizeof(Effect));
     fx->fps = 30;
     while (fgets(line, sizeof(line), f)) {
-        char *eq = strchr(line, '=');
+        char *eq;
+        /* fgets truncates silently: a line with no newline that filled the
+           buffer is longer than we can parse, and truncating a formula changes
+           what it computes */
+        if (!strchr(line, '\n') && !feof(f)) {
+            fclose(f);
+            snprintf(err, errlen, "a line is longer than %d characters", (int)sizeof(line) - 1);
+            free(fx);
+            return 0;
+        }
+        eq = strchr(line, '=');
         char *v, *k = line, *trim;
         if (!eq) continue;
         *eq = 0;
@@ -601,11 +611,18 @@ static int load_effect(const char *path, Effect **out, char *err, int errlen) {
             if (fx->fps < 1) fx->fps = 30;      /* 1000/0 would fault, 1000/fps<1 spins */
             if (fx->fps > 120) fx->fps = 120;
         }
-        else if (!_stricmp(k, "r")) lstrcpynA(er, v, sizeof(er));
-        else if (!_stricmp(k, "g")) lstrcpynA(eg, v, sizeof(eg));
-        else if (!_stricmp(k, "b")) lstrcpynA(eb, v, sizeof(eb));
+        else if (!_stricmp(k, "r")) { if (strlen(v) >= sizeof(er)) goto too_long; lstrcpynA(er, v, sizeof(er)); }
+        else if (!_stricmp(k, "g")) { if (strlen(v) >= sizeof(eg)) goto too_long; lstrcpynA(eg, v, sizeof(eg)); }
+        else if (!_stricmp(k, "b")) { if (strlen(v) >= sizeof(eb)) goto too_long; lstrcpynA(eb, v, sizeof(eb)); }
     }
     fclose(f);
+    if (0) {
+too_long:
+        fclose(f);
+        snprintf(err, errlen, "one of the r/g/b formulas is too long (max %d)", (int)sizeof(er) - 1);
+        free(fx);
+        return 0;
+    }
     if (!er[0]) lstrcpyA(er, "0");
     if (!eg[0]) lstrcpyA(eg, "0");
     if (!eb[0]) lstrcpyA(eb, "0");
