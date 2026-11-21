@@ -527,14 +527,22 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     {
         RectF plate(area.X - 6, area.Y - 2, area.Width + 12, area.Height + 10);
         plateRect = plate;
+        /* the board sits in a well, not on a plate: darker than the card, with
+           the shadow pooling at the top edge (design #8's surface language) */
         LinearGradientBrush pb(PointF(plate.X, plate.Y), PointF(plate.X, plate.Y + plate.Height),
-                               Color(255, 30, 34, 43), Color(255, 18, 20, 26));
+                               Color(255, 14, 16, 20), Color(255, 22, 25, 32));
         GraphicsPath pp; rounded(&pp, plate, 14.0f);
         g->FillPath(&pb, &pp);
         Pen outer(Color(255, 48, 53, 66), 1.0f);
         g->DrawPath(&outer, &pp);
-        Pen gloss(Color(22, 255, 255, 255), 1.0f);
-        g->DrawLine(&gloss, PointF(plate.X + 14, plate.Y + 1.5f), PointF(plate.X + plate.Width - 14, plate.Y + 1.5f));
+        Pen gloss(Color(16, 255, 255, 255), 1.0f);
+        g->DrawLine(&gloss, PointF(plate.X + 14, plate.Y + plate.Height - 1.0f),
+                    PointF(plate.X + plate.Width - 14, plate.Y + plate.Height - 1.0f));
+        {
+            Pen shade(Color(120, 0, 0, 0), 2.0f);
+            g->DrawLine(&shade, PointF(plate.X + 12, plate.Y + 1.0f),
+                        PointF(plate.X + plate.Width - 12, plate.Y + 1.0f));
+        }
     }
     /* Scale the board to fill the card. The two axes are allowed to differ a
        little (up to 30%) so the keyboard uses the width instead of floating in
@@ -901,8 +909,8 @@ static void paint(HWND hwnd) {
                 int id = 100 + i;
                 int active = (app_state()->effect == app_effect_id(i));
                 RectF btn((REAL)cx, (REAL)cy, (REAL)bw, (REAL)bh);
-                Color fillc = active ? accentSoft
-                             : (g_hover == id ? Color(255, 36, 40, 50) : Color(255, 26, 29, 37));
+                Color fillc = active ? Color(255, 42, 47, 59)
+                             : (g_hover == id ? Color(255, 35, 39, 49) : Color(255, 25, 28, 36));
                 if (active) {
                     fillc = Color(255, (BYTE)(24 + accent.GetR() * 0.10f),
                                        (BYTE)(30 + accent.GetG() * 0.10f),
@@ -910,11 +918,14 @@ static void paint(HWND hwnd) {
                 }
                 fill_round(&g, btn, 11.0f, fillc);
                 if (active) {
-                    Pen glow(Color(48, 74, 144, 255), 4.0f);
-                    GraphicsPath gp; rounded(&gp, btn, 11.0f);
-                    g.DrawPath(&glow, &gp);
+                    /* a quiet top highlight instead of a coloured glow */
+                    Pen hi(Color(26, 255, 255, 255), 1.0f);
+                    g.DrawLine(&hi, PointF(btn.X + 14, btn.Y + 1.5f),
+                               PointF(btn.X + btn.Width - 14, btn.Y + 1.5f));
                 }
-                stroke_round(&g, btn, 11.0f, active ? accent : lineSoft, active ? 1.6f : 1.0f);
+                stroke_round(&g, btn, 11.0f,
+                             active ? Color(70, 255, 255, 255) : lineSoft,
+                             1.0f);
                 {
                     /* a distinct glyph per effect, tinted with the palette slot */
                     Color tint = SWATCH[i % 7];
