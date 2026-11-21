@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180, initial-scale=1">
+<title>Hi75C Pro — Lighting</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:#050506;overflow:hidden;display:flex;align-items:center;justify-content:center;
+       font-family:"Inter","SF Pro Text",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+       color:#ECEDEF;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  button:disabled{cursor:default}
+  svg{display:block}
+  ::selection{background:#303237;color:#fff}
+
+  .app{
+    --bg:#08090A; --rail:#0A0B0C; --card:#0D0E10; --raise:#141519;
+    --line:#1A1C1F; --line-2:#24262A;
+    --t1:#ECEDEF; --t2:#9A9DA3; --t3:#66696F; --t4:#4A4D53;
+    --lc:#FF8C1A; --bright:.72;
+    --mono:"SF Mono","Cascadia Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+    width:1180px;height:900px;display:grid;grid-template-columns:248px minmax(0,1fr);
+    background:var(--bg);overflow:hidden;position:relative
+  }
+
+  /* ---------- rail ---------- */
+  .rail{background:var(--rail);border-right:1px solid #141518;padding:20px 20px 18px;
+        display:flex;flex-direction:column;min-height:0}
+  .brand{display:flex;align-items:center;gap:10px;height:30px;padding:0 2px}
+  .mark{width:26px;height:26px;border-radius:7px;border:1px solid #26282D;background:#121316;
+        display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;
+        letter-spacing:.01em;color:#E8E9EB;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);flex:none}
+  .brand-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .brand-name{font-size:12px;font-weight:600;letter-spacing:-.01em;color:#E7E8EA;line-height:1}
+  .brand-sub{font-size:9.5px;color:#6E7278;letter-spacing:.01em;line-height:1;white-space:nowrap}
+  .nav{margin-top:30px;display:flex;flex-direction:column;gap:2px}
+  .nav-item{display:flex;align-items:center;gap:10px;height:34px;padding:0 10px;width:100%;
+            border-radius:6px;border:1px solid transparent;color:#96999F;font-size:12px;
+            font-weight:500;letter-spacing:-.005em;text-align:left;
+            transition:background .12s ease,color .12s ease,border-color .12s ease}
+  .nav-item svg{width:15px;height:15px;flex:none;opacity:.72}
+  .nav-item:hover{background:#0F1013;color:#D3D5D9}
+  .nav-item.is-active{background:#141518;border-color:#1F2125;color:#F0F1F3;font-weight:600}
+  .nav-item.is-active svg{opacity:1}
+  .nav-item:focus-visible{outline:1px solid #4A4D53;outline-offset:1px}
+  .rail-foot{margin-top:auto;padding-top:16px;border-top:1px solid #16181B}
+  .conn{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:500;color:#D6D8DB}
+  .led{width:6px;height:6px;border-radius:50%;background:#DFE1E4;box-shadow:0 0 0 3px #16181A}
+  .conn-meta{margin-top:7px;font-size:9.5px;line-height:1.5;color:#74787F}
+  .mono-id{margin-top:2px;font-family:var(--mono);font-size:8.5px;color:#62666D;letter-spacing:.03em;
+           white-space:nowrap}
+  .rail-ver{margin-top:14px;font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:#35383D}
+
+  /* ---------- main / type ---------- */
+  .main{padding:28px;min-width:0;overflow:hidden}
+  .view{height:844px;display:grid;column-gap:20px;row-gap:20px}
+  #view-lighting{grid-template-rows:60px 364px 312px 48px}
+  #view-keymap{grid-template-rows:60px 400px 344px}
+  #view-about{grid-template-rows:60px minmax(0,1fr)}
+  .view[hidden]{display:none}
+  .head{display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .head h1{margin:0;font-size:22px;line-height:1.15;font-weight:600;letter-spacing:-.025em;color:#F1F2F4}
+  .sub{margin:5px 0 0;font-size:12px;line-height:1.4;color:#82858B;letter-spacing:-.005em}
+  .actions{display:flex;align-items:center;gap:6px;flex:none}
+  .btn{height:28px;display:inline-flex;align-items:center;gap:6px;padding:0 9px;border:1px solid #24262A;
+       border-radius:6px;background:#0C0D0F;color:#AEB1B6;font-size:11px;font-weight:500;
+       letter-spacing:-.005em;transition:background .12s,border-color .12s,color .12s}
+  .btn svg{width:12.5px;height:12.5px;opacity:.78;flex:none}
+  .btn:hover{background:#121316;border-color:#32353A;color:#EDEEF0}
+  .btn:active{background:#0A0B0D;border-color:#24262A;color:#C9CBD0}
+  .btn:focus-visible{outline:1px solid #565A61;outline-offset:2px}
+  .btn-quiet{border-color:transparent;background:transparent}
+  .btn-quiet:hover{border-color:#24262A;background:#0D0E10}
+
+  .card{background:var(--card);border:1px solid #1B1D20;border-radius:10px;min-width:0}
+  .card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;height:18px}
+  .card-title{margin:0;font-size:11.5px;font-weight:600;letter-spacing:-.005em;color:#E5E6E9}
+  .meta{font-size:9.5px;line-height:1;color:#6A6E75;letter-spacing:.015em;
+        font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* ---------- keyboard ---------- */
+  .board-card{padding:16px;display:flex;flex-direction:column;min-height:0}
+  .live{display:flex;align-items:center;gap:7px;font-size:10px;color:#9B9EA4;letter-spacing:.005em}
+  .live-dot{width:5px;height:5px;border-radius:50%;background:var(--lc);flex:none;
+            filter:drop-shadow(0 0 3px var(--lc))}
+  .board-stage{flex:1;display:flex;align-items:center;justify-content:center;margin-top:12px;min-height:0}
+  .board{position:relative;width:750px;height:301px;background:#0A0B0C;border:1px solid #1D1F23;
+         border-radius:9px;box-shadow:0 26px 54px -34px rgba(0,0,0,.95),
+         inset 0 1px 0 rgba(255,255,255,.025)}
+  .cap{position:absolute;display:flex;align-items:center;justify-content:center;padding:0;border-radius:5px;
+       background:#191A1D;border:1px solid #292B2F;color:#8D9096;overflow:hidden;
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 1px 0 rgba(0,0,0,.45)}
+  .cap::after{content:"";position:absolute;inset:0;border-radius:4px;background:var(--lc);
+              opacity:calc(var(--i,.3) * var(--bright,.72) * .16);pointer-events:none}
+  .cap .leg{position:relative;z-index:1;line-height:1;font-weight:500;letter-spacing:.005em;
+            white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.4)}
+  .cap.cat-alpha,.cap.cat-number{background:#1A1B1E;color:#BEC1C6;--lgc:#BEC1C6}
+  .cap.cat-symbol{--lgc:#A4A7AC;background:#191A1D}
+  .cap.cat-modifier,.cap.cat-function,.cap.cat-navigation{background:#17181B;--lgc:#878A90}
+  .cap .leg{font-size:10.5px}
+  .cap.cat-alpha .leg,.cap.cat-number .leg{font-size:10.5px}
+  .cap.cat-symbol .leg{font-size:10px}
+  .cap.cat-function .leg{font-size:9px}
+  .cap.cat-modifier .leg{font-size:8.5px}
+  .cap.cat-navigation .leg{font-size:9px}
+  .cap.arrow .leg{font-size:11px}
+  .home{position:absolute;left:50%;bottom:6px;width:6px;height:1.5px;margin-left:-3px;border-radius:1px;
+        background:#46494F}
+  .knob{position:absolute;display:flex;align-items:center;justify-content:center}
+  .knob-disc{position:relative;width:36px;height:36px;border-radius:50%;background:#1B1D20;
+             border:1px solid #31343A;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),
+             inset 0 -1px 0 rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.6)}
+  .knob-disc::before{content:"";position:absolute;inset:5px;border-radius:50%;border:1px solid #2A2D31;
+                     background:#1F2124}
+  .knob-disc::after{content:"";position:absolute;left:50%;top:5px;width:2px;height:6px;margin-left:-1px;
+                    border-radius:1px;background:#9DA0A6}
+  .knob-ring{position:absolute;inset:-1px;border-radius:50%;border:1px solid #2A2C30}
+  .knob-label{position:absolute;left:0;right:0;bottom:-13px;text-align:center;font-family:var(--mono);
+              font-size:7px;line-height:1;letter-spacing:.1em;color:#4F535A}
+  .board.is-off .cap{color:var(--lgc);border-color:#292B2F;
+       box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 1px 0 rgba(0,0,0,.45)}
+  .board.is-off .cap::after{opacity:0}
+  .board.is-off .home{background:#46494F}
+  .board.is-off .knob-ring{opacity:.12}
+
+  /* subtle warm/lighted states, kept grayscale-safe as fallbacks */
+  @supports (color: color-mix(in srgb, red 50%, blue)){
+    .cap[data-b="1"]{color:color-mix(in srgb,var(--lc) 18%,var(--lgc))}
+    .cap[data-b="2"]{color:color-mix(in srgb,var(--lc) 38%,var(--lgc))}
+    .cap[data-b="3"]{color:color-mix(in srgb,var(--lc) 62%,var(--lgc));
+                     border-color:color-mix(in srgb,var(--lc) 24%,#2A2C30);
+                     box-shadow:inset 0 0 14px color-mix(in srgb,var(--lc) 20%,transparent),
+                                inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.45)}
+    .cap[data-b="2"]{box-shadow:inset 0 0 10px color-mix(in srgb,var(--lc) 9%,transparent),
+                                inset 0 1px 0 rgba(255,255,255,.045),0 1px 0 rgba(0,0,0,.45)}
+    .knob-ring{border-color:color-mix(in srgb,var(--lc) 34%,transparent);
+               box-shadow:0 0 12px color-mix(in srgb,var(--lc) 13%,transparent)}
+    .home{background:color-mix(in srgb,var(--lc) 30%,#46494F)}
+  }
+
+  /* ---------- effects ---------- */
+  .duo{display:grid;grid-template-columns:568px 288px;gap:20px;min-height:0}
+  .fx-card{padding:16px;display:flex;flex-direction:column;min-height:0}
+  .fx-grid{flex:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(3,1fr);
+           gap:8px;margin-top:12px;min-height:0}
+  .fx{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+      padding:9px 10px 8px;border-radius:6px;border:1px solid #191B1E;background:#101113;
+      color:#A4A7AD;font-size:10.5px;font-weight:500;line-height:1.22;letter-spacing:-.005em;
+      text-align:left;transition:background .12s,border-color .12s,color .12s;overflow:hidden}
+  .fx:hover{background:#141519;border-color:#2A2C31;color:#DFE1E4}
+  .fx.is-active{background:#1B1D21;border-color:#3C3F45;color:#F4F5F7;
+                box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .fx:focus-visible{outline:1px solid #565A61;outline-offset:1px}
+  .fx-name{display:block;max-width:100%}
+  .fx-n{font-family:var(--mono);font-size:8px;line-height:1;color:#5B5F65;letter-spacing:.02em;
+        font-variant-numeric:tabular-nums}
+  .fx.is-active .fx-n{color:#A9ACB1}
+  .fx.is-active .fx-name{font-weight:600}
+  .fx-note{display:flex;align-items:flex-end;padding:9px 10px 8px;color:#5D6168;font-size:9px;
+           line-height:1.35;letter-spacing:-.005em}
+
+  /* ---------- colour ---------- */
+  .color-card{padding:16px;display:flex;flex-direction:column;min-height:0}
+  .hex{font-family:var(--mono);font-size:9.5px;color:#8B8E94;letter-spacing:.03em}
+  .swatches{display:flex;justify-content:space-between;margin-top:14px}
+  .swatch{width:28px;height:28px;border-radius:8px;background:var(--sw);flex:none;
+          box-shadow:inset 0 0 0 1px rgba(0,0,0,.28);
+          transition:transform .12s ease,box-shadow .12s ease}
+  .swatch:hover{transform:scale(1.045)}
+  .swatch.is-active{box-shadow:inset 0 0 0 1px rgba(0,0,0,.28),0 0 0 2px var(--card),0 0 0 3px #D3D5D9}
+  .swatch:focus-visible{outline:2px solid #6B6F76;outline-offset:3px}
+  .swatches.is-disabled{opacity:.32}
+  .swatches.is-disabled .swatch{cursor:default;transform:none}
+  .ctl{margin-top:18px}
+  .ctl + .ctl{margin-top:14px}
+  .ctl-top{display:flex;align-items:baseline;justify-content:space-between;height:16px}
+  .ctl-label{font-size:11px;font-weight:500;color:#BCBFC4;letter-spacing:-.005em}
+  .ctl-val{font-family:var(--mono);font-size:10px;color:#E3E4E7;font-variant-numeric:tabular-nums}
+  .slider{-webkit-appearance:none;appearance:none;display:block;width:100%;height:14px;margin:4px 0 0;
+          background:transparent;cursor:pointer}
+  .slider::-webkit-slider-runnable-track{height:2px;border-radius:1px;
+      background:linear-gradient(to right,#D7D9DD 0,#D7D9DD var(--p,72%),#25272B var(--p,72%),#25272B 100%)}
+  .slider::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;width:13px;height:13px;
+      margin-top:-5.5px;border-radius:50%;background:#F1F2F4;border:3px solid #0D0E10;
+      box-shadow:0 0 0 1px #3A3D43,0 1px 2px rgba(0,0,0,.7)}
+  .slider:hover::-webkit-slider-thumb{box-shadow:0 0 0 1px #55585F,0 1px 2px rgba(0,0,0,.7)}
+  .slider:focus{outline:none}
+  .slider:focus-visible{outline:1px solid #565A61;outline-offset:3px;border-radius:2px}
+  .slider:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 1px #6A6E75,0 0 0 4px rgba(255,255,255,.1)}
+  .slider::-moz-range-track{height:2px;border-radius:1px;background:#25272B}
+  .slider::-moz-range-progress{height:2px;border-radius:1px;background:#D7D9DD}
+  .slider::-moz-range-thumb{box-sizing:border-box;width:13px;height:13px;border-radius:50%;
+      background:#F1F2F4;border:3px solid #0D0E10;box-shadow:0 0 0 1px #3A3D43}
+  .hints{display:flex;justify-content:space-between;margin-top:4px;font-size:8.5px;color:#6B6F76;
+         letter-spacing:.02em}
+  .ctl.is-disabled{opacity:.32}
+  .ctl.is-disabled .slider{cursor:default}
+  .presets{margin-top:auto;border-top:1px solid #191B1E;padding-top:14px}
+  .eyebrow{font-family:var(--mono);font-size:8.5px;font-weight:500;letter-spacing:.12em;
+           text-transform:uppercase;color:#666A71}
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);margin-top:8px;height:30px;
+       border:1px solid #24262A;border-radius:6px;overflow:hidden;background:#0B0C0E}
+  .seg-btn{font-size:10.5px;font-weight:500;color:#9A9DA3;border-left:1px solid #202226;
+           transition:background .12s,color .12s}
+  .seg-btn:first-child{border-left:0}
+  .seg-btn:hover{background:#131418;color:#E8E9EB}
+  .seg-btn:active{background:#181A1E}
+  .seg-btn:focus-visible{outline:1px solid #4A4D53;outline-offset:-3px}
+
+  /* ---------- summary ---------- */
+  .summary{display:flex;align-items:center;gap:14px;padding:0 16px;background:#0C0D0F;
+           border:1px solid #1B1D20;border-radius:8px;min-width:0}
+  .sum-eyebrow{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;
+               color:#666A71;flex:none}
+  .sum-main{display:flex;align-items:center;gap:9px;font-size:11px;color:#8F9298;white-space:nowrap;
+            min-width:0;overflow:hidden}
+  .sum-effect{font-size:11.5px;font-weight:600;color:#EDEEF0;letter-spacing:-.005em}
+  .sum-colour{display:inline-flex;align-items:center;gap:7px}
+  .sum-chip{width:7px;height:7px;border-radius:50%;background:var(--lc);flex:none;
+            box-shadow:0 0 0 2px #17181A}
+  .sum-sep{width:2px;height:2px;border-radius:50%;background:#3E4147;flex:none}
+  .num{color:#C6C9CE;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:10px}
+  .sum-right{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:9.5px;color:#7A7E85;
+             white-space:nowrap;flex:none}
+  .sum-right svg{width:11px;height:11px;color:#8A8E95}
+
+  /* ---------- keymap ---------- */
+  .km-board-card{padding:16px;display:flex;flex-direction:column;min-height:0}
+  .layer-tag{display:flex;align-items:center;gap:7px;font-size:10px;color:#B7BAC0}
+  .tag-dot{width:4px;height:4px;border-radius:50%;background:#A9ACB1;flex:none}
+  .board-km{width:782px;height:314px}
+  .board-km .cap{cursor:pointer;color:var(--lgc);border-color:#292B2F;box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 1px 0 rgba(0,0,0,.45);transition:background .1s,border-color .1s,color .1s}
+  .board-km .cap::after{opacity:0}
+  .board-km .cap:hover{background:#202226;border-color:#3C3F45;color:#E5E6E9}
+  .board-km .cap:focus-visible{outline:1px solid #D8DADE;outline-offset:1px;z-index:3}
+  .board-km .cap.is-selected{z-index:2;border-color:#E6E7EA;color:#F7F8F9;
+       box-shadow:0 0 0 1px #E6E7EA,0 1px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)}
+  .km-row{display:grid;grid-template-columns:568px 288px;gap:20px;min-height:0}
+  .key-card{padding:16px;display:flex;flex-direction:column;min-height:0}
+  .key-hero{display:flex;align-items:center;gap:14px;margin-top:20px}
+  .key-chip{width:58px;height:58px;border-radius:8px;border:1px solid #2E3035;background:#161719;
+            display:flex;align-items:center;justify-content:center;padding:6px;flex:none;overflow:hidden;
+            font-size:15px;font-weight:600;color:#ECEDEF;white-space:nowrap;
+            box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .key-name{font-size:14px;font-weight:600;letter-spacing:-.01em;color:#EDEEF0}
+  .key-sub{margin-top:3px;font-size:10.5px;color:#6B6E74}
+  .kv{margin:22px 0 0;display:flex;flex-direction:column}
+  .kv > div{display:flex;align-items:center;justify-content:space-between;padding:10px 0;
+            border-top:1px solid #191B1E}
+  .kv dt{font-size:10.5px;color:#777A80}
+  .kv dd{margin:0;font-size:10.5px;color:#C9CBD0;font-variant-numeric:tabular-nums}
+  .fineprint{margin:auto 0 0;padding-top:16px;font-size:9.5px;line-height:1.5;color:#6E7278}
+  .layers-card{padding:16px;display:flex;flex-direction:column;min-height:0}
+  .layer-list{margin-top:18px;display:flex;flex-direction:column;gap:6px}
+  .layer{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;
+         border:1px solid #1E2024;border-radius:6px;font-size:11px;color:#A7AAAF}
+  .layer.is-active{background:#16181B;border-color:#2A2C31;color:#EDEEF0}
+  .layer .meta{font-size:9px}
+
+  /* ---------- about ---------- */
+  .about-card{padding:20px;display:flex;flex-direction:column;min-height:0}
+  .about-top{display:flex;align-items:center;gap:12px;padding-bottom:22px;border-bottom:1px solid #191B1E}
+  .mark-lg{width:38px;height:38px;border-radius:10px;font-size:14px}
+  .about-name{font-size:16px;font-weight:600;letter-spacing:-.015em;color:#EDEEF0}
+  .about-sub{margin-top:3px;font-size:10.5px;color:#6B6E74}
+  .about-badge{margin-left:auto;font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;
+               text-transform:uppercase;color:#777A80;border:1px solid #24262A;border-radius:5px;
+               padding:5px 7px}
+  .about-grid{margin-top:6px;display:grid;grid-template-columns:1fr 1fr;column-gap:48px}
+  .about-row{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:13px 0;
+             border-bottom:1px solid #17191C;font-size:11px}
+  .about-row dt{color:#6B6E74;white-space:nowrap}
+  .about-row dd{margin:0;color:#C6C9CE;text-align:right}
+  .about-note{margin:26px 0 0;max-width:560px;font-size:11px;line-height:1.65;color:#878A90}
+  .about-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;
+              border-top:1px solid #17191C;padding-top:14px;font-size:9px;color:#44474D}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">H</div>
+      <div class="brand-txt">
+        <span class="brand-name">Hi75C Pro</span>
+        <span class="brand-sub">LEOBOG · 75% · 82 keys</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Sections">
+      <button type="button" class="nav-item is-active" data-view="lighting" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="2.6"/><path d="M8 1.4v1.5M8 13.1v1.5M1.4 8h1.5M13.1 8h1.5M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M12.7 3.3l-1.1 1.1M4.4 11.6l-1.1 1.1"/>
+        </svg>
+        <span>Lighting</span>
+      </button>
+      <button type="button" class="nav-item" data-view="keymap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <rect x="1.6" y="4" width="12.8" height="8" rx="2"/>
+          <path d="M4.2 6.5h.01M6.6 6.5h.01M9 6.5h.01M11.4 6.5h.01M4.2 9.4h.01M6.6 9.4h2.8M10.6 9.4h.01"/>
+        </svg>
+        <span>Keymap</span>
+      </button>
+      <button type="button" class="nav-item" data-view="about">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.2"/><path d="M8 7.2v3.5"/>
+          <circle cx="8" cy="4.9" r=".65" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>About</span>
+      </button>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="conn"><span class="led" aria-hidden="true"></span><span>Connected</span></div>
+      <div class="conn-meta">2.4 GHz dongle</div>
+      <div class="conn-meta mono-id">3554:FA09 · FW 1.06 · 1 ms</div>
+      <div class="rail-ver">UTILITY 0.9.4</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ============ LIGHTING ============ -->
+    <section class="view" id="view-lighting" aria-labelledby="lighting-title">
+      <header class="head">
+        <div>
+          <h1 id="lighting-title">Lighting</h1>
+          <p class="sub">One effect at a time, written to the board as you change it.</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn" title="Import a lighting profile (.json)">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 2.1v7.2"/><path d="M5.3 6.7 8 9.4l2.7-2.7"/>
+              <path d="M2.8 10.6v1.5c0 .9.7 1.6 1.6 1.6h7.2c.9 0 1.6-.7 1.6-1.6v-1.5"/>
+            </svg>
+            <span>Import</span>
+          </button>
+          <button type="button" class="btn btn-quiet" title="Reset lighting to factory defaults">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3.2 8a4.8 4.8 0 1 0 1.4-3.4"/><path d="M2.9 2.9v3.9h3.9"/>
+            </svg>
+            <span>Restore</span>
+          </button>
+          <button type="button" class="btn btn-quiet" title="Rescan for a connected keyboard">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13 8a5 5 0 1 1-1.5-3.6"/><path d="M13.1 2.7v3.8H9.3"/>
+            </svg>
+            <span>Rescan</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="card board-card" aria-label="Keyboard lighting preview">
+        <div class="card-head">
+          <div class="live"><span class="live-dot" aria-hidden="true"></span> Live preview</div>
+          <div class="meta">ANSI 75% · 82 keys</div>
+        </div>
+        <div class="board-stage">
+          <div class="board" id="board" role="img"
+               aria-label="Hi75C Pro keycaps lit by the selected effect and colour">
+          <div class="cap cat-function" data-b="1" style="left:2.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.47" title="Esc · matrix 0"><span class="leg">Esc</span></div>
+          <div class="cap cat-function" data-b="2" style="left:94.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.55" title="F1 · matrix 12"><span class="leg">F1</span></div>
+          <div class="cap cat-function" data-b="2" style="left:140.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.55" title="F2 · matrix 18"><span class="leg">F2</span></div>
+          <div class="cap cat-function" data-b="2" style="left:186.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.53" title="F3 · matrix 24"><span class="leg">F3</span></div>
+          <div class="cap cat-function" data-b="1" style="left:232.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.50" title="F4 · matrix 30"><span class="leg">F4</span></div>
+          <div class="cap cat-function" data-b="1" style="left:301.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.47" title="F5 · matrix 36"><span class="leg">F5</span></div>
+          <div class="cap cat-function" data-b="1" style="left:347.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.46" title="F6 · matrix 42"><span class="leg">F6</span></div>
+          <div class="cap cat-function" data-b="1" style="left:393.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.48" title="F7 · matrix 48"><span class="leg">F7</span></div>
+          <div class="cap cat-function" data-b="1" style="left:439.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.51" title="F8 · matrix 54"><span class="leg">F8</span></div>
+          <div class="cap cat-function" data-b="2" style="left:508.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.55" title="F9 · matrix 60"><span class="leg">F9</span></div>
+          <div class="cap cat-function" data-b="2" style="left:554.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.57" title="F10 · matrix 66"><span class="leg">F10</span></div>
+          <div class="cap cat-function" data-b="2" style="left:600.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.57" title="F11 · matrix 72"><span class="leg">F11</span></div>
+          <div class="cap cat-function" data-b="2" style="left:646.5px;top:2.5px;width:41.0px;height:41.0px;--i:0.53" title="F12 · matrix 78"><span class="leg">F12</span></div>
+          <div class="cap cat-symbol" data-b="1" style="left:2.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.46" title="` · matrix 1"><span class="leg">`</span></div>
+          <div class="cap cat-number" data-b="2" style="left:48.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.55" title="1 · matrix 7"><span class="leg">1</span></div>
+          <div class="cap cat-number" data-b="2" style="left:94.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.64" title="2 · matrix 13"><span class="leg">2</span></div>
+          <div class="cap cat-number" data-b="3" style="left:140.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.70" title="3 · matrix 19"><span class="leg">3</span></div>
+          <div class="cap cat-number" data-b="3" style="left:186.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.74" title="4 · matrix 25"><span class="leg">4</span></div>
+          <div class="cap cat-number" data-b="3" style="left:232.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.75" title="5 · matrix 31"><span class="leg">5</span></div>
+          <div class="cap cat-number" data-b="3" style="left:278.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.73" title="6 · matrix 37"><span class="leg">6</span></div>
+          <div class="cap cat-number" data-b="2" style="left:324.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.69" title="7 · matrix 43"><span class="leg">7</span></div>
+          <div class="cap cat-number" data-b="2" style="left:370.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.65" title="8 · matrix 49"><span class="leg">8</span></div>
+          <div class="cap cat-number" data-b="2" style="left:416.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.61" title="9 · matrix 55"><span class="leg">9</span></div>
+          <div class="cap cat-number" data-b="2" style="left:462.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.59" title="0 · matrix 61"><span class="leg">0</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:508.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.58" title="- · matrix 67"><span class="leg">-</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:554.5px;top:60.0px;width:41.0px;height:41.0px;--i:0.59" title="= · matrix 73"><span class="leg">=</span></div>
+          <div class="cap cat-modifier" data-b="2" style="left:600.5px;top:60.0px;width:87.0px;height:41.0px;--i:0.60" title="Backspace · matrix 79"><span class="leg">Backspace</span></div>
+          <div class="cap cat-navigation" data-b="2" style="left:704.0px;top:60.0px;width:41.0px;height:41.0px;--i:0.58" title="Del · matrix 85"><span class="leg">Del</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:2.5px;top:106.0px;width:64.0px;height:41.0px;--i:0.45" title="Tab · matrix 2"><span class="leg">Tab</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:71.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.56" title="Q · matrix 8"><span class="leg">Q</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:117.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.65" title="W · matrix 14"><span class="leg">W</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:163.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.75" title="E · matrix 20"><span class="leg">E</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:209.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.83" title="R · matrix 26"><span class="leg">R</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:255.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.88" title="T · matrix 32"><span class="leg">T</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:301.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.90" title="Y · matrix 38"><span class="leg">Y</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:347.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.88" title="U · matrix 44"><span class="leg">U</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:393.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.81" title="I · matrix 50"><span class="leg">I</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:439.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.73" title="O · matrix 56"><span class="leg">O</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:485.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.66" title="P · matrix 62"><span class="leg">P</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:531.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.60" title="[ · matrix 68"><span class="leg">[</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:577.5px;top:106.0px;width:41.0px;height:41.0px;--i:0.57" title="] · matrix 74"><span class="leg">]</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:623.5px;top:106.0px;width:64.0px;height:41.0px;--i:0.56" title="\ · matrix 80"><span class="leg">\</span></div>
+          <div class="cap cat-navigation" data-b="2" style="left:704.0px;top:106.0px;width:41.0px;height:41.0px;--i:0.56" title="End · matrix 86"><span class="leg">End</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:2.5px;top:152.0px;width:75.5px;height:41.0px;--i:0.44" title="Caps · matrix 3"><span class="leg">Caps</span></div>
+          <div class="cap cat-alpha" data-b="1" style="left:83.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.51" title="A · matrix 9"><span class="leg">A</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:129.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.59" title="S · matrix 15"><span class="leg">S</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:175.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.69" title="D · matrix 21"><span class="leg">D</span></div>
+          <div class="cap cat-alpha home-key" data-b="3" style="left:221.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.78" title="F · matrix 27"><span class="leg">F</span><span class="home" aria-hidden="true"></span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:267.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.87" title="G · matrix 33"><span class="leg">G</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:313.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.92" title="H · matrix 39"><span class="leg">H</span></div>
+          <div class="cap cat-alpha home-key" data-b="3" style="left:359.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.93" title="J · matrix 45"><span class="leg">J</span><span class="home" aria-hidden="true"></span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:405.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.88" title="K · matrix 51"><span class="leg">K</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:451.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.79" title="L · matrix 57"><span class="leg">L</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:497.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.70" title="; · matrix 63"><span class="leg">;</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:543.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.61" title="&#x27; · matrix 69"><span class="leg">&#x27;</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:589.0px;top:152.0px;width:98.5px;height:41.0px;--i:0.51" title="Enter · matrix 81"><span class="leg">Enter</span></div>
+          <div class="cap cat-navigation" data-b="1" style="left:704.0px;top:152.0px;width:41.0px;height:41.0px;--i:0.47" title="PgUp · matrix 87"><span class="leg">PgUp</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:2.5px;top:198.0px;width:98.5px;height:41.0px;--i:0.47" title="LShift · matrix 4"><span class="leg">LShift</span></div>
+          <div class="cap cat-alpha" data-b="1" style="left:106.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.48" title="Z · matrix 10"><span class="leg">Z</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:152.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.52" title="X · matrix 16"><span class="leg">X</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:198.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.58" title="C · matrix 22"><span class="leg">C</span></div>
+          <div class="cap cat-alpha" data-b="2" style="left:244.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.66" title="V · matrix 28"><span class="leg">V</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:290.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.73" title="B · matrix 34"><span class="leg">B</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:336.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.78" title="N · matrix 40"><span class="leg">N</span></div>
+          <div class="cap cat-alpha" data-b="3" style="left:382.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.81" title="M · matrix 46"><span class="leg">M</span></div>
+          <div class="cap cat-symbol" data-b="3" style="left:428.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.79" title=", · matrix 52"><span class="leg">,</span></div>
+          <div class="cap cat-symbol" data-b="3" style="left:474.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.75" title=". · matrix 58"><span class="leg">.</span></div>
+          <div class="cap cat-symbol" data-b="2" style="left:520.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.67" title="/ · matrix 64"><span class="leg">/</span></div>
+          <div class="cap cat-modifier" data-b="2" style="left:566.0px;top:198.0px;width:75.5px;height:41.0px;--i:0.55" title="RShift · matrix 70"><span class="leg">RShift</span></div>
+          <div class="cap cat-navigation arrow" data-b="1" style="left:658.0px;top:209.5px;width:41.0px;height:41.0px;--i:0.42" title="↑ · matrix 82"><span class="leg">↑</span></div>
+          <div class="cap cat-navigation" data-b="1" style="left:704.0px;top:198.0px;width:41.0px;height:41.0px;--i:0.38" title="PgDn · matrix 88"><span class="leg">PgDn</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:2.5px;top:244.0px;width:52.5px;height:41.0px;--i:0.48" title="LCtrl · matrix 5"><span class="leg">LCtrl</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:60.0px;top:244.0px;width:52.5px;height:41.0px;--i:0.47" title="LWin · matrix 11"><span class="leg">LWin</span></div>
+          <div class="cap cat-modifier" data-b="1" style="left:117.5px;top:244.0px;width:52.5px;height:41.0px;--i:0.45" title="LAlt · matrix 17"><span class="leg">LAlt</span></div>
+          <div class="cap cat-modifier" data-b="2" style="left:175.0px;top:244.0px;width:282.5px;height:41.0px;--i:0.53" title="Space · matrix 35"></div>
+          <div class="cap cat-modifier" data-b="2" style="left:462.5px;top:244.0px;width:41.0px;height:41.0px;--i:0.66" title="RAlt · matrix 53"><span class="leg">RAlt</span></div>
+          <div class="cap cat-modifier" data-b="2" style="left:508.5px;top:244.0px;width:41.0px;height:41.0px;--i:0.65" title="FN · matrix 59"><span class="leg">FN</span></div>
+          <div class="cap cat-modifier" data-b="2" style="left:554.5px;top:244.0px;width:41.0px;height:41.0px;--i:0.60" title="RCtrl · matrix 65"><span class="leg">RCtrl</span></div>
+          <div class="cap cat-navigation arrow" data-b="1" style="left:612.0px;top:255.5px;width:41.0px;height:41.0px;--i:0.50" title="← · matrix 77"><span class="leg">←</span></div>
+          <div class="cap cat-navigation arrow" data-b="1" style="left:658.0px;top:255.5px;width:41.0px;height:41.0px;--i:0.42" title="↓ · matrix 83"><span class="leg">↓</span></div>
+          <div class="cap cat-navigation arrow" data-b="0" style="left:704.0px;top:255.5px;width:41.0px;height:41.0px;--i:0.33" title="→ · matrix 89"><span class="leg">→</span></div>
+          <div class="knob" style="left:704.0px;top:2.5px;width:41px;height:41px" title="Rotary encoder · volume"><span class="knob-ring"></span><span class="knob-disc"></span><span class="knob-label">VOL</span></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="duo">
+        <section class="card fx-card" aria-label="Lighting effects">
+          <div class="card-head"><h2 class="card-title">Effects</h2><span class="meta">17 effects</span></div>
+          <div class="fx-grid">
+          <button type="button" class="fx" data-name="Off" data-speed="0" data-colour="0" data-bright="0" aria-pressed="false"><span class="fx-name">Off</span><span class="fx-n" aria-hidden="true">01</span></button>
+          <button type="button" class="fx" data-name="Fixed On" data-speed="0" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Fixed On</span><span class="fx-n" aria-hidden="true">02</span></button>
+          <button type="button" class="fx is-active" data-name="Breathing" data-speed="1" data-colour="1" data-bright="1" aria-pressed="true"><span class="fx-name">Breathing</span><span class="fx-n" aria-hidden="true">03</span></button>
+          <button type="button" class="fx" data-name="Spectrum Cycle" data-speed="1" data-colour="0" data-bright="1" aria-pressed="false"><span class="fx-name">Spectrum Cycle</span><span class="fx-n" aria-hidden="true">04</span></button>
+          <button type="button" class="fx" data-name="Row Ripple" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Row Ripple</span><span class="fx-n" aria-hidden="true">05</span></button>
+          <button type="button" class="fx" data-name="Raindrops" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Raindrops</span><span class="fx-n" aria-hidden="true">06</span></button>
+          <button type="button" class="fx" data-name="Slow Wave" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Slow Wave</span><span class="fx-n" aria-hidden="true">07</span></button>
+          <button type="button" class="fx" data-name="Board Ripple" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Board Ripple</span><span class="fx-n" aria-hidden="true">08</span></button>
+          <button type="button" class="fx" data-name="Stars Twinkle" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Stars Twinkle</span><span class="fx-n" aria-hidden="true">09</span></button>
+          <button type="button" class="fx" data-name="Snake" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Snake</span><span class="fx-n" aria-hidden="true">10</span></button>
+          <button type="button" class="fx" data-name="Neon Stream" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Neon Stream</span><span class="fx-n" aria-hidden="true">11</span></button>
+          <button type="button" class="fx" data-name="Reactive" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Reactive</span><span class="fx-n" aria-hidden="true">12</span></button>
+          <button type="button" class="fx" data-name="Center Wave" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Center Wave</span><span class="fx-n" aria-hidden="true">13</span></button>
+          <button type="button" class="fx" data-name="Rainbow Wheel" data-speed="1" data-colour="0" data-bright="1" aria-pressed="false"><span class="fx-name">Rainbow Wheel</span><span class="fx-n" aria-hidden="true">14</span></button>
+          <button type="button" class="fx" data-name="Waterfall" data-speed="1" data-colour="0" data-bright="1" aria-pressed="false"><span class="fx-name">Waterfall</span><span class="fx-n" aria-hidden="true">15</span></button>
+          <button type="button" class="fx" data-name="Fast Flicker" data-speed="1" data-colour="1" data-bright="1" aria-pressed="false"><span class="fx-name">Fast Flicker</span><span class="fx-n" aria-hidden="true">16</span></button>
+          <button type="button" class="fx" data-name="Per-Key Custom" data-speed="0" data-colour="0" data-bright="1" aria-pressed="false"><span class="fx-name">Per-Key Custom</span><span class="fx-n" aria-hidden="true">17</span></button>
+          <div class="fx-note">Colour and speed vary by effect.</div>
+          </div>
+        </section>
+
+        <section class="card color-card" aria-label="Colour, brightness and speed">
+          <div class="card-head"><h2 class="card-title">Colour</h2><span class="hex" id="hex">#FF8C1A</span></div>
+          <div class="swatches" id="swatches">
+          <button type="button" class="swatch" data-name="Red" data-hex="#FF2B2B" style="--sw:#FF2B2B" aria-label="Red #FF2B2B" aria-pressed="false" title="Red · #FF2B2B"></button>
+          <button type="button" class="swatch is-active" data-name="Orange" data-hex="#FF8C1A" style="--sw:#FF8C1A" aria-label="Orange #FF8C1A" aria-pressed="true" title="Orange · #FF8C1A"></button>
+          <button type="button" class="swatch" data-name="Yellow" data-hex="#FFE11A" style="--sw:#FFE11A" aria-label="Yellow #FFE11A" aria-pressed="false" title="Yellow · #FFE11A"></button>
+          <button type="button" class="swatch" data-name="Green" data-hex="#2EE65C" style="--sw:#2EE65C" aria-label="Green #2EE65C" aria-pressed="false" title="Green · #2EE65C"></button>
+          <button type="button" class="swatch" data-name="Cyan" data-hex="#1AE5FF" style="--sw:#1AE5FF" aria-label="Cyan #1AE5FF" aria-pressed="false" title="Cyan · #1AE5FF"></button>
+          <button type="button" class="swatch" data-name="Blue" data-hex="#2E6BFF" style="--sw:#2E6BFF" aria-label="Blue #2E6BFF" aria-pressed="false" title="Blue · #2E6BFF"></button>
+          <button type="button" class="swatch" data-name="Purple" data-hex="#B833FF" style="--sw:#B833FF" aria-label="Purple #B833FF" aria-pressed="false" title="Purple · #B833FF"></button>
+          </div>
+
+          <div class="ctl" id="bright-ctl">
+            <div class="ctl-top">
+              <label class="ctl-label" for="brightness">Brightness</label>
+              <output class="ctl-val" id="bright-val" for="brightness">72%</output>
+            </div>
+            <input class="slider" id="brightness" type="range" min="0" max="100" value="72"
+                   style="--p:72%" aria-valuetext="72 percent">
+            <div class="hints" aria-hidden="true"><span>Dim</span><span>Bright</span></div>
+          </div>
+
+          <div class="ctl" id="speed-ctl">
+            <div class="ctl-top">
+              <label class="ctl-label" for="speed">Speed</label>
+              <output class="ctl-val" id="speed-val" for="speed">40%</output>
+            </div>
+            <input class="slider" id="speed" type="range" min="0" max="100" value="40"
+                   style="--p:40%" aria-valuetext="40 percent">
+            <div class="hints" aria-hidden="true"><span>Slow</span><span>Fast</span></div>
+          </div>
+
+          <div class="presets">
+            <div class="eyebrow">Quick presets</div>
+            <div class="seg" role="group" aria-label="Quick presets">
+              <button type="button" class="seg-btn" data-preset="warm">Warm</button>
+              <button type="button" class="seg-btn" data-preset="cool">Cool</button>
+              <button type="button" class="seg-btn" data-preset="off">Off</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="summary" aria-label="Currently running">
+        <span class="sum-eyebrow">Running</span>
+        <div class="sum-main">
+          <strong class="sum-effect" id="sum-effect">Breathing</strong>
+          <span class="sum-sep" aria-hidden="true"></span>
+          <span class="sum-colour"><span class="sum-chip" aria-hidden="true"></span><span id="sum-colour-name">Orange</span></span>
+          <span class="sum-sep" aria-hidden="true"></span>
+          <span>Brightness <span class="num" id="sum-bright">72%</span></span>
+          <span class="sum-sep" aria-hidden="true"></span>
+          <span>Speed <span class="num" id="sum-speed">40%</span></span>
+        </div>
+        <div class="sum-right">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m3.4 8.4 3 3 6.2-6.6"/>
+          </svg>
+          <span>Written to board</span>
+        </div>
+      </footer>
+    </section>
+
+    <!-- ============ KEYMAP ============ -->
+    <section class="view" id="view-keymap" hidden aria-labelledby="keymap-title">
+      <header class="head">
+        <div>
+          <h1 id="keymap-title">Keymap</h1>
+          <p class="sub">Base layer. Select a key on the board to inspect its assignment.</p>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn btn-quiet" title="Reset the base layer to defaults">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3.2 8a4.8 4.8 0 1 0 1.4-3.4"/><path d="M2.9 2.9v3.9h3.9"/>
+            </svg>
+            <span>Reset layer</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="card km-board-card" aria-label="Keymap, base layer">
+        <div class="card-head">
+          <div class="layer-tag"><span class="tag-dot" aria-hidden="true"></span> Base layer</div>
+          <div class="meta">ANSI 75% · knob is firmware</div>
+        </div>
+        <div class="board-stage">
+          <div class="board board-km" role="group" aria-label="Click a key to inspect it">
+          <button type="button" class="cap cat-function km-cap is-selected" data-b="1" style="left:2.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.47" data-kid="K1" data-idx="0" data-name="Esc" data-cat="function" data-w="1" aria-label="Esc, matrix 0"><span class="leg">Esc</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:98.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.55" data-kid="K2" data-idx="12" data-name="F1" data-cat="function" data-w="1" aria-label="F1, matrix 12"><span class="leg">F1</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:146.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.55" data-kid="K3" data-idx="18" data-name="F2" data-cat="function" data-w="1" aria-label="F2, matrix 18"><span class="leg">F2</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:194.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.53" data-kid="K4" data-idx="24" data-name="F3" data-cat="function" data-w="1" aria-label="F3, matrix 24"><span class="leg">F3</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="1" style="left:242.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.50" data-kid="K5" data-idx="30" data-name="F4" data-cat="function" data-w="1" aria-label="F4, matrix 30"><span class="leg">F4</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="1" style="left:314.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.47" data-kid="K6" data-idx="36" data-name="F5" data-cat="function" data-w="1" aria-label="F5, matrix 36"><span class="leg">F5</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="1" style="left:362.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.46" data-kid="K7" data-idx="42" data-name="F6" data-cat="function" data-w="1" aria-label="F6, matrix 42"><span class="leg">F6</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="1" style="left:410.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.48" data-kid="K8" data-idx="48" data-name="F7" data-cat="function" data-w="1" aria-label="F7, matrix 48"><span class="leg">F7</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="1" style="left:458.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.51" data-kid="K9" data-idx="54" data-name="F8" data-cat="function" data-w="1" aria-label="F8, matrix 54"><span class="leg">F8</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:530.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.55" data-kid="K10" data-idx="60" data-name="F9" data-cat="function" data-w="1" aria-label="F9, matrix 60"><span class="leg">F9</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:578.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.57" data-kid="K11" data-idx="66" data-name="F10" data-cat="function" data-w="1" aria-label="F10, matrix 66"><span class="leg">F10</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:626.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.57" data-kid="K12" data-idx="72" data-name="F11" data-cat="function" data-w="1" aria-label="F11, matrix 72"><span class="leg">F11</span></button>
+          <button type="button" class="cap cat-function km-cap" data-b="2" style="left:674.5px;top:2.5px;width:43.0px;height:43.0px;--i:0.53" data-kid="K13" data-idx="78" data-name="F12" data-cat="function" data-w="1" aria-label="F12, matrix 78"><span class="leg">F12</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="1" style="left:2.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.46" data-kid="K15" data-idx="1" data-name="`" data-cat="symbol" data-w="1" aria-label="`, matrix 1"><span class="leg">`</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="2" style="left:50.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.55" data-kid="K16" data-idx="7" data-name="1" data-cat="number" data-w="1" aria-label="1, matrix 7"><span class="leg">1</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="2" style="left:98.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.64" data-kid="K17" data-idx="13" data-name="2" data-cat="number" data-w="1" aria-label="2, matrix 13"><span class="leg">2</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="3" style="left:146.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.70" data-kid="K18" data-idx="19" data-name="3" data-cat="number" data-w="1" aria-label="3, matrix 19"><span class="leg">3</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="3" style="left:194.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.74" data-kid="K19" data-idx="25" data-name="4" data-cat="number" data-w="1" aria-label="4, matrix 25"><span class="leg">4</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="3" style="left:242.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.75" data-kid="K20" data-idx="31" data-name="5" data-cat="number" data-w="1" aria-label="5, matrix 31"><span class="leg">5</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="3" style="left:290.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.73" data-kid="K21" data-idx="37" data-name="6" data-cat="number" data-w="1" aria-label="6, matrix 37"><span class="leg">6</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="2" style="left:338.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.69" data-kid="K22" data-idx="43" data-name="7" data-cat="number" data-w="1" aria-label="7, matrix 43"><span class="leg">7</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="2" style="left:386.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.65" data-kid="K23" data-idx="49" data-name="8" data-cat="number" data-w="1" aria-label="8, matrix 49"><span class="leg">8</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="2" style="left:434.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.61" data-kid="K24" data-idx="55" data-name="9" data-cat="number" data-w="1" aria-label="9, matrix 55"><span class="leg">9</span></button>
+          <button type="button" class="cap cat-number km-cap" data-b="2" style="left:482.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.59" data-kid="K25" data-idx="61" data-name="0" data-cat="number" data-w="1" aria-label="0, matrix 61"><span class="leg">0</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:530.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.58" data-kid="K26" data-idx="67" data-name="-" data-cat="symbol" data-w="1" aria-label="-, matrix 67"><span class="leg">-</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:578.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.59" data-kid="K27" data-idx="73" data-name="=" data-cat="symbol" data-w="1" aria-label="=, matrix 73"><span class="leg">=</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="2" style="left:626.5px;top:62.5px;width:91.0px;height:43.0px;--i:0.60" data-kid="K28" data-idx="79" data-name="Backspace" data-cat="modifier" data-w="2" aria-label="Backspace, matrix 79"><span class="leg">Backspace</span></button>
+          <button type="button" class="cap cat-navigation km-cap" data-b="2" style="left:734.5px;top:62.5px;width:43.0px;height:43.0px;--i:0.58" data-kid="K29" data-idx="85" data-name="Del" data-cat="navigation" data-w="1" aria-label="Del, matrix 85"><span class="leg">Del</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:2.5px;top:110.5px;width:67.0px;height:43.0px;--i:0.45" data-kid="K30" data-idx="2" data-name="Tab" data-cat="modifier" data-w="1.5" aria-label="Tab, matrix 2"><span class="leg">Tab</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:74.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.56" data-kid="K31" data-idx="8" data-name="Q" data-cat="alpha" data-w="1" aria-label="Q, matrix 8"><span class="leg">Q</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:122.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.65" data-kid="K32" data-idx="14" data-name="W" data-cat="alpha" data-w="1" aria-label="W, matrix 14"><span class="leg">W</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:170.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.75" data-kid="K33" data-idx="20" data-name="E" data-cat="alpha" data-w="1" aria-label="E, matrix 20"><span class="leg">E</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:218.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.83" data-kid="K34" data-idx="26" data-name="R" data-cat="alpha" data-w="1" aria-label="R, matrix 26"><span class="leg">R</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:266.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.88" data-kid="K35" data-idx="32" data-name="T" data-cat="alpha" data-w="1" aria-label="T, matrix 32"><span class="leg">T</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:314.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.90" data-kid="K36" data-idx="38" data-name="Y" data-cat="alpha" data-w="1" aria-label="Y, matrix 38"><span class="leg">Y</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:362.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.88" data-kid="K37" data-idx="44" data-name="U" data-cat="alpha" data-w="1" aria-label="U, matrix 44"><span class="leg">U</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:410.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.81" data-kid="K38" data-idx="50" data-name="I" data-cat="alpha" data-w="1" aria-label="I, matrix 50"><span class="leg">I</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:458.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.73" data-kid="K39" data-idx="56" data-name="O" data-cat="alpha" data-w="1" aria-label="O, matrix 56"><span class="leg">O</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:506.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.66" data-kid="K40" data-idx="62" data-name="P" data-cat="alpha" data-w="1" aria-label="P, matrix 62"><span class="leg">P</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:554.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.60" data-kid="K41" data-idx="68" data-name="[" data-cat="symbol" data-w="1" aria-label="[, matrix 68"><span class="leg">[</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:602.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.57" data-kid="K42" data-idx="74" data-name="]" data-cat="symbol" data-w="1" aria-label="], matrix 74"><span class="leg">]</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:650.5px;top:110.5px;width:67.0px;height:43.0px;--i:0.56" data-kid="K43" data-idx="80" data-name="\" data-cat="symbol" data-w="1.5" aria-label="\, matrix 80"><span class="leg">\</span></button>
+          <button type="button" class="cap cat-navigation km-cap" data-b="2" style="left:734.5px;top:110.5px;width:43.0px;height:43.0px;--i:0.56" data-kid="K44" data-idx="86" data-name="End" data-cat="navigation" data-w="1" aria-label="End, matrix 86"><span class="leg">End</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:2.5px;top:158.5px;width:79.0px;height:43.0px;--i:0.44" data-kid="K45" data-idx="3" data-name="Caps" data-cat="modifier" data-w="1.75" aria-label="Caps, matrix 3"><span class="leg">Caps</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="1" style="left:86.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.51" data-kid="K46" data-idx="9" data-name="A" data-cat="alpha" data-w="1" aria-label="A, matrix 9"><span class="leg">A</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:134.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.59" data-kid="K47" data-idx="15" data-name="S" data-cat="alpha" data-w="1" aria-label="S, matrix 15"><span class="leg">S</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:182.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.69" data-kid="K48" data-idx="21" data-name="D" data-cat="alpha" data-w="1" aria-label="D, matrix 21"><span class="leg">D</span></button>
+          <button type="button" class="cap cat-alpha home-key km-cap" data-b="3" style="left:230.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.78" data-kid="K49" data-idx="27" data-name="F" data-cat="alpha" data-w="1" aria-label="F, matrix 27"><span class="leg">F</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:278.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.87" data-kid="K50" data-idx="33" data-name="G" data-cat="alpha" data-w="1" aria-label="G, matrix 33"><span class="leg">G</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:326.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.92" data-kid="K51" data-idx="39" data-name="H" data-cat="alpha" data-w="1" aria-label="H, matrix 39"><span class="leg">H</span></button>
+          <button type="button" class="cap cat-alpha home-key km-cap" data-b="3" style="left:374.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.93" data-kid="K52" data-idx="45" data-name="J" data-cat="alpha" data-w="1" aria-label="J, matrix 45"><span class="leg">J</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:422.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.88" data-kid="K53" data-idx="51" data-name="K" data-cat="alpha" data-w="1" aria-label="K, matrix 51"><span class="leg">K</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:470.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.79" data-kid="K54" data-idx="57" data-name="L" data-cat="alpha" data-w="1" aria-label="L, matrix 57"><span class="leg">L</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:518.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.70" data-kid="K55" data-idx="63" data-name=";" data-cat="symbol" data-w="1" aria-label=";, matrix 63"><span class="leg">;</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:566.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.61" data-kid="K56" data-idx="69" data-name="&#x27;" data-cat="symbol" data-w="1" aria-label="&#x27;, matrix 69"><span class="leg">&#x27;</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:614.5px;top:158.5px;width:103.0px;height:43.0px;--i:0.51" data-kid="K57" data-idx="81" data-name="Enter" data-cat="modifier" data-w="2.25" aria-label="Enter, matrix 81"><span class="leg">Enter</span></button>
+          <button type="button" class="cap cat-navigation km-cap" data-b="1" style="left:734.5px;top:158.5px;width:43.0px;height:43.0px;--i:0.47" data-kid="K81" data-idx="87" data-name="PgUp" data-cat="navigation" data-w="1" aria-label="PgUp, matrix 87"><span class="leg">PgUp</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:2.5px;top:206.5px;width:103.0px;height:43.0px;--i:0.47" data-kid="K58" data-idx="4" data-name="LShift" data-cat="modifier" data-w="2.25" aria-label="LShift, matrix 4"><span class="leg">LShift</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="1" style="left:110.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.48" data-kid="K59" data-idx="10" data-name="Z" data-cat="alpha" data-w="1" aria-label="Z, matrix 10"><span class="leg">Z</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:158.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.52" data-kid="K60" data-idx="16" data-name="X" data-cat="alpha" data-w="1" aria-label="X, matrix 16"><span class="leg">X</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:206.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.58" data-kid="K61" data-idx="22" data-name="C" data-cat="alpha" data-w="1" aria-label="C, matrix 22"><span class="leg">C</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="2" style="left:254.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.66" data-kid="K62" data-idx="28" data-name="V" data-cat="alpha" data-w="1" aria-label="V, matrix 28"><span class="leg">V</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:302.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.73" data-kid="K63" data-idx="34" data-name="B" data-cat="alpha" data-w="1" aria-label="B, matrix 34"><span class="leg">B</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:350.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.78" data-kid="K64" data-idx="40" data-name="N" data-cat="alpha" data-w="1" aria-label="N, matrix 40"><span class="leg">N</span></button>
+          <button type="button" class="cap cat-alpha km-cap" data-b="3" style="left:398.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.81" data-kid="K65" data-idx="46" data-name="M" data-cat="alpha" data-w="1" aria-label="M, matrix 46"><span class="leg">M</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="3" style="left:446.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.79" data-kid="K66" data-idx="52" data-name="," data-cat="symbol" data-w="1" aria-label=",, matrix 52"><span class="leg">,</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="3" style="left:494.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.75" data-kid="K67" data-idx="58" data-name="." data-cat="symbol" data-w="1" aria-label="., matrix 58"><span class="leg">.</span></button>
+          <button type="button" class="cap cat-symbol km-cap" data-b="2" style="left:542.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.67" data-kid="K68" data-idx="64" data-name="/" data-cat="symbol" data-w="1" aria-label="/, matrix 64"><span class="leg">/</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="2" style="left:590.5px;top:206.5px;width:79.0px;height:43.0px;--i:0.55" data-kid="K69" data-idx="70" data-name="RShift" data-cat="modifier" data-w="1.75" aria-label="RShift, matrix 70"><span class="leg">RShift</span></button>
+          <button type="button" class="cap cat-navigation arrow km-cap" data-b="1" style="left:686.5px;top:218.5px;width:43.0px;height:43.0px;--i:0.42" data-kid="K70" data-idx="82" data-name="↑" data-cat="navigation" data-w="1" aria-label="↑, matrix 82"><span class="leg">↑</span></button>
+          <button type="button" class="cap cat-navigation km-cap" data-b="1" style="left:734.5px;top:206.5px;width:43.0px;height:43.0px;--i:0.38" data-kid="K14" data-idx="88" data-name="PgDn" data-cat="navigation" data-w="1" aria-label="PgDn, matrix 88"><span class="leg">PgDn</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:2.5px;top:254.5px;width:55.0px;height:43.0px;--i:0.48" data-kid="K71" data-idx="5" data-name="LCtrl" data-cat="modifier" data-w="1.25" aria-label="LCtrl, matrix 5"><span class="leg">LCtrl</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:62.5px;top:254.5px;width:55.0px;height:43.0px;--i:0.47" data-kid="K72" data-idx="11" data-name="LWin" data-cat="modifier" data-w="1.25" aria-label="LWin, matrix 11"><span class="leg">LWin</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="1" style="left:122.5px;top:254.5px;width:55.0px;height:43.0px;--i:0.45" data-kid="K73" data-idx="17" data-name="LAlt" data-cat="modifier" data-w="1.25" aria-label="LAlt, matrix 17"><span class="leg">LAlt</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="2" style="left:182.5px;top:254.5px;width:295.0px;height:43.0px;--i:0.53" data-kid="K74" data-idx="35" data-name="Space" data-cat="modifier" data-w="6.25" aria-label="Space, matrix 35"></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="2" style="left:482.5px;top:254.5px;width:43.0px;height:43.0px;--i:0.66" data-kid="K75" data-idx="53" data-name="RAlt" data-cat="modifier" data-w="1" aria-label="RAlt, matrix 53"><span class="leg">RAlt</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="2" style="left:530.5px;top:254.5px;width:43.0px;height:43.0px;--i:0.65" data-kid="K76" data-idx="59" data-name="FN" data-cat="modifier" data-w="1" aria-label="FN, matrix 59"><span class="leg">FN</span></button>
+          <button type="button" class="cap cat-modifier km-cap" data-b="2" style="left:578.5px;top:254.5px;width:43.0px;height:43.0px;--i:0.60" data-kid="K77" data-idx="65" data-name="RCtrl" data-cat="modifier" data-w="1" aria-label="RCtrl, matrix 65"><span class="leg">RCtrl</span></button>
+          <button type="button" class="cap cat-navigation arrow km-cap" data-b="1" style="left:638.5px;top:266.5px;width:43.0px;height:43.0px;--i:0.50" data-kid="K78" data-idx="77" data-name="←" data-cat="navigation" data-w="1" aria-label="←, matrix 77"><span class="leg">←</span></button>
+          <button type="button" class="cap cat-navigation arrow km-cap" data-b="1" style="left:686.5px;top:266.5px;width:43.0px;height:43.0px;--i:0.42" data-kid="K79" data-idx="83" data-name="↓" data-cat="navigation" data-w="1" aria-label="↓, matrix 83"><span class="leg">↓</span></button>
+          <button type="button" class="cap cat-navigation arrow km-cap" data-b="0" style="left:734.5px;top:266.5px;width:43.0px;height:43.0px;--i:0.33" data-kid="K80" data-idx="89" data-name="→" data-cat="navigation" data-w="1" aria-label="→, matrix 89"><span class="leg">→</span></button>
+          <div class="knob" style="left:734.5px;top:2.5px;width:43px;height:43px" title="Rotary encoder · volume"><span class="knob-ring"></span><span class="knob-disc"></span><span class="knob-label">VOL</span></div>
+          </div>
+        </div>
+      </section>
+
+      <div class="km-row">
+        <section class="card key-card" aria-label="Selected key">
+          <div class="card-head"><h2 class="card-title">Selected key</h2><span class="meta" id="km-matrix">matrix 0</span></div>
+          <div class="key-hero">
+            <div class="key-chip" id="km-chip">Esc</div>
+            <div>
+              <div class="key-name" id="km-name">Esc</div>
+              <div class="key-sub" id="km-sub">Function row · 1u</div>
+            </div>
+          </div>
+          <dl class="kv">
+            <div><dt>Matrix index</dt><dd id="km-idx">0</dd></div>
+            <div><dt>Layer</dt><dd>Base</dd></div>
+            <div><dt>Assignment</dt><dd id="km-assign">Esc</dd></div>
+          </dl>
+          <p class="fineprint">Assignments are written per key. The knob keeps its firmware encoder binding.</p>
+        </section>
+
+        <section class="card layers-card" aria-label="Layers">
+          <div class="card-head"><h2 class="card-title">Layers</h2><span class="meta">2 of 2</span></div>
+          <div class="layer-list">
+            <div class="layer is-active"><span>Base</span><span class="meta">81 keys + knob</span></div>
+            <div class="layer"><span>FN</span><span class="meta">Media · system</span></div>
+          </div>
+          <p class="fineprint">Hold FN to reach the secondary legends printed on the caps.</p>
+        </section>
+      </div>
+    </section>
+
+    <!-- ============ ABOUT ============ -->
+    <section class="view" id="view-about" hidden aria-labelledby="about-title">
+      <header class="head">
+        <div>
+          <h1 id="about-title">About</h1>
+          <p class="sub">A small, local controller for one keyboard.</p>
+        </div>
+      </header>
+
+      <section class="card about-card" aria-label="Application and device information">
+        <div class="about-top">
+          <div class="mark mark-lg" aria-hidden="true">H</div>
+          <div>
+            <div class="about-name">Hi75C Pro</div>
+            <div class="about-sub">Lighting utility · v0.9.4</div>
+          </div>
+          <span class="about-badge">On-board settings</span>
+        </div>
+
+        <div class="about-grid">
+          <div class="about-row"><dt>Device</dt><dd>LEOBOG Hi75C Pro</dd></div>
+          <div class="about-row"><dt>Firmware</dt><dd>1.06 · read from board</dd></div>
+          <div class="about-row"><dt>Layout</dt><dd>ANSI 75% · 82 keys incl. knob</dd></div>
+          <div class="about-row"><dt>Connection</dt><dd>2.4 GHz dongle · 3554:FA09</dd></div>
+          <div class="about-row"><dt>Lighting</dt><dd>16 effects + off · 7 colours</dd></div>
+          <div class="about-row"><dt>Storage</dt><dd>On-board profile</dd></div>
+          <div class="about-row"><dt>Protocol</dt><dd>HID report 0x13 · 20 bytes</dd></div>
+          <div class="about-row"><dt>Polling</dt><dd>1 ms</dd></div>
+        </div>
+
+        <p class="about-note">Settings are written directly over HID and stored on the keyboard, so they
+          survive a reboot and work without this window open. The utility holds no account, sends no
+          telemetry, and keeps no copy of your keymap in the cloud.</p>
+
+        <div class="about-foot">
+          <span>Built for Hi75C Pro · not affiliated with LEOBOG</span>
+          <span>© 2026</span>
+        </div>
+      </section>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  var app = document.querySelector('.app');
+  var board = document.getElementById('board');
+  var navItems = Array.prototype.slice.call(document.querySelectorAll('.nav-item'));
+  var views = Array.prototype.slice.call(document.querySelectorAll('.view'));
+
+  /* navigation */
+  navItems.forEach(function (item) {
+    item.addEventListener('click', function () {
+      navItems.forEach(function (other) {
+        var on = other === item;
+        other.classList.toggle('is-active', on);
+        if (on) { other.setAttribute('aria-current', 'page'); }
+        else { other.removeAttribute('aria-current'); }
+      });
+      views.forEach(function (view) {
+        view.hidden = view.id !== 'view-' + item.getAttribute('data-view');
+      });
+    });
+  });
+
+  /* lighting state */
+  var fxButtons = Array.prototype.slice.call(document.querySelectorAll('.fx[data-name]'));
+  var swatches = Array.prototype.slice.call(document.querySelectorAll('.swatch'));
+  var swatchWrap = document.getElementById('swatches');
+  var brightness = document.getElementById('brightness');
+  var speed = document.getElementById('speed');
+  var brightVal = document.getElementById('bright-val');
+  var speedVal = document.getElementById('speed-val');
+  var hexOut = document.getElementById('hex');
+  var sumEffect = document.getElementById('sum-effect');
+  var sumColour = document.getElementById('sum-colour-name');
+  var sumBright = document.getElementById('sum-bright');
+  var sumSpeed = document.getElementById('sum-speed');
+  var brightCtl = document.getElementById('bright-ctl');
+  var speedCtl = document.getElementById('speed-ctl');
+
+  var activeFx = fxButtons.filter(function (b) { return b.classList.contains('is-active'); })[0];
+  var activeSwatch = swatches.filter(function (s) { return s.classList.contains('is-active'); })[0];
+
+  function supports(button, attr) {
+    return !!button && button.getAttribute(attr) === '1';
+  }
+
+  function applyEffect(button) {
+    activeFx = button;
+    fxButtons.forEach(function (fx) {
+      var on = fx === button;
+      fx.classList.toggle('is-active', on);
+      fx.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var off = button.getAttribute('data-name') === 'Off';
+    var hasSpeed = supports(button, 'data-speed') && !off;
+    var hasColour = supports(button, 'data-colour') && !off;
+    var hasBright = supports(button, 'data-bright') && !off;
+
+    board.classList.toggle('is-off', off);
+    sumEffect.textContent = button.getAttribute('data-name');
+
+    speed.disabled = !hasSpeed;
+    speedCtl.classList.toggle('is-disabled', !hasSpeed);
+    if (!hasSpeed) { sumSpeed.textContent = '—'; } else { sumSpeed.textContent = speed.value + '%'; }
+
+    brightness.disabled = !hasBright;
+    brightCtl.classList.toggle('is-disabled', !hasBright);
+    if (!hasBright) { sumBright.textContent = '—'; } else { sumBright.textContent = brightness.value + '%'; }
+
+    swatches.forEach(function (s) { s.disabled = !hasColour; });
+    swatchWrap.classList.toggle('is-disabled', !hasColour);
+  }
+
+  function applyColour(button) {
+    activeSwatch = button;
+    swatches.forEach(function (s) {
+      var on = s === button;
+      s.classList.toggle('is-active', on);
+      s.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    var hex = button.getAttribute('data-hex');
+    app.style.setProperty('--lc', hex);
+    hexOut.textContent = hex.toUpperCase();
+    sumColour.textContent = button.getAttribute('data-name');
+  }
+
+  function setSlider(input, output, summary, val) {
+    input.value = val;
+    input.style.setProperty('--p', val + '%');
+    input.setAttribute('aria-valuetext', val + ' percent');
+    output.textContent = val + '%';
+    if (summary) { summary.textContent = val + '%'; }
+  }
+
+  fxButtons.forEach(function (button) {
+    button.addEventListener('click', function () { applyEffect(button); });
+  });
+
+  swatches.forEach(function (button) {
+    button.addEventListener('click', function () {
+      if (button.disabled) { return; }
+      applyColour(button);
+    });
+  });
+
+  brightness.addEventListener('input', function () {
+    board.style.setProperty('--bright', brightness.value / 100);
+    setSlider(brightness, brightVal, sumBright, brightness.value);
+  });
+  speed.addEventListener('input', function () {
+    setSlider(speed, speedVal, sumSpeed, speed.value);
+  });
+
+  /* quick presets */
+  document.querySelectorAll('[data-preset]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var preset = button.getAttribute('data-preset');
+      var target;
+      if (preset === 'warm') {
+        target = fxButtons.filter(function (b) { return b.getAttribute('data-name') === 'Breathing'; })[0];
+        applyEffect(target);
+        applyColour(swatches.filter(function (s) { return s.getAttribute('data-name') === 'Orange'; })[0]);
+        setSlider(brightness, brightVal, sumBright, 72);
+        setSlider(speed, speedVal, sumSpeed, 40);
+        board.style.setProperty('--bright', 0.72);
+      } else if (preset === 'cool') {
+        target = fxButtons.filter(function (b) { return b.getAttribute('data-name') === 'Slow Wave'; })[0];
+        applyEffect(target);
+        applyColour(swatches.filter(function (s) { return s.getAttribute('data-name') === 'Cyan'; })[0]);
+        setSlider(brightness, brightVal, sumBright, 58);
+        setSlider(speed, speedVal, sumSpeed, 30);
+        board.style.setProperty('--bright', 0.58);
+      } else {
+        target = fxButtons.filter(function (b) { return b.getAttribute('data-name') === 'Off'; })[0];
+        applyEffect(target);
+      }
+    });
+  });
+
+  /* keymap inspection */
+  var kmCaps = Array.prototype.slice.call(document.querySelectorAll('.km-cap'));
+  var kmChip = document.getElementById('km-chip');
+  var kmName = document.getElementById('km-name');
+  var kmSub = document.getElementById('km-sub');
+  var kmMatrix = document.getElementById('km-matrix');
+  var kmIdx = document.getElementById('km-idx');
+  var kmAssign = document.getElementById('km-assign');
+  var catLabel = {
+    function: 'Function row', number: 'Number row', alpha: 'Alpha block', symbol: 'Symbol',
+    modifier: 'Modifier', navigation: 'Navigation'
+  };
+
+  kmCaps.forEach(function (cap) {
+    cap.addEventListener('click', function () {
+      kmCaps.forEach(function (c) { c.classList.toggle('is-selected', c === cap); });
+      var name = cap.getAttribute('data-name');
+      var idx = cap.getAttribute('data-idx');
+      var cat = cap.getAttribute('data-cat');
+      var w = cap.getAttribute('data-w');
+      kmChip.textContent = name;
+      kmChip.style.fontSize = name.length > 6 ? '10.5px' : (name.length > 3 ? '12.5px' : '15px');
+      kmName.textContent = name;
+      kmSub.textContent = (catLabel[cat] || 'Key') + ' · ' + w + 'u';
+      kmMatrix.textContent = 'matrix ' + idx;
+      kmIdx.textContent = idx;
+      kmAssign.textContent = name;
+    });
+  });
+})();
+</script>
+</body>
+</html>

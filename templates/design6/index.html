@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180">
+<title>LEOBOG Hi75C Pro &middot; Lighting</title>
+<style>
+  :root{
+    --sans:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --mono:"Cascadia Mono","Consolas","SFMono-Regular",ui-monospace,"Liberation Mono",monospace;
+    --bg:#0a0d0f;
+    --ink:#edf2f4;
+    --ink2:#b7c1c6;
+    --ink3:#8a969c;
+    --ink4:#626e75;
+    --ink5:#4b565c;
+    --line:#252d31;
+    --line2:#2f383d;
+    --panel:#12171a;
+    --sig:#ff5a2b;
+    --sig2:#ff7a52;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(120% 90% at 50% 0%,#0f1518 0%,#070a0b 55%,#040607 100%);
+    font-family:var(--sans);font-size:12px;line-height:1.4;color:var(--ink);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  a{color:inherit;text-decoration:none}
+  svg{display:block}
+  ::selection{background:rgba(255,90,43,.3);color:#fff}
+
+  .app{
+    width:1180px;height:900px;flex:none;display:flex;position:relative;overflow:hidden;
+    border-radius:4px;background:var(--bg);
+    box-shadow:0 0 0 1px #2b3338,0 0 0 2px #050708,0 30px 90px -20px rgba(0,0,0,.92);
+  }
+  .app::before{
+    content:"";position:absolute;left:1px;right:1px;top:0;height:1px;z-index:70;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+  }
+  .app::after{
+    content:"";position:absolute;inset:0;z-index:60;border-radius:4px;pointer-events:none;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.025);
+  }
+
+  /* ---------- rail ---------- */
+  .rail{
+    width:172px;flex:0 0 172px;height:100%;display:flex;flex-direction:column;
+    padding:20px 16px 14px;position:relative;
+    background:
+      linear-gradient(180deg,rgba(255,255,255,.022),transparent 130px),
+      repeating-linear-gradient(180deg,rgba(255,255,255,.011) 0 1px,transparent 1px 3px),
+      linear-gradient(180deg,#0b0f11,#080b0d);
+    border-right:1px solid #20282c;
+  }
+  .rail::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;pointer-events:none;opacity:.55;
+    background:repeating-linear-gradient(180deg,rgba(255,255,255,.06) 0 1px,transparent 1px 4px);
+    border-right:1px solid rgba(0,0,0,.5);
+  }
+  .brand{display:flex;align-items:center;gap:10px;padding-left:2px}
+  .mark{
+    width:26px;height:26px;flex:none;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:2px;padding:3px;
+    border:1px solid #333c41;border-radius:2px;
+    background:linear-gradient(180deg,#1a2023,#0f1315);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 2px rgba(0,0,0,.6);
+  }
+  .mark i{display:block;background:#3a4349;border-radius:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+  .mark i.lit{background:var(--sig);box-shadow:0 0 8px rgba(255,90,43,.65),inset 0 1px 0 rgba(255,255,255,.25)}
+  .word{font-size:11.5px;font-weight:600;letter-spacing:.26em;line-height:1;color:#e9eff1}
+  .brand-sub{font:7.5px/1 var(--mono);letter-spacing:.2em;color:#6a767c;margin-top:5px;text-transform:uppercase}
+
+  .rail-rule{height:1px;flex:none;background:linear-gradient(90deg,#2a3338,rgba(42,51,56,0));margin:18px 0 16px}
+  .sec-lb{
+    font:8px/1 var(--mono);letter-spacing:.2em;color:#5a666c;text-transform:uppercase;
+    margin-bottom:9px;text-shadow:0 1px 0 rgba(255,255,255,.03);
+  }
+
+  .nav{
+    width:100%;height:40px;display:flex;align-items:center;gap:9px;padding:0 9px;margin-bottom:3px;
+    border:1px solid transparent;border-radius:2px;text-align:left;
+    color:#96a2a8;transition:background .15s,border-color .15s,color .15s;
+  }
+  .nav .n{font:8px var(--mono);letter-spacing:.08em;color:#4f5b61;width:14px;flex:none}
+  .nav .t{font-size:11.5px;line-height:1;font-weight:500;letter-spacing:.02em}
+  .nav .hint{margin-left:auto;font:7.5px var(--mono);letter-spacing:.05em;color:#4f5b61}
+  .nav .dot{margin-left:auto;width:4px;height:4px;border-radius:50%;background:transparent;flex:none}
+  .nav:hover{background:rgba(255,255,255,.025);border-color:#1e262a;color:#c0cacf}
+  .nav.on{
+    background:linear-gradient(180deg,#181e21,#12171a);border-color:#293136;color:#eef3f5;
+    box-shadow:inset 2px 0 0 var(--sig),inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .nav.on .n{color:var(--sig)}
+  .nav.on .dot{background:var(--sig);box-shadow:0 0 7px rgba(255,90,43,.8)}
+  .nav:focus-visible{outline:1px solid var(--sig);outline-offset:1px}
+
+  .rail-grow{flex:1;min-height:60px;display:flex;align-items:center;padding-left:2px}
+  .vlabel{
+    writing-mode:vertical-rl;transform:rotate(180deg);
+    font:7.5px var(--mono);letter-spacing:.32em;color:#444f56;text-transform:uppercase;white-space:nowrap;
+  }
+  .vlabel::after{content:"";display:inline-block;width:1px;height:34px;background:#2a3338;margin-top:14px}
+
+  .device{margin-top:18px;flex:none}
+  .dev-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .conn{display:flex;align-items:center;gap:5px;font:7.5px var(--mono);letter-spacing:.12em;color:var(--sig);text-transform:uppercase}
+  .conn i{width:5px;height:5px;border-radius:50%;background:var(--sig);box-shadow:0 0 6px rgba(255,90,43,.9);animation:pulse 3.8s ease-in-out infinite}
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,90,43,0),0 0 6px rgba(255,90,43,.9)}
+    50%{box-shadow:0 0 0 3px rgba(255,90,43,.07),0 0 10px rgba(255,90,43,.95)}
+  }
+  .dev-card{
+    border:1px solid #252d31;border-radius:3px;padding:10px;
+    background:linear-gradient(180deg,#13181b,#0f1315);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .dev-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .dev-name{font-size:12px;font-weight:600;letter-spacing:.01em;color:#e6eef1;white-space:nowrap}
+  .dev-badge{font:7px var(--mono);letter-spacing:.1em;color:#7f8b91;border:1px solid #2c353a;padding:2px 4px;border-radius:1px;flex:none}
+  .dev-sub{font:8px var(--mono);letter-spacing:.08em;color:#657178;margin-top:5px}
+  .dev-rule{height:1px;background:#20282c;margin:9px 0 6px}
+  .dev-row{
+    display:flex;justify-content:space-between;align-items:center;height:17px;
+    font:7.5px var(--mono);letter-spacing:.1em;color:#556168;text-transform:uppercase;
+  }
+  .dev-row b{font-weight:400;color:#9fabb1;letter-spacing:.03em}
+  .dev-ticks{display:flex;gap:2px;margin-top:9px;height:5px}
+  .dev-ticks i{flex:1;background:#2a3439;border-radius:.5px}
+  .dev-ticks i:nth-child(4n){background:rgba(255,90,43,.35)}
+  .rail-foot{
+    display:flex;justify-content:space-between;align-items:center;padding-top:14px;
+    font:7.5px var(--mono);letter-spacing:.12em;color:#48545a;text-transform:uppercase;flex:none;
+  }
+
+  /* ---------- main ---------- */
+  .main{
+    flex:1;min-width:0;height:100%;display:flex;flex-direction:column;padding:22px 24px 20px;position:relative;
+    background:
+      radial-gradient(900px 260px at 55% -120px,rgba(255,255,255,.045),transparent 70%),
+      repeating-linear-gradient(180deg,rgba(255,255,255,.008) 0 1px,transparent 1px 3px),
+      linear-gradient(180deg,#0e1214,#0a0d0f 52%,#090c0e);
+  }
+  .page{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .ph-l{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .eyebrow{display:flex;align-items:center;gap:8px;font:8px var(--mono);letter-spacing:.18em;color:#5f6b72;text-transform:uppercase}
+  .eyebrow .ebar{width:14px;height:2px;flex:none;background:var(--sig);box-shadow:0 0 8px rgba(255,90,43,.5)}
+  .eyebrow .slash{color:#394349}
+  h1{margin:0;font-size:24px;line-height:1;font-weight:500;letter-spacing:-.02em;color:#f0f4f6}
+  .ph-r{display:flex;align-items:center;gap:16px}
+  .stat{display:flex;flex-direction:column;gap:5px}
+  .stat .sk{font:7.5px var(--mono);letter-spacing:.16em;color:#59656b;text-transform:uppercase}
+  .stat .v{font:9.5px var(--mono);letter-spacing:.03em;color:#aeb8bd;white-space:nowrap}
+  .vr{width:1px;height:26px;background:#232b2f}
+  .slots{display:flex;gap:3px;margin-left:4px}
+  .slots i{width:13px;height:4px;border-radius:1px;background:#242c30}
+  .slots i.on{background:var(--sig);box-shadow:0 0 8px rgba(255,90,43,.5)}
+
+  .top{height:348px;flex:none;display:grid;grid-template-columns:648px 296px;gap:16px;margin-bottom:16px}
+  .card{
+    position:relative;border:1px solid #252d31;border-radius:3px;
+    background:linear-gradient(180deg,#151a1d 0%,#111517 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 1px 0 rgba(0,0,0,.35);
+  }
+  .card::before{
+    content:"";position:absolute;left:10px;right:10px;top:0;height:1px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+  }
+  .card-hd{height:18px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .hl{display:flex;align-items:center;gap:7px;font:8.5px var(--mono);letter-spacing:.16em;color:#8b979d;text-transform:uppercase}
+  .hr{font:8px var(--mono);letter-spacing:.12em;color:#5b666d;text-transform:uppercase;white-space:nowrap}
+  .hr .sep{color:#394349;margin:0 4px}
+  .hr .live-dot{display:inline-block;vertical-align:middle;margin:-1px 5px 0 0}
+  .live-dot{width:4px;height:4px;flex:none;border-radius:50%;background:var(--sig);box-shadow:0 0 7px rgba(255,90,43,.9)}
+  .count{
+    display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:12px;padding:0 3px;margin-left:1px;
+    border:1px solid #303a3f;border-radius:1px;font:7px var(--mono);letter-spacing:.06em;color:#9aa6ac;
+  }
+
+  /* preview */
+  .preview{padding:16px;display:flex;flex-direction:column}
+  .deck{
+    position:relative;margin-top:9px;height:260px;flex:none;padding:6px 4px 8px;overflow:hidden;
+    border:1px solid #232b2f;border-radius:3px;
+    background:
+      radial-gradient(110% 100% at 50% 112%,rgba(255,90,43,.16),transparent 62%),
+      linear-gradient(180deg,#0c1012,#080b0d);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03),inset 0 12px 30px rgba(0,0,0,.35),0 0 32px -14px rgba(255,90,43,.3);
+  }
+  .deck-top{
+    position:relative;z-index:1;height:12px;display:flex;align-items:center;justify-content:space-between;
+    font:7px var(--mono);letter-spacing:.2em;color:#5e6a70;text-transform:uppercase;line-height:1;
+  }
+  .deck-top .dt-l{display:flex;align-items:center;gap:10px}
+  .deck-top .dt-r{display:flex;align-items:center;gap:10px;color:#4d585e}
+  .deck-top b{font-weight:600;letter-spacing:.28em;color:#78848a}
+  .deck-top .pdot{width:3px;height:3px;background:var(--sig);box-shadow:0 0 6px rgba(255,90,43,.8)}
+  .keys{position:relative;z-index:1;margin-top:4px;display:flex;flex-direction:column;gap:4px;width:604px}
+  .kr{display:flex;gap:4px;width:604px;height:34px;flex:none}
+  .kr:first-child{margin-bottom:4px}
+  .k{
+    position:relative;flex:none;height:34px;border:1px solid #363d41;border-radius:3px;
+    background:
+      radial-gradient(120% 90% at 50% 15%,rgba(255,255,255,.055),transparent 62%),
+      linear-gradient(180deg,rgba(255,90,43,.09),rgba(255,90,43,.025) 55%,rgba(0,0,0,.05)),
+      linear-gradient(180deg,#262b2e,#1c2124);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.10),
+      inset 0 -3px 0 rgba(0,0,0,.3),
+      0 1px 0 rgba(0,0,0,.55),
+      0 0 10px -6px rgba(255,90,43,.6);
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;line-height:1;font-weight:500;letter-spacing:.01em;color:#f3ece8;
+    text-shadow:0 0 8px rgba(255,90,43,.3);
+    user-select:none;
+  }
+  .k .alt{position:absolute;top:3px;right:4px;font-size:6px;line-height:1;font-weight:400;color:rgba(255,235,227,.46);letter-spacing:0;text-shadow:none}
+  .k.mod{font-size:7px;letter-spacing:.07em;color:#ded7d3;text-transform:uppercase}
+  .k.fn{font-size:8px;letter-spacing:.03em}
+  .k.esc{font-size:8px;letter-spacing:.04em}
+  .k.arrow{font-size:11px;font-weight:400;color:#f5ede9}
+  .k.space{font:6px var(--mono);letter-spacing:.32em;color:rgba(255,240,233,.32);text-shadow:none}
+  .sp{flex:none;height:34px}
+  .knob-wrap{flex:none;width:40px;height:34px;display:flex;align-items:center;justify-content:center}
+  .knob{
+    width:34px;height:34px;border-radius:50%;position:relative;
+    background:repeating-conic-gradient(from 8deg,#3a4247 0deg 5deg,#1d2326 5deg 11deg);
+    box-shadow:inset 0 0 0 1px #454e53,0 1px 2px rgba(0,0,0,.7),0 0 14px -3px rgba(255,90,43,.55);
+  }
+  .knob::before{
+    content:"";position:absolute;inset:5px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#2f373b,#151a1d 70%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 4px rgba(0,0,0,.6);
+  }
+  .knob::after{
+    content:"";position:absolute;top:4px;left:50%;width:2px;height:8px;border-radius:1px;
+    background:var(--sig);transform:translateX(-50%);box-shadow:0 0 6px rgba(255,90,43,.9);
+  }
+  .pv-foot{margin-top:9px;height:18px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .pv-l{display:flex;align-items:center;gap:8px;font-size:9px;color:#8b979d;white-space:nowrap}
+  .pv-l b{font-size:10px;font-weight:500;color:#e7eef1}
+  .pv-l .hex{font:8.5px var(--mono);letter-spacing:.02em;color:#ff8a63}
+  .pv-l .dot{width:4px;height:4px;border-radius:50%;background:var(--sig);box-shadow:0 0 6px rgba(255,90,43,.8);flex:none}
+  .pv-l .sep{color:#394349;margin:0 1px}
+  .pv-r{font:7.5px var(--mono);letter-spacing:.12em;color:#5a666c;text-transform:uppercase;white-space:nowrap}
+
+  /* output controls */
+  .output{padding:16px;display:flex;flex-direction:column}
+  .ctl{margin-top:10px;flex:1;display:flex;flex-direction:column;min-height:0}
+  .row{display:flex;align-items:center;justify-content:space-between;height:11px}
+  .lb{font:8px var(--mono);letter-spacing:.16em;color:#6c787e;text-transform:uppercase}
+  .vl{font:9px var(--mono);letter-spacing:.04em;color:#d9e2e6}
+  .vl .u{color:#6c787e;margin-left:1px}
+  .field{margin-bottom:16px}
+  .sw{display:flex;gap:6px;height:30px;margin-top:8px}
+  .sw button{
+    flex:1;height:30px;border:1px solid rgba(0,0,0,.55);border-radius:2px;padding:0;
+    background:var(--c);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.24),inset 0 -2px 3px rgba(0,0,0,.22);
+  }
+  .sw button.on{outline:1px solid var(--sig);outline-offset:2px}
+  .sw button:hover{filter:brightness(1.12)}
+  .sw button:focus-visible{outline:1px solid #fff;outline-offset:2px}
+  .fader{position:relative;height:24px;margin-top:8px;display:flex;align-items:center}
+  .track{
+    position:relative;width:100%;height:8px;overflow:hidden;
+    background:repeating-linear-gradient(90deg,#232a2e 0 4px,transparent 4px 7px);
+    border-top:1px solid #14191b;border-bottom:1px solid #30383d;
+  }
+  .fill{
+    position:absolute;left:0;top:0;bottom:0;display:block;
+    background:repeating-linear-gradient(90deg,#ff6a3d 0 4px,transparent 4px 7px);
+    box-shadow:0 0 10px rgba(255,90,43,.32);
+  }
+  .cap{
+    position:absolute;top:0;width:14px;height:24px;transform:translateX(-50%);border-radius:2px;
+    border:1px solid #4a545a;
+    background:
+      repeating-linear-gradient(90deg,rgba(0,0,0,.38) 0 1px,transparent 1px 3px),
+      linear-gradient(180deg,#3c454a,#22282c);
+    box-shadow:0 2px 4px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .cap::after{
+    content:"";position:absolute;left:2px;right:2px;top:11px;height:2px;
+    background:var(--sig);box-shadow:0 0 6px rgba(255,90,43,.8);
+  }
+  .steps{display:flex;gap:3px;height:20px;margin-top:8px}
+  .steps i{
+    flex:1;border:1px solid #242c30;border-radius:1px;
+    background:linear-gradient(180deg,#1a2023,#14181b);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .steps i.on{
+    border-color:rgba(255,90,43,.6);
+    background:linear-gradient(180deg,#ff7146,#e84716);
+    box-shadow:0 0 10px -2px rgba(255,90,43,.5),inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .divider{height:1px;background:#222a2e;margin:0 0 14px;flex:none}
+  .presets{display:flex;gap:6px;margin-top:8px}
+  .preset{
+    flex:1;height:54px;padding:7px 8px;border:1px solid #272f33;border-radius:2px;
+    background:linear-gradient(180deg,#171c1f,#121619);text-align:left;position:relative;
+    display:flex;flex-direction:column;justify-content:center;gap:3px;color:inherit;min-width:0;
+    transition:border-color .15s,background .15s;
+  }
+  .preset:hover{border-color:#343e43;background:linear-gradient(180deg,#1a2023,#14191c)}
+  .preset .p-top{display:flex;justify-content:space-between;align-items:center;height:7px}
+  .preset .p-num{font:7px var(--mono);line-height:1;letter-spacing:.08em;color:#5b666c}
+  .preset .p-dot{width:4px;height:4px;border-radius:50%;background:#333d42}
+  .preset .p-name{font-size:10px;line-height:1;font-weight:500;letter-spacing:.01em;color:#b4bfc4;white-space:nowrap}
+  .preset .p-meta{font:7px/1 var(--mono);letter-spacing:.005em;color:#68757b;white-space:nowrap}
+  .preset.on{
+    border-color:rgba(255,90,43,.55);
+    background:linear-gradient(180deg,rgba(255,90,43,.08),rgba(255,90,43,.012)),#14181b;
+    box-shadow:inset 2px 0 0 var(--sig);
+  }
+  .preset.on .p-name{color:#fff}
+  .preset.on .p-num{color:#ff8a63}
+  .preset.on .p-dot{background:var(--sig);box-shadow:0 0 6px rgba(255,90,43,.8)}
+  .ctl-foot{
+    margin-top:auto;height:11px;display:flex;align-items:center;gap:6px;
+    font:7px var(--mono);letter-spacing:.13em;color:#4f5b61;text-transform:uppercase;
+  }
+  .ctl-foot i{width:3px;height:3px;background:#3d484e;flex:none}
+
+  /* effects */
+  .effects{height:356px;flex:none;padding:16px;display:flex;flex-direction:column;margin-bottom:16px}
+  .fx-grid{margin-top:9px;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:55px;gap:6px}
+  .fx{
+    position:relative;display:flex;align-items:center;gap:10px;padding:0 11px 0 12px;overflow:hidden;
+    border:1px solid #242c30;border-radius:2px;
+    background:linear-gradient(180deg,#161b1e,#121619);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+    text-align:left;color:inherit;transition:background .15s,border-color .15s;
+  }
+  .fx:hover{background:linear-gradient(180deg,#1a2023,#151a1d);border-color:#333c41}
+  .fx-i{font:8px var(--mono);letter-spacing:.05em;color:#4f5b61;width:13px;flex:none}
+  .fx-b{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .fx-n{font-size:11px;line-height:1;font-weight:500;letter-spacing:.01em;color:#b9c3c8;white-space:nowrap}
+  .fx-d{font-size:8.5px;line-height:1;color:#6f7b82;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fx-led{margin-left:auto;width:4px;height:4px;flex:none;border-radius:50%;background:#333d42}
+  .fx.on{
+    border-color:rgba(255,90,43,.62);
+    background:
+      linear-gradient(180deg,rgba(255,90,43,.10),rgba(255,90,43,.015) 60%,rgba(0,0,0,0)),
+      linear-gradient(180deg,#1c2124,#14181b);
+    box-shadow:inset 2px 0 0 var(--sig),inset 0 0 0 1px rgba(255,90,43,.07),0 0 26px -14px rgba(255,90,43,.7);
+  }
+  .fx.on .fx-n{color:#fff5f1}
+  .fx.on .fx-d{color:#bda69d}
+  .fx.on .fx-i{color:#ff8a63}
+  .fx.on .fx-led{background:var(--sig);box-shadow:0 0 8px rgba(255,90,43,.9)}
+  .fx-wide{
+    margin-top:11px;height:46px;flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;
+    border:1px solid #242c30;border-radius:2px;
+    background:linear-gradient(180deg,#161b1e,#121619);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);text-align:left;color:inherit;
+    transition:background .15s,border-color .15s;
+  }
+  .fx-wide:hover{background:linear-gradient(180deg,#1a2023,#151a1d);border-color:#333c41}
+  .fx-wide .fx-i{width:15px}
+  .pk{width:14px;height:14px;flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-right:2px}
+  .pk i{display:block;background:#3d474d;border-radius:.5px}
+  .pk i:nth-child(5){background:rgba(255,90,43,.55)}
+  .fx-wide .fx-b{flex:1}
+  .fx-wide .fx-d{color:#5f6b72}
+  .fx-tag{
+    font:7px var(--mono);letter-spacing:.14em;color:#66727a;text-transform:uppercase;
+    border:1px solid #2b3439;border-radius:1px;padding:3px 6px;flex:none;
+  }
+  .fx-wide .fx-led{margin-left:6px}
+
+  /* status bar */
+  .bar{
+    height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 14px;
+    border:1px solid #252d31;border-radius:3px;
+    background:linear-gradient(180deg,#14191c,#101416);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .bar-l{display:flex;align-items:center;height:100%;min-width:0}
+  .sm{display:flex;flex-direction:column;justify-content:center;gap:4px;padding:0 12px;min-width:0}
+  .sm:first-child{padding-left:2px}
+  .sm-k{font:7px var(--mono);letter-spacing:.16em;color:#59656b;text-transform:uppercase;line-height:1;white-space:nowrap}
+  .sm-v{display:flex;align-items:center;gap:5px;font-size:9.5px;line-height:1;color:#c3cdd2;white-space:nowrap}
+  .sm-v b{font-weight:500;color:#e8eff2}
+  .sm-v .mono{font:8.5px var(--mono);letter-spacing:.02em;color:#ff9a78}
+  .sm-div{width:1px;height:24px;flex:none;background:#242c30}
+  .dot-sig{width:5px;height:5px;border-radius:50%;flex:none;background:var(--sig);box-shadow:0 0 6px rgba(255,90,43,.8)}
+  .chip{width:8px;height:8px;flex:none;border-radius:1px;background:var(--sig);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+  .bar-r{display:flex;align-items:center;gap:8px;flex:none}
+  .sync{
+    display:flex;align-items:center;gap:6px;margin-right:4px;
+    font:7.5px var(--mono);letter-spacing:.12em;color:#566269;text-transform:uppercase;white-space:nowrap;
+  }
+  .sync i{width:4px;height:4px;border-radius:50%;background:#5b6a70;flex:none}
+  .btn{
+    height:30px;padding:0 11px;display:inline-flex;align-items:center;gap:7px;
+    border:1px solid #2b3338;border-radius:2px;
+    background:linear-gradient(180deg,#1b2124,#151a1d);
+    color:#c6d0d4;font:500 9px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 1px 0 rgba(0,0,0,.45);
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .btn svg{width:11px;height:11px;flex:none;stroke:currentColor;fill:none;stroke-width:1.3;stroke-linecap:square;stroke-linejoin:miter;opacity:.75}
+  .btn:hover{border-color:#3b464c;background:linear-gradient(180deg,#20272a,#181e21);color:#eef3f5}
+  .btn:active{box-shadow:inset 0 2px 4px rgba(0,0,0,.45);transform:translateY(.5px)}
+  .btn.restore{color:#9aa5aa}
+  .btn.primary{
+    color:#ffd9cc;border-color:rgba(255,90,43,.45);
+    background:linear-gradient(180deg,rgba(255,90,43,.13),rgba(255,90,43,.035)),linear-gradient(180deg,#1b2124,#151a1d);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 18px -10px rgba(255,90,43,.8);
+  }
+  .btn.primary:hover{color:#fff;border-color:rgba(255,90,43,.7);background:linear-gradient(180deg,rgba(255,90,43,.2),rgba(255,90,43,.06)),linear-gradient(180deg,#20262a,#171d20)}
+  .btn:focus-visible{outline:1px solid var(--sig);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- rail -->
+  <aside class="rail">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i class="lit"></i></div>
+      <div>
+        <div class="word">LEOBOG</div>
+        <div class="brand-sub">HI75C Pro</div>
+      </div>
+    </div>
+
+    <div class="rail-rule"></div>
+    <div class="sec-lb">Sections</div>
+
+    <nav aria-label="Sections">
+      <button type="button" class="nav on" aria-current="page"><span class="n">01</span><span class="t">Lighting</span><span class="dot"></span></button>
+      <button type="button" class="nav"><span class="n">02</span><span class="t">Keymap</span><span class="hint">82</span></button>
+      <button type="button" class="nav"><span class="n">03</span><span class="t">About</span></button>
+    </nav>
+
+    <div class="rail-grow">
+      <div class="vlabel">Control surface &middot; AL 6063</div>
+    </div>
+
+    <div class="device">
+      <div class="dev-hd">
+        <span class="sec-lb" style="margin:0">Device</span>
+        <span class="conn"><i></i>Connected</span>
+      </div>
+      <div class="dev-card">
+        <div class="dev-top">
+          <span class="dev-name">Hi75C Pro</span>
+          <span class="dev-badge">75%</span>
+        </div>
+        <div class="dev-sub">USB-C &middot; Wired</div>
+        <div class="dev-rule"></div>
+        <div class="dev-row"><span>Rate</span><b>1000 Hz</b></div>
+        <div class="dev-row"><span>Firmware</span><b>1.0.7</b></div>
+        <div class="dev-row"><span>Serial</span><b>8F41-22C7</b></div>
+        <div class="dev-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+
+    <div class="rail-foot"><span>LGC 1.4.2</span><span>&copy; 2026</span></div>
+  </aside>
+
+  <!-- main -->
+  <main class="main">
+
+    <header class="page">
+      <div class="ph-l">
+        <div class="eyebrow"><span class="ebar"></span>Section 01 <span class="slash">/</span> Lighting</div>
+        <h1>Lighting</h1>
+      </div>
+      <div class="ph-r">
+        <div class="stat"><span class="sk">Profile</span><span class="v">01 &middot; Studio</span></div>
+        <div class="vr"></div>
+        <div class="stat"><span class="sk">Output</span><span class="v">USB-C &middot; 1000 Hz</span></div>
+        <div class="slots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+      </div>
+    </header>
+
+    <div class="top">
+
+      <!-- keyboard preview -->
+      <section class="card preview">
+        <div class="card-hd">
+          <span class="hl"><i class="live-dot"></i>Live preview</span>
+          <span class="hr">75% &middot; ANSI &middot; Knob</span>
+        </div>
+
+        <div class="deck">
+          <div class="deck-top">
+            <div class="dt-l"><span class="pdot"></span><b>LEOBOG</b><span>HI75C Pro</span></div>
+            <div class="dt-r"><span>CNC AL 6063</span><span>USB-C</span></div>
+          </div>
+          <div class="keys" role="img" aria-label="Keyboard preview, 82 keys with knob">
+            <div class="kr">
+              <div class="k esc" style="width:34px">Esc</div>
+              <div class="sp" style="width:14px"></div>
+              <div class="k fn" style="width:34px">F1</div>
+              <div class="k fn" style="width:34px">F2</div>
+              <div class="k fn" style="width:34px">F3</div>
+              <div class="k fn" style="width:34px">F4</div>
+              <div class="k fn" style="width:34px">F5</div>
+              <div class="k fn" style="width:34px">F6</div>
+              <div class="k fn" style="width:34px">F7</div>
+              <div class="k fn" style="width:34px">F8</div>
+              <div class="k fn" style="width:34px">F9</div>
+              <div class="k fn" style="width:34px">F10</div>
+              <div class="k fn" style="width:34px">F11</div>
+              <div class="k fn" style="width:34px">F12</div>
+              <div class="sp" style="width:10px"></div>
+              <div class="k mod" style="width:34px">Del</div>
+              <div class="knob-wrap"><div class="knob" aria-hidden="true"></div></div>
+            </div>
+
+            <div class="kr">
+              <div class="k" style="width:34px">&#96;<span class="alt">~</span></div>
+              <div class="k" style="width:34px">1<span class="alt">!</span></div>
+              <div class="k" style="width:34px">2<span class="alt">@</span></div>
+              <div class="k" style="width:34px">3<span class="alt">#</span></div>
+              <div class="k" style="width:34px">4<span class="alt">$</span></div>
+              <div class="k" style="width:34px">5<span class="alt">%</span></div>
+              <div class="k" style="width:34px">6<span class="alt">^</span></div>
+              <div class="k" style="width:34px">7<span class="alt">&amp;</span></div>
+              <div class="k" style="width:34px">8<span class="alt">*</span></div>
+              <div class="k" style="width:34px">9<span class="alt">(</span></div>
+              <div class="k" style="width:34px">0<span class="alt">)</span></div>
+              <div class="k" style="width:34px">-<span class="alt">_</span></div>
+              <div class="k" style="width:34px">=<span class="alt">+</span></div>
+              <div class="k mod" style="width:72px">Bksp</div>
+              <div class="k mod" style="width:34px">Home</div>
+            </div>
+
+            <div class="kr">
+              <div class="k mod" style="width:52px">Tab</div>
+              <div class="k" style="width:34px">Q</div>
+              <div class="k" style="width:34px">W</div>
+              <div class="k" style="width:34px">E</div>
+              <div class="k" style="width:34px">R</div>
+              <div class="k" style="width:34px">T</div>
+              <div class="k" style="width:34px">Y</div>
+              <div class="k" style="width:34px">U</div>
+              <div class="k" style="width:34px">I</div>
+              <div class="k" style="width:34px">O</div>
+              <div class="k" style="width:34px">P</div>
+              <div class="k" style="width:34px">[<span class="alt">{</span></div>
+              <div class="k" style="width:34px">]<span class="alt">}</span></div>
+              <div class="k" style="width:54px">\<span class="alt">|</span></div>
+              <div class="k mod" style="width:34px">PgUp</div>
+            </div>
+
+            <div class="kr">
+              <div class="k mod" style="width:66px">Caps</div>
+              <div class="k" style="width:34px">A</div>
+              <div class="k" style="width:34px">S</div>
+              <div class="k" style="width:34px">D</div>
+              <div class="k" style="width:34px">F</div>
+              <div class="k" style="width:34px">G</div>
+              <div class="k" style="width:34px">H</div>
+              <div class="k" style="width:34px">J</div>
+              <div class="k" style="width:34px">K</div>
+              <div class="k" style="width:34px">L</div>
+              <div class="k" style="width:34px">;<span class="alt">:</span></div>
+              <div class="k" style="width:34px">'<span class="alt">&quot;</span></div>
+              <div class="k mod" style="width:78px">Enter</div>
+              <div class="k mod" style="width:34px">PgDn</div>
+            </div>
+
+            <div class="kr">
+              <div class="k mod" style="width:86px">Shift</div>
+              <div class="k" style="width:34px">Z</div>
+              <div class="k" style="width:34px">X</div>
+              <div class="k" style="width:34px">C</div>
+              <div class="k" style="width:34px">V</div>
+              <div class="k" style="width:34px">B</div>
+              <div class="k" style="width:34px">N</div>
+              <div class="k" style="width:34px">M</div>
+              <div class="k" style="width:34px">,<span class="alt">&lt;</span></div>
+              <div class="k" style="width:34px">.<span class="alt">&gt;</span></div>
+              <div class="k" style="width:34px">/<span class="alt">?</span></div>
+              <div class="k mod" style="width:58px">Shift</div>
+              <div class="k arrow" style="width:34px">&#8593;</div>
+              <div class="k mod" style="width:34px">End</div>
+            </div>
+
+            <div class="kr">
+              <div class="k mod" style="width:44px">Ctrl</div>
+              <div class="k mod" style="width:38px">Win</div>
+              <div class="k mod" style="width:38px">Alt</div>
+              <div class="k space" style="width:220px">LEOBOG</div>
+              <div class="k mod" style="width:38px">Alt</div>
+              <div class="k mod" style="width:38px">Fn</div>
+              <div class="k mod" style="width:38px">Ctrl</div>
+              <div class="sp" style="width:8px"></div>
+              <div class="k arrow" style="width:34px">&#8592;</div>
+              <div class="k arrow" style="width:34px">&#8595;</div>
+              <div class="k arrow" style="width:34px">&#8594;</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pv-foot">
+          <div class="pv-l">
+            <span class="dot"></span><b>Fixed On</b><span class="sep">/</span>Embers
+            <span class="hex">#FF5A2B</span>
+          </div>
+          <div class="pv-r">PWM 8-BIT &middot; 1000 Hz</div>
+        </div>
+      </section>
+
+      <!-- output controls -->
+      <aside class="card output">
+        <div class="card-hd">
+          <span class="hl">Light output</span>
+          <span class="hr"><i class="live-dot"></i>Live</span>
+        </div>
+
+        <div class="ctl">
+          <div class="field">
+            <div class="row"><span class="lb">Colour</span><span class="vl">#FF5A2B</span></div>
+            <div class="sw" role="group" aria-label="Colour swatches">
+              <button type="button" class="on" aria-pressed="true" style="--c:#ff5a2b" title="Ember #FF5A2B" aria-label="Ember"></button>
+              <button type="button" style="--c:#ffc15a" title="Amber #FFC15A" aria-label="Amber"></button>
+              <button type="button" style="--c:#c3f04e" title="Lime #C3F04E" aria-label="Lime"></button>
+              <button type="button" style="--c:#58e3c2" title="Mint #58E3C2" aria-label="Mint"></button>
+              <button type="button" style="--c:#5fb8ff" title="Azure #5FB8FF" aria-label="Azure"></button>
+              <button type="button" style="--c:#9c82ff" title="Violet #9C82FF" aria-label="Violet"></button>
+              <button type="button" style="--c:#eef3f5" title="Frost #EEF3F5" aria-label="Frost"></button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="row"><span class="lb">Brightness</span><span class="vl">78<span class="u">%</span></span></div>
+            <div class="fader">
+              <div class="track"><i class="fill" style="width:78%"></i></div>
+              <span class="cap" style="left:78%"></span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-bottom:16px">
+            <div class="row"><span class="lb">Speed</span><span class="vl">4<span class="u"> / 8</span></span></div>
+            <div class="steps" aria-hidden="true">
+              <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div>
+            <div class="row"><span class="lb">Presets</span><span class="hr">Onboard</span></div>
+            <div class="presets">
+              <button type="button" class="preset on" aria-pressed="true">
+                <span class="p-top"><span class="p-num">01</span><span class="p-dot"></span></span>
+                <span class="p-name">Studio</span>
+                <span class="p-meta">Fixed On &middot; 78%</span>
+              </button>
+              <button type="button" class="preset">
+                <span class="p-top"><span class="p-num">02</span><span class="p-dot"></span></span>
+                <span class="p-name">Night</span>
+                <span class="p-meta">Breathing &middot; 34%</span>
+              </button>
+              <button type="button" class="preset">
+                <span class="p-top"><span class="p-num">03</span><span class="p-dot"></span></span>
+                <span class="p-name">Showcase</span>
+                <span class="p-meta">Spectrum &middot; 100%</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="ctl-foot"><i></i>Applied immediately &middot; no save</div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- effects -->
+    <section class="card effects">
+      <div class="card-hd">
+        <span class="hl">Effect library <span class="count">17</span></span>
+        <span class="hr">Selected <span class="sep">/</span> 02 &middot; Fixed On</span>
+      </div>
+
+      <div class="fx-grid">
+        <button type="button" class="fx"><span class="fx-i">01</span><span class="fx-b"><span class="fx-n">Off</span><span class="fx-d">All LEDs dark</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx on" aria-pressed="true"><span class="fx-i">02</span><span class="fx-b"><span class="fx-n">Fixed On</span><span class="fx-d">Single static colour</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">03</span><span class="fx-b"><span class="fx-n">Breathing</span><span class="fx-d">Fade in and out</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">04</span><span class="fx-b"><span class="fx-n">Spectrum Cycle</span><span class="fx-d">Full-spectrum sweep</span></span><span class="fx-led"></span></button>
+
+        <button type="button" class="fx"><span class="fx-i">05</span><span class="fx-b"><span class="fx-n">Row Ripple</span><span class="fx-d">Row-by-row wave</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">06</span><span class="fx-b"><span class="fx-n">Raindrops</span><span class="fx-d">Random droplets</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">07</span><span class="fx-b"><span class="fx-n">Slow Wave</span><span class="fx-d">Low-frequency drift</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">08</span><span class="fx-b"><span class="fx-n">Board Ripple</span><span class="fx-d">Radial pulse</span></span><span class="fx-led"></span></button>
+
+        <button type="button" class="fx"><span class="fx-i">09</span><span class="fx-b"><span class="fx-n">Stars Twinkle</span><span class="fx-d">Random sparkle</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">10</span><span class="fx-b"><span class="fx-n">Snake</span><span class="fx-d">Travelling chain</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">11</span><span class="fx-b"><span class="fx-n">Neon Stream</span><span class="fx-d">Flowing gradient</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">12</span><span class="fx-b"><span class="fx-n">Reactive</span><span class="fx-d">Key-press flash</span></span><span class="fx-led"></span></button>
+
+        <button type="button" class="fx"><span class="fx-i">13</span><span class="fx-b"><span class="fx-n">Center Wave</span><span class="fx-d">Outward from centre</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">14</span><span class="fx-b"><span class="fx-n">Rainbow Wheel</span><span class="fx-d">Hue rotation</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">15</span><span class="fx-b"><span class="fx-n">Waterfall</span><span class="fx-d">Column cascade</span></span><span class="fx-led"></span></button>
+        <button type="button" class="fx"><span class="fx-i">16</span><span class="fx-b"><span class="fx-n">Fast Flicker</span><span class="fx-d">High-tempo strobe</span></span><span class="fx-led"></span></button>
+      </div>
+
+      <button type="button" class="fx-wide">
+        <span class="fx-i">17</span>
+        <span class="pk" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="fx-b"><span class="fx-n">Per-Key Custom</span><span class="fx-d">Assign a colour to each keycap</span></span>
+        <span class="fx-tag">Advanced</span>
+        <span class="fx-led"></span>
+      </button>
+    </section>
+
+    <!-- running summary + actions -->
+    <footer class="bar">
+      <div class="bar-l">
+        <div class="sm">
+          <span class="sm-k">Preset</span>
+          <span class="sm-v"><i class="dot-sig"></i><b>01 &middot; Studio</b></span>
+        </div>
+        <span class="sm-div"></span>
+        <div class="sm">
+          <span class="sm-k">Effect</span>
+          <span class="sm-v">Fixed On</span>
+        </div>
+        <span class="sm-div"></span>
+        <div class="sm">
+          <span class="sm-k">Colour</span>
+          <span class="sm-v"><i class="chip"></i>Ember <span class="mono">#FF5A2B</span></span>
+        </div>
+        <span class="sm-div"></span>
+        <div class="sm">
+          <span class="sm-k">Brightness</span>
+          <span class="sm-v"><b>78%</b></span>
+        </div>
+        <span class="sm-div"></span>
+        <div class="sm">
+          <span class="sm-k">Speed</span>
+          <span class="sm-v"><b>4 / 8</b></span>
+        </div>
+      </div>
+
+      <div class="bar-r">
+        <span class="sync"><i></i>Synced 14:32:08</span>
+        <button type="button" class="btn" title="Import a profile from file">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.2"/><path d="M5.4 7.1 8 9.7l2.6-2.6"/><path d="M3 11.4v1.8h10v-1.8"/></svg>
+          Import
+        </button>
+        <button type="button" class="btn restore" title="Restore factory defaults">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.2 6.3A5 5 0 1 1 3 9.9"/><path d="M3.2 2.6v3.7h3.7"/></svg>
+          Restore
+        </button>
+        <button type="button" class="btn primary" title="Rescan for connected devices">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="4.6"/><path d="M8 1v2.4M8 12.6V15M1 8h2.4M12.6 8H15"/><circle cx="8" cy="8" r="1.15" fill="currentColor" stroke="none"/></svg>
+          Rescan
+        </button>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

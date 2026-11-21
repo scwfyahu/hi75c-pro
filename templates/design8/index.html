@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180">
+<meta name="color-scheme" content="dark">
+<title>LEOBOG Hi75C Pro — Lighting</title>
+<style>
+:root{
+  --accent:#D39B7A;--accent-hi:#EDBB98;--accent-deep:#8E6350;
+  --ember:#D98E6A;--ink:#F2E9DF;--ink-2:#B4A79B;--ink-3:#8A7D71;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  min-height:100vh;display:grid;place-items:center;background:#0B0908;
+  font-family:"Inter","SF Pro Text","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;
+  color:#F2E9DF;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+p,h1,h2,h3{margin:0}
+svg{display:block}
+:focus-visible{outline:1px solid rgba(211,155,122,.8);outline-offset:3px}
+
+.app{
+  width:1180px;height:900px;display:flex;overflow:hidden;
+  background:
+    radial-gradient(80% 55% at 62% -12%,rgba(255,238,224,.045),transparent 62%),
+    linear-gradient(180deg,#181411,#151210 55%,#141110);
+  box-shadow:0 60px 140px -50px rgba(0,0,0,.9),0 0 0 1px rgba(255,240,225,.03);
+}
+
+/* ------- rail ------- */
+.rail{
+  width:220px;flex:0 0 220px;height:900px;padding:22px 16px 18px;display:flex;flex-direction:column;
+  background:
+    radial-gradient(120% 44% at 50% 56%,rgba(255,236,220,.035),rgba(255,236,220,0) 70%),
+    linear-gradient(180deg,#1D1916 0%,#191512 55%,#161210 100%);
+  box-shadow:inset -1px 0 0 rgba(255,240,225,.035),inset 0 1px 0 rgba(255,240,225,.04),14px 0 32px -26px rgba(0,0,0,.85);
+}
+.brand{display:flex;align-items:center;gap:11px;padding:0 6px;flex:0 0 auto}
+.logo{
+  position:relative;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(158deg,#3B332C,#241F1B 72%);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.14),inset 0 -2px 4px rgba(0,0,0,.5),0 8px 14px -8px rgba(0,0,0,.9);
+}
+.logo::before{
+  content:"";width:19px;height:19px;border-radius:50%;
+  background:
+    repeating-conic-gradient(from 0deg,rgba(255,255,255,.09) 0deg 1.5deg,rgba(0,0,0,.10) 1.5deg 7deg),
+    radial-gradient(circle at 38% 30%,#5A4D42,#2A241F 66%);
+  box-shadow:inset 0 1px 1px rgba(255,244,232,.25),inset 0 -2px 4px rgba(0,0,0,.55);
+}
+.logo::after{
+  content:"";position:absolute;top:9px;left:50%;width:2px;height:5px;border-radius:2px;
+  background:rgba(237,187,152,.9);transform:translateX(-50%);box-shadow:0 0 7px rgba(217,142,106,.65);
+}
+.brand-name{font-size:12px;font-weight:600;letter-spacing:.19em;color:#F0E6DA}
+.brand-sub{margin-top:3px;font-size:9.5px;letter-spacing:.055em;color:#8A7D71}
+
+.rail-label{
+  margin:0 0 8px;padding:0 12px;font-size:8px;font-weight:600;letter-spacing:.17em;
+  text-transform:uppercase;color:#776B60;
+}
+.nav-wrap{margin-top:33px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav-item{
+  position:relative;height:42px;width:100%;display:flex;align-items:center;gap:11px;padding:0 12px;
+  border-radius:13px;font-size:12px;font-weight:500;color:#9E9185;text-align:left;
+  transition:background .18s ease,color .18s ease;
+}
+.nav-item svg{width:16px;height:16px;opacity:.7;transition:color .18s ease,opacity .18s ease}
+.nav-item:hover{background:rgba(255,243,230,.028);color:#D9CCBF}
+.nav-item.active{
+  color:#F3E9DD;
+  background:linear-gradient(180deg,#2E2721,#26201B);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.08),inset 0 -1px 0 rgba(0,0,0,.4),0 12px 20px -16px rgba(0,0,0,.9);
+}
+.nav-item.active svg{color:var(--accent);opacity:1}
+.nav-dot{width:5px;height:5px;border-radius:50%;margin-left:auto;background:transparent}
+.nav-item.active .nav-dot{background:var(--accent-hi);box-shadow:0 0 9px rgba(217,142,106,.8)}
+
+.rail-spacer{flex:1 1 auto;min-height:20px}
+.shortcuts{padding:0 6px}
+.shortcuts .rail-label{padding:0 6px;margin-bottom:6px}
+.shortcut{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 6px;font-size:10px;color:#8D8074}
+.shortcut-keys{display:flex;align-items:center;gap:2px}
+kbd{
+  display:inline-grid;place-items:center;min-width:16px;height:17px;padding:0 4px;border-radius:5px;
+  font-family:inherit;font-size:8.5px;font-weight:500;color:#C8BAAD;
+  background:linear-gradient(180deg,#2A2420,#221D19);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.08),inset 0 -1px 0 rgba(0,0,0,.4),0 2px 3px rgba(0,0,0,.35);
+}
+.shortcut-keys i{font-style:normal;font-size:8px;color:#6F6459;padding:0 1px}
+
+.device-block{padding:0 6px}
+.device-block .rail-label{padding:0 6px;margin-bottom:7px}
+.connect{
+  padding:13px 14px;border-radius:17px;
+  background:linear-gradient(180deg,#181411,#14110F);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.55),inset 0 -1px 0 rgba(255,240,225,.045),0 1px 0 rgba(255,240,225,.03);
+}
+.connect-top{display:flex;align-items:center;gap:8px}
+.led{
+  width:7px;height:7px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 0 4px rgba(211,155,122,.07),0 0 10px rgba(217,142,106,.65);
+  animation:breathe 3.4s ease-in-out infinite;
+}
+.connect-state{font-size:11.5px;font-weight:600;color:#F0E6DA}
+.connect-tag{
+  margin-left:auto;padding:2px 5px;border-radius:4px;font-size:7.5px;letter-spacing:.12em;color:#918476;
+  background:rgba(255,244,232,.045);box-shadow:inset 0 1px 0 rgba(255,244,232,.04);
+}
+.connect-sub{margin-top:5px;font-size:9.5px;color:#7F7267}
+.connect-specs{display:flex;gap:16px;margin-top:11px}
+.spec span{display:block;margin-bottom:3px;font-size:7.5px;letter-spacing:.12em;text-transform:uppercase;color:#6F6459}
+.spec b{display:block;font-size:10.5px;font-weight:600;color:#D8CABD;font-variant-numeric:tabular-nums}
+.rail-foot{display:flex;justify-content:space-between;padding:11px 11px 0;font-size:8px;letter-spacing:.06em;color:#6B5F54}
+
+@keyframes breathe{
+  0%,100%{opacity:.55;transform:scale(.9)}
+  50%{opacity:1;transform:scale(1)}
+}
+
+/* ------- main ------- */
+.main{
+  flex:1;min-width:0;height:900px;padding:24px 26px;display:flex;flex-direction:column;gap:20px;
+}
+.top{flex:0 0 54px;height:54px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.eyebrow{
+  margin:0 0 3px;font-size:8.5px;font-weight:600;letter-spacing:.17em;text-transform:uppercase;color:#7E7267;
+}
+.top h1{font-size:25px;line-height:30px;font-weight:600;letter-spacing:-.012em;color:#F4EBE1}
+.top-right{display:flex;align-items:center;gap:10px}
+.live-pill{
+  display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 13px;border-radius:999px;
+  font-size:10px;color:#C8BAAD;
+  background:linear-gradient(180deg,#28221D,#211C18);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.06),inset 0 -1px 0 rgba(0,0,0,.4),0 10px 20px -16px rgba(0,0,0,.9);
+}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--accent-hi);box-shadow:0 0 8px rgba(217,142,106,.75);animation:breathe 3.4s ease-in-out infinite}
+.icon-btn{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#8D8074;
+  background:linear-gradient(180deg,#27211C,#201B17);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.055),inset 0 -1px 0 rgba(0,0,0,.4),0 8px 16px -14px rgba(0,0,0,.9);
+  transition:color .18s ease,transform .18s ease;
+}
+.icon-btn:hover{color:#E8DCD0;transform:translateY(-1px)}
+.icon-btn svg{width:15px;height:15px}
+
+.card{
+  position:relative;border-radius:26px;
+  background:
+    radial-gradient(140% 90% at 12% -20%,rgba(255,240,225,.05),transparent 56%),
+    linear-gradient(180deg,#27211C,#221D19 55%,#201B17);
+  box-shadow:
+    inset 0 1px 0 rgba(255,243,230,.07),
+    inset 0 -1px 0 rgba(0,0,0,.45),
+    0 26px 44px -30px rgba(0,0,0,.95),
+    0 10px 20px -14px rgba(0,0,0,.6);
+}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.card-head h2{font-size:12.5px;line-height:16px;font-weight:600;letter-spacing:.005em;color:#EFE4D8;white-space:nowrap}
+.head-left{display:flex;align-items:center;gap:8px;min-width:0}
+.head-sub{display:block;margin-top:3px;font-size:9px;letter-spacing:.02em;color:#82756A;white-space:nowrap}
+.head-note{font-size:9px;letter-spacing:.02em;color:#82756A;white-space:nowrap}
+.count{
+  display:inline-grid;place-items:center;min-width:19px;height:17px;padding:0 5px;border-radius:5px;
+  font-size:8.5px;font-weight:600;color:#9B8E81;background:rgba(255,244,232,.045);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.04);
+}
+.chip{
+  display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;
+  font-size:8.5px;letter-spacing:.05em;color:#A4978B;background:rgba(255,244,232,.035);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.045),inset 0 -1px 0 rgba(0,0,0,.25);
+  white-space:nowrap;
+}
+
+.row-top{display:flex;gap:20px;height:398px;flex:0 0 398px;min-height:0}
+
+/* ------- board ------- */
+.board-card{flex:0 0 620px;height:398px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.board-card .card-head{flex:0 0 auto;align-items:flex-start}
+.board-card .chip{margin-top:-4px}
+.board-well{
+  position:relative;flex:1 1 auto;min-height:0;border-radius:20px;padding:12px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:radial-gradient(95% 110% at 50% -5%,#15110E 0%,#0F0C0A 62%,#0D0B09 100%);
+  box-shadow:
+    inset 0 2px 7px rgba(0,0,0,.75),
+    inset 0 16px 34px rgba(0,0,0,.34),
+    inset 0 -1px 0 rgba(255,240,225,.05);
+}
+.board-well::before{
+  content:"";position:absolute;left:9%;right:9%;bottom:6%;height:44%;border-radius:50%;
+  background:radial-gradient(50% 100% at 50% 100%,rgba(217,142,106,.24),rgba(217,142,106,.06) 55%,transparent 76%);
+  filter:blur(20px);pointer-events:none;
+}
+.board{
+  position:relative;z-index:1;width:540px;height:228px;padding:10px;border-radius:16px;
+  background:linear-gradient(180deg,#332C25 0%,#26201B 46%,#1C1714 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,244,232,.11),
+    inset 0 -3px 6px rgba(0,0,0,.55),
+    0 20px 30px -20px rgba(0,0,0,.95),
+    0 7px 14px -8px rgba(0,0,0,.6);
+}
+.board::after{
+  content:"HI75C PRO";position:absolute;right:14px;bottom:3px;font-size:6px;line-height:1;
+  letter-spacing:.24em;color:rgba(255,240,225,.16);text-shadow:0 1px 0 rgba(0,0,0,.6);
+}
+.keys{
+  position:relative;width:520px;height:208px;border-radius:7px;
+  background:radial-gradient(80% 120% at 45% 22%,#1C1713,#15110E 72%);
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.6);
+}
+.key{
+  position:absolute;display:flex;align-items:center;justify-content:center;border-radius:7px;
+  color:rgba(247,237,227,.84);font-weight:500;letter-spacing:.01em;line-height:1;
+  text-shadow:0 1px 0 rgba(0,0,0,.6);
+  background:
+    radial-gradient(125% 90% at 50% -12%,rgba(255,255,255,.09),rgba(255,255,255,0) 58%),
+    linear-gradient(180deg,rgba(217,142,106,var(--a)),rgba(217,142,106,var(--a2))),
+    linear-gradient(180deg,#3B342D,#2A241F);
+  box-shadow:
+    inset 0 1px 0 rgba(255,244,232,.18),
+    inset 0 -3px 5px rgba(0,0,0,.26),
+    inset 0 -5px 9px rgba(217,142,106,var(--ga)),
+    0 2px 0 #12100D,
+    0 4px 7px rgba(0,0,0,.42),
+    0 0 var(--gb) rgba(217,142,106,var(--ga));
+  transition:filter .16s ease,transform .16s ease;
+}
+.key:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.knob{
+  position:absolute;left:485px;top:-3px;width:38px;height:38px;border-radius:50%;z-index:2;
+  background:
+    repeating-conic-gradient(from 3deg,rgba(255,255,255,.05) 0deg 1.3deg,rgba(0,0,0,.085) 1.3deg 7deg),
+    radial-gradient(circle at 38% 28%,#4E4339,#302822 52%,#1A1613 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255,244,232,.28),
+    inset 0 -5px 9px rgba(0,0,0,.65),
+    0 7px 12px rgba(0,0,0,.55),
+    0 1px 0 #0E0B09,
+    0 0 18px rgba(217,142,106,.1);
+}
+.knob::before{
+  content:"";position:absolute;inset:6px;border-radius:50%;
+  background:radial-gradient(circle at 40% 28%,rgba(255,255,255,.06),transparent 58%);
+}
+.knob::after{
+  content:"";position:absolute;top:5px;left:50%;width:2px;height:6px;border-radius:2px;
+  background:rgba(237,187,152,.88);transform:translateX(-50%);box-shadow:0 0 7px rgba(217,142,106,.7);
+}
+.board-foot{flex:0 0 30px;height:30px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 2px}
+.mini-summary{display:flex;align-items:center;gap:7px;font-size:9.5px;color:#B6A89B;white-space:nowrap}
+.dot{width:5px;height:5px;border-radius:50%;background:#D98E6A;box-shadow:0 0 8px rgba(217,142,106,.65)}
+.time{font-size:9px;letter-spacing:.055em;color:#7A6E63;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ------- side column ------- */
+.side{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:12px}
+.color-card{flex:0 0 160px;height:160px;padding:16px 18px;display:flex;flex-direction:column}
+.slider-card{flex:1 1 auto;min-height:0;padding:16px 18px;display:flex;flex-direction:column}
+.swatches{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.sw{
+  width:28px;height:28px;border-radius:50%;flex:0 0 28px;
+  background:
+    radial-gradient(circle at 34% 26%,rgba(255,255,255,.35),rgba(255,255,255,0) 44%),
+    radial-gradient(circle at 50% 120%,rgba(0,0,0,.45),transparent 62%),
+    var(--c);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.35),
+    inset 0 -2px 4px rgba(0,0,0,.35),
+    0 3px 6px rgba(0,0,0,.45);
+  transition:transform .16s ease,box-shadow .16s ease;
+}
+.sw:hover{transform:translateY(-1px)}
+.sw.on{
+  box-shadow:
+    0 0 0 2px #241F1B,
+    0 0 0 5px rgba(211,155,122,.45),
+    0 6px 12px rgba(0,0,0,.45),
+    inset 0 1px 1px rgba(255,255,255,.4),
+    inset 0 -2px 4px rgba(0,0,0,.35);
+}
+.color-meta{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-top:auto;padding-bottom:2px}
+.color-name{font-size:14.5px;font-weight:600;letter-spacing:-.006em;line-height:19px;color:#F2E8DD}
+.color-sub{margin-top:3px;font-size:8.5px;letter-spacing:.02em;color:#82756A}
+.hex{font-size:9px;letter-spacing:.08em;color:#998C7F;font-variant-numeric:tabular-nums;padding-bottom:2px}
+.sliders{display:flex;flex-direction:column;gap:30px;margin-top:24px}
+.slider-label{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:13px}
+.slider-label span{font-size:10.5px;color:#B7A99C}
+.slider-label b{font-size:10.5px;font-weight:600;color:#F0E5D9;font-variant-numeric:tabular-nums}
+.track{
+  position:relative;height:12px;border-radius:999px;cursor:pointer;
+  background:#120F0D;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.8),inset 0 -1px 0 rgba(255,244,232,.045);
+}
+.fill{
+  position:absolute;left:0;top:0;bottom:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent-deep),#C9906F 68%,var(--accent-hi));
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.22),0 0 14px rgba(217,142,106,.15);
+}
+.thumb{
+  position:absolute;top:50%;width:28px;height:28px;border-radius:50%;transform:translate(-50%,-50%);
+  background:radial-gradient(circle at 36% 28%,#ECC5A7,#C58F6F 56%,#8B5E49 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255,255,255,.5),
+    inset 0 -3px 5px rgba(0,0,0,.35),
+    0 4px 9px rgba(0,0,0,.55),
+    0 0 0 1px rgba(0,0,0,.14);
+}
+.slider-note{display:flex;align-items:center;gap:6px;margin-top:auto;padding-top:10px;font-size:8.5px;letter-spacing:.02em;color:#7F7267}
+.slider-note .dot{width:4px;height:4px;background:var(--accent);box-shadow:none}
+
+/* ------- effects ------- */
+.effects-card{height:174px;flex:0 0 174px;padding:14px 16px;display:flex;flex-direction:column}
+.effects-card .card-head{flex:0 0 16px;height:16px}
+.fx-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px 8px;margin-top:9px;flex:1 1 auto;min-height:0}
+.fx{
+  position:relative;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  padding:0 12px;font-size:11px;font-weight:500;letter-spacing:.005em;color:#AFA294;
+  background:transparent;transition:background .16s ease,color .16s ease,box-shadow .16s ease;
+}
+.fx:hover{background:rgba(255,243,230,.035);color:#E8DCCF}
+.fx.sel{
+  color:#F5EBDF;font-weight:600;
+  background:
+    radial-gradient(120% 150% at 0% 50%,rgba(211,155,122,.10),transparent 62%),
+    linear-gradient(180deg,#332B25,#29231E);
+  box-shadow:
+    inset 0 1px 0 rgba(255,244,232,.09),
+    inset 0 -1px 0 rgba(0,0,0,.42),
+    0 10px 18px -14px rgba(0,0,0,.9);
+}
+.pip{position:absolute;left:11px;top:50%;width:4px;height:4px;border-radius:50%;transform:translateY(-50%);background:var(--accent-hi);box-shadow:0 0 8px rgba(217,142,106,.85)}
+
+/* ------- bottom row ------- */
+.row-bottom{display:flex;gap:20px;height:166px;flex:0 0 166px;min-height:0}
+.presets-card{flex:0 0 452px;height:166px;padding:16px 18px;display:flex;flex-direction:column}
+.preset-grid{display:flex;gap:12px;margin-top:12px;flex:1 1 auto;min-height:0}
+.preset{
+  flex:1 1 0;min-width:0;border-radius:16px;padding:11px 12px;display:flex;flex-direction:column;
+  text-align:left;background:linear-gradient(180deg,#28221D,#221D19);
+  box-shadow:
+    inset 0 1px 0 rgba(255,244,232,.055),
+    inset 0 -1px 0 rgba(0,0,0,.35),
+    0 8px 16px -14px rgba(0,0,0,.9);
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.preset:hover{transform:translateY(-1px);background:linear-gradient(180deg,#2B2520,#241F1B)}
+.preset.on{
+  background:
+    radial-gradient(120% 120% at 20% -10%,rgba(211,155,122,.10),transparent 58%),
+    linear-gradient(180deg,#2E2721,#26201B);
+  box-shadow:
+    inset 0 1px 0 rgba(255,244,232,.09),
+    inset 0 -1px 0 rgba(0,0,0,.4),
+    0 14px 22px -18px rgba(0,0,0,.95);
+}
+.preset-head{display:flex;align-items:center;gap:8px}
+.preset-name{font-size:11.5px;font-weight:600;letter-spacing:-.005em;color:#EEE3D7;white-space:nowrap}
+.pdot{width:5px;height:5px;border-radius:50%;margin-left:auto;flex:0 0 5px;background:transparent}
+.preset.on .pdot{background:var(--accent-hi);box-shadow:0 0 8px rgba(217,142,106,.8)}
+.mini{display:flex;gap:3px;height:20px;margin:10px 0 9px}
+.mini i{
+  flex:1 1 0;border-radius:3px;background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0) 55%),var(--p);
+  opacity:var(--o);box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 1px 2px rgba(0,0,0,.4);
+}
+.preset-fx{font-size:9.5px;color:#B1A396;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset-lv{margin-top:3px;font-size:8.5px;letter-spacing:.01em;color:#7F7267;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.session-card{flex:1 1 auto;min-width:0;height:166px;padding:16px 18px;display:flex;gap:18px}
+.session-main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.micro{margin:0;font-size:8px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#7E7267}
+.session-effect{display:flex;align-items:center;gap:9px;margin-top:9px;min-width:0}
+.session-effect h3{font-size:18px;line-height:22px;font-weight:600;letter-spacing:-.015em;color:#F3E9DD;white-space:nowrap}
+.pill{
+  display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:6px;white-space:nowrap;
+  font-size:8px;letter-spacing:.03em;color:#C7B8AA;background:rgba(255,244,232,.05);
+  box-shadow:inset 0 1px 0 rgba(255,244,232,.045);
+}
+.session-meta{margin-top:9px;font-size:9.5px;line-height:15px;color:#A99B8E}
+.session-meta .sep{padding:0 5px;color:#6F6459}
+.session-foot{margin-top:auto;display:flex;align-items:center;gap:6px;font-size:8.5px;letter-spacing:.03em;color:#7B6F64;font-variant-numeric:tabular-nums}
+.session-foot .dot{width:4px;height:4px;background:var(--accent-deep);box-shadow:none}
+.actions{flex:0 0 150px;width:150px;display:flex;flex-direction:column;gap:6px}
+.actions .micro{margin-bottom:2px}
+.action{
+  height:32px;padding:0 10px;border-radius:10px;display:flex;align-items:center;gap:8px;
+  font-size:10px;letter-spacing:.01em;color:#B6A89B;
+  background:linear-gradient(180deg,#2A2420,#231E1A);
+  box-shadow:
+    inset 0 1px 0 rgba(255,244,232,.06),
+    inset 0 -1px 0 rgba(0,0,0,.4),
+    0 6px 12px -10px rgba(0,0,0,.9);
+  transition:color .16s ease,background .16s ease;
+}
+.action svg{width:12px;height:12px;opacity:.72;flex:0 0 12px}
+.action:hover{color:#EEE2D5;background:linear-gradient(180deg,#302923,#28221D)}
+.action:hover svg{opacity:1;color:var(--accent)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none !important;transition:none !important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <p class="brand-name">LEOBOG</p>
+        <p class="brand-sub">Hi75C Pro</p>
+      </div>
+    </div>
+
+    <div class="nav-wrap">
+      <p class="rail-label">Workspace</p>
+      <nav class="nav" aria-label="Sections">
+        <button type="button" class="nav-item active" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.7"/><path d="M12 2.5v2M12 19.5v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2.5 12h2M19.5 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg><span>Lighting</span><span class="nav-dot" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.8" y="6" width="18.4" height="12" rx="3"/><path d="M6.6 10h.01M10.2 10h.01M13.8 10h.01M17.4 10h.01M6.6 14h.01M9 14h6M17.4 14h.01"/></svg><span>Keymap</span><span class="nav-dot" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.8"/><path d="M12 11v5M12 7.8h.01"/></svg><span>About</span><span class="nav-dot" aria-hidden="true"></span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="rail-spacer"></div>
+
+    <section class="shortcuts" aria-label="On-board shortcuts">
+      <p class="rail-label">On-board shortcuts</p>
+      <div class="shortcut"><span>Cycle effect</span><span class="shortcut-keys"><kbd>Fn</kbd><i>+</i><kbd>Tab</kbd></span></div>
+      <div class="shortcut"><span>Brightness</span><span class="shortcut-keys"><kbd>Fn</kbd><i>+</i><kbd>↑</kbd><kbd>↓</kbd></span></div>
+      <div class="shortcut"><span>Speed</span><span class="shortcut-keys"><kbd>Fn</kbd><i>+</i><kbd>←</kbd><kbd>→</kbd></span></div>
+    </section>
+
+    <div style="height:20px"></div>
+
+    <div class="device-block">
+      <p class="rail-label">Device</p>
+      <div class="connect">
+        <div class="connect-top">
+          <span class="led" aria-hidden="true"></span>
+          <span class="connect-state">Connected</span>
+          <span class="connect-tag">USB-C</span>
+        </div>
+        <p class="connect-sub">Hi75C Pro · wired</p>
+        <div class="connect-specs">
+          <div class="spec"><span>Firmware</span><b>1.07</b></div>
+          <div class="spec"><span>Polling</span><b>1000 Hz</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="rail-foot"><span>Desktop 1.4.2</span><span>USB HID</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="top">
+      <div>
+        <p class="eyebrow">LEOBOG · Hi75C Pro</p>
+        <h1>Lighting</h1>
+      </div>
+      <div class="top-right">
+        <span class="live-pill"><span class="live-dot" aria-hidden="true"></span>Applied live</span>
+        <button type="button" class="icon-btn" aria-label="More options"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5.5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="18.5" cy="12" r="1.5"/></svg></button>
+      </div>
+    </header>
+
+    <div class="row-top">
+      <section class="card board-card" aria-labelledby="board-title">
+        <div class="card-head">
+          <div>
+            <h2 id="board-title">Keyboard preview</h2>
+            <span class="head-sub">Hi75C Pro · ANSI 75% · 82 keys incl. knob</span>
+          </div>
+          <span class="chip">Live preview</span>
+        </div>
+
+        <div class="board-well">
+          <div class="board">
+            <div class="keys" role="img" aria-label="Hi75C Pro keyboard, backlit in Ember with the Slow Wave effect">
+            <div class="key" style="left:1.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.211;--a2:0.116;--ga:0.068;--gb:6.7px"><span style="font-size:8.5px">Esc</span></div>
+            <div class="key" style="left:65.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.26;--a2:0.143;--ga:0.083;--gb:7.4px"><span style="font-size:8.5px">F1</span></div>
+            <div class="key" style="left:97.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.224;--a2:0.123;--ga:0.072;--gb:6.9px"><span style="font-size:8.5px">F2</span></div>
+            <div class="key" style="left:129.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.257;--a2:0.141;--ga:0.082;--gb:7.4px"><span style="font-size:8.5px">F3</span></div>
+            <div class="key" style="left:161.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.307;--a2:0.169;--ga:0.098;--gb:8.1px"><span style="font-size:8.5px">F4</span></div>
+            <div class="key" style="left:209.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.417;--a2:0.229;--ga:0.133;--gb:9.8px"><span style="font-size:8.5px">F5</span></div>
+            <div class="key" style="left:241.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.469;--a2:0.258;--ga:0.15;--gb:10.5px"><span style="font-size:8.5px">F6</span></div>
+            <div class="key" style="left:273.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.437;--a2:0.241;--ga:0.14;--gb:10.1px"><span style="font-size:8.5px">F7</span></div>
+            <div class="key" style="left:305.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.432;--a2:0.238;--ga:0.138;--gb:10.0px"><span style="font-size:8.5px">F8</span></div>
+            <div class="key" style="left:353.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.472;--a2:0.26;--ga:0.151;--gb:10.6px"><span style="font-size:8.5px">F9</span></div>
+            <div class="key" style="left:385.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.494;--a2:0.272;--ga:0.158;--gb:10.9px"><span style="font-size:8.5px">F10</span></div>
+            <div class="key" style="left:417.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.51;--a2:0.281;--ga:0.163;--gb:11.2px"><span style="font-size:8.5px">F11</span></div>
+            <div class="key" style="left:449.5px;top:1.5px;width:29.0px;height:29.0px;--a:0.46;--a2:0.253;--ga:0.147;--gb:10.4px"><span style="font-size:8.5px">F12</span></div>
+            <div class="key" style="left:1.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.289;--a2:0.159;--ga:0.093;--gb:7.8px"><span style="font-size:9.5px">`</span></div>
+            <div class="key" style="left:33.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.318;--a2:0.175;--ga:0.102;--gb:8.3px"><span style="font-size:9.5px">1</span></div>
+            <div class="key" style="left:65.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.287;--a2:0.158;--ga:0.092;--gb:7.8px"><span style="font-size:9.5px">2</span></div>
+            <div class="key" style="left:97.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.314;--a2:0.172;--ga:0.1;--gb:8.2px"><span style="font-size:9.5px">3</span></div>
+            <div class="key" style="left:129.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.376;--a2:0.207;--ga:0.12;--gb:9.1px"><span style="font-size:9.5px">4</span></div>
+            <div class="key" style="left:161.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.437;--a2:0.24;--ga:0.14;--gb:10.1px"><span style="font-size:9.5px">5</span></div>
+            <div class="key" style="left:193.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.51;--a2:0.28;--ga:0.163;--gb:11.1px"><span style="font-size:9.5px">6</span></div>
+            <div class="key" style="left:225.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.494;--a2:0.271;--ga:0.158;--gb:10.9px"><span style="font-size:9.5px">7</span></div>
+            <div class="key" style="left:257.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.456;--a2:0.251;--ga:0.146;--gb:10.3px"><span style="font-size:9.5px">8</span></div>
+            <div class="key" style="left:289.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.45;--a2:0.247;--ga:0.144;--gb:10.2px"><span style="font-size:9.5px">9</span></div>
+            <div class="key" style="left:321.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.438;--a2:0.241;--ga:0.14;--gb:10.1px"><span style="font-size:9.5px">0</span></div>
+            <div class="key" style="left:353.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.477;--a2:0.262;--ga:0.153;--gb:10.6px"><span style="font-size:9.5px">-</span></div>
+            <div class="key" style="left:385.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.471;--a2:0.259;--ga:0.151;--gb:10.6px"><span style="font-size:9.5px">=</span></div>
+            <div class="key" style="left:417.5px;top:41.5px;width:61.0px;height:29.0px;--a:0.397;--a2:0.218;--ga:0.127;--gb:9.5px"><span style="font-size:7.5px">Backspace</span></div>
+            <div class="key" style="left:489.5px;top:41.5px;width:29.0px;height:29.0px;--a:0.271;--a2:0.149;--ga:0.087;--gb:7.6px"><span style="font-size:8.5px">Del</span></div>
+            <div class="key" style="left:1.5px;top:73.5px;width:45.0px;height:29.0px;--a:0.353;--a2:0.194;--ga:0.113;--gb:8.8px"><span style="font-size:8.5px">Tab</span></div>
+            <div class="key" style="left:49.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.345;--a2:0.19;--ga:0.11;--gb:8.7px"><span style="font-size:9.5px">Q</span></div>
+            <div class="key" style="left:81.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.384;--a2:0.211;--ga:0.123;--gb:9.3px"><span style="font-size:9.5px">W</span></div>
+            <div class="key" style="left:113.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.423;--a2:0.233;--ga:0.136;--gb:9.9px"><span style="font-size:9.5px">E</span></div>
+            <div class="key" style="left:145.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.506;--a2:0.278;--ga:0.162;--gb:11.1px"><span style="font-size:9.5px">R</span></div>
+            <div class="key" style="left:177.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.51;--a2:0.281;--ga:0.163;--gb:11.2px"><span style="font-size:9.5px">T</span></div>
+            <div class="key" style="left:209.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.485;--a2:0.267;--ga:0.155;--gb:10.8px"><span style="font-size:9.5px">Y</span></div>
+            <div class="key" style="left:241.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.455;--a2:0.25;--ga:0.146;--gb:10.3px"><span style="font-size:9.5px">U</span></div>
+            <div class="key" style="left:273.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.409;--a2:0.225;--ga:0.131;--gb:9.6px"><span style="font-size:9.5px">I</span></div>
+            <div class="key" style="left:305.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.417;--a2:0.229;--ga:0.133;--gb:9.8px"><span style="font-size:9.5px">O</span></div>
+            <div class="key" style="left:337.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.441;--a2:0.242;--ga:0.141;--gb:10.1px"><span style="font-size:9.5px">P</span></div>
+            <div class="key" style="left:369.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.393;--a2:0.216;--ga:0.126;--gb:9.4px"><span style="font-size:9.5px">[</span></div>
+            <div class="key" style="left:401.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.34;--a2:0.187;--ga:0.109;--gb:8.6px"><span style="font-size:9.5px">]</span></div>
+            <div class="key" style="left:433.5px;top:73.5px;width:45.0px;height:29.0px;--a:0.258;--a2:0.142;--ga:0.082;--gb:7.4px"><span style="font-size:8.5px">\</span></div>
+            <div class="key" style="left:489.5px;top:73.5px;width:29.0px;height:29.0px;--a:0.203;--a2:0.111;--ga:0.065;--gb:6.5px"><span style="font-size:8.5px">End</span></div>
+            <div class="key" style="left:1.5px;top:105.5px;width:53.0px;height:29.0px;--a:0.417;--a2:0.229;--ga:0.133;--gb:9.7px"><span style="font-size:8.5px">Caps</span></div>
+            <div class="key" style="left:57.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.407;--a2:0.224;--ga:0.13;--gb:9.6px"><span style="font-size:9.5px">A</span></div>
+            <div class="key" style="left:89.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.463;--a2:0.255;--ga:0.148;--gb:10.4px"><span style="font-size:9.5px">S</span></div>
+            <div class="key" style="left:121.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.51;--a2:0.281;--ga:0.163;--gb:11.2px"><span style="font-size:9.5px">D</span></div>
+            <div class="key" style="left:153.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.51;--a2:0.281;--ga:0.163;--gb:11.2px"><span style="font-size:9.5px">F</span></div>
+            <div class="key" style="left:185.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.487;--a2:0.268;--ga:0.156;--gb:10.8px"><span style="font-size:9.5px">G</span></div>
+            <div class="key" style="left:217.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.416;--a2:0.229;--ga:0.133;--gb:9.7px"><span style="font-size:9.5px">H</span></div>
+            <div class="key" style="left:249.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.365;--a2:0.201;--ga:0.117;--gb:9.0px"><span style="font-size:9.5px">J</span></div>
+            <div class="key" style="left:281.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.384;--a2:0.211;--ga:0.123;--gb:9.3px"><span style="font-size:9.5px">K</span></div>
+            <div class="key" style="left:313.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.37;--a2:0.204;--ga:0.118;--gb:9.1px"><span style="font-size:9.5px">L</span></div>
+            <div class="key" style="left:345.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.351;--a2:0.193;--ga:0.112;--gb:8.8px"><span style="font-size:9.5px">;</span></div>
+            <div class="key" style="left:377.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.292;--a2:0.161;--ga:0.094;--gb:7.9px"><span style="font-size:9.5px">&#x27;</span></div>
+            <div class="key" style="left:409.5px;top:105.5px;width:69.0px;height:29.0px;--a:0.198;--a2:0.109;--ga:0.063;--gb:6.5px"><span style="font-size:8.5px">Enter</span></div>
+            <div class="key" style="left:489.5px;top:105.5px;width:29.0px;height:29.0px;--a:0.209;--a2:0.115;--ga:0.067;--gb:6.6px"><span style="font-size:8.5px">PgUp</span></div>
+            <div class="key" style="left:1.5px;top:137.5px;width:69.0px;height:29.0px;--a:0.434;--a2:0.238;--ga:0.139;--gb:10.0px"><span style="font-size:8px">LShift</span></div>
+            <div class="key" style="left:73.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.477;--a2:0.262;--ga:0.153;--gb:10.7px"><span style="font-size:9.5px">Z</span></div>
+            <div class="key" style="left:105.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.51;--a2:0.281;--ga:0.163;--gb:11.2px"><span style="font-size:9.5px">X</span></div>
+            <div class="key" style="left:137.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.485;--a2:0.266;--ga:0.155;--gb:10.8px"><span style="font-size:9.5px">C</span></div>
+            <div class="key" style="left:169.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.426;--a2:0.235;--ga:0.136;--gb:9.9px"><span style="font-size:9.5px">V</span></div>
+            <div class="key" style="left:201.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.362;--a2:0.199;--ga:0.116;--gb:8.9px"><span style="font-size:9.5px">B</span></div>
+            <div class="key" style="left:233.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.307;--a2:0.169;--ga:0.098;--gb:8.1px"><span style="font-size:9.5px">N</span></div>
+            <div class="key" style="left:265.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.331;--a2:0.182;--ga:0.106;--gb:8.5px"><span style="font-size:9.5px">M</span></div>
+            <div class="key" style="left:297.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.323;--a2:0.178;--ga:0.103;--gb:8.3px"><span style="font-size:9.5px">,</span></div>
+            <div class="key" style="left:329.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.283;--a2:0.155;--ga:0.09;--gb:7.7px"><span style="font-size:9.5px">.</span></div>
+            <div class="key" style="left:361.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.234;--a2:0.129;--ga:0.075;--gb:7.0px"><span style="font-size:9.5px">/</span></div>
+            <div class="key" style="left:393.5px;top:137.5px;width:53.0px;height:29.0px;--a:0.152;--a2:0.083;--ga:0.049;--gb:5.8px"><span style="font-size:8px">RShift</span></div>
+            <div class="key" style="left:457.5px;top:145.5px;width:29.0px;height:29.0px;--a:0.178;--a2:0.098;--ga:0.057;--gb:6.2px"><span style="font-size:11.5px">↑</span></div>
+            <div class="key" style="left:489.5px;top:137.5px;width:29.0px;height:29.0px;--a:0.207;--a2:0.114;--ga:0.066;--gb:6.6px"><span style="font-size:8.5px">PgDn</span></div>
+            <div class="key" style="left:1.5px;top:169.5px;width:37.0px;height:29.0px;--a:0.428;--a2:0.235;--ga:0.137;--gb:9.9px"><span style="font-size:8px">LCtrl</span></div>
+            <div class="key" style="left:41.5px;top:169.5px;width:37.0px;height:29.0px;--a:0.472;--a2:0.26;--ga:0.151;--gb:10.6px"><span style="font-size:8px">LWin</span></div>
+            <div class="key" style="left:81.5px;top:169.5px;width:37.0px;height:29.0px;--a:0.482;--a2:0.265;--ga:0.154;--gb:10.7px"><span style="font-size:8px">LAlt</span></div>
+            <div class="key" style="left:121.5px;top:169.5px;width:197.0px;height:29.0px;--a:0.429;--a2:0.236;--ga:0.137;--gb:9.9px"></div>
+            <div class="key" style="left:321.5px;top:169.5px;width:29.0px;height:29.0px;--a:0.235;--a2:0.129;--ga:0.075;--gb:7.0px"><span style="font-size:8px">RAlt</span></div>
+            <div class="key" style="left:353.5px;top:169.5px;width:29.0px;height:29.0px;--a:0.149;--a2:0.082;--ga:0.048;--gb:5.7px"><span style="font-size:8.5px">FN</span></div>
+            <div class="key" style="left:385.5px;top:169.5px;width:29.0px;height:29.0px;--a:0.129;--a2:0.071;--ga:0.041;--gb:5.4px"><span style="font-size:8px">RCtrl</span></div>
+            <div class="key" style="left:425.5px;top:177.5px;width:29.0px;height:29.0px;--a:0.161;--a2:0.088;--ga:0.051;--gb:5.9px"><span style="font-size:11.5px">←</span></div>
+            <div class="key" style="left:457.5px;top:177.5px;width:29.0px;height:29.0px;--a:0.177;--a2:0.097;--ga:0.057;--gb:6.2px"><span style="font-size:11.5px">↓</span></div>
+            <div class="key" style="left:489.5px;top:177.5px;width:29.0px;height:29.0px;--a:0.195;--a2:0.107;--ga:0.062;--gb:6.4px"><span style="font-size:11.5px">→</span></div>
+            <div class="knob" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="board-foot">
+          <span class="mini-summary"><span class="dot" aria-hidden="true"></span>Slow Wave · Ember · 80% · 40%</span>
+          <span class="time">Synced 14:41:08</span>
+        </div>
+      </section>
+
+      <div class="side">
+        <section class="card color-card" aria-labelledby="colour-title">
+          <div class="card-head">
+            <div class="head-left"><h2 id="colour-title">Colour</h2><span class="count">7</span></div>
+            <span class="head-note">On-board</span>
+          </div>
+          <div class="swatches" role="group" aria-label="Lighting colour">
+          <button type="button" class="sw on" style="--c:#D98E6A" aria-label="Ember colour" aria-pressed="true"></button>
+          <button type="button" class="sw" style="--c:#D8A45E" aria-label="Amber colour" aria-pressed="false"></button>
+          <button type="button" class="sw" style="--c:#C4B36A" aria-label="Citron colour" aria-pressed="false"></button>
+          <button type="button" class="sw" style="--c:#8CA98B" aria-label="Sage colour" aria-pressed="false"></button>
+          <button type="button" class="sw" style="--c:#6E9F9E" aria-label="Lagoon colour" aria-pressed="false"></button>
+          <button type="button" class="sw" style="--c:#8194BE" aria-label="Cobalt colour" aria-pressed="false"></button>
+          <button type="button" class="sw" style="--c:#A48BBA" aria-label="Iris colour" aria-pressed="false"></button>
+          </div>
+          <div class="color-meta">
+            <div>
+              <p class="color-name">Ember</p>
+              <p class="color-sub">Colour 1 of 7 · applied to all keys</p>
+            </div>
+            <span class="hex">#D98E6A</span>
+          </div>
+        </section>
+
+        <section class="card slider-card" aria-labelledby="levels-title">
+          <div class="card-head">
+            <h2 id="levels-title">Brightness &amp; speed</h2>
+            <span class="head-note">Applies live</span>
+          </div>
+          <div class="sliders">
+            <div>
+              <div class="slider-label"><span id="bri-label">Brightness</span><b>80%</b></div>
+              <div class="track" role="slider" tabindex="0" aria-labelledby="bri-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80" aria-valuetext="80 percent">
+                <span class="fill" style="width:80%"></span>
+                <span class="thumb" style="left:80%"></span>
+              </div>
+            </div>
+            <div>
+              <div class="slider-label"><span id="spd-label">Speed</span><b>40%</b></div>
+              <div class="track" role="slider" tabindex="0" aria-labelledby="spd-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" aria-valuetext="40 percent">
+                <span class="fill" style="width:40%"></span>
+                <span class="thumb" style="left:40%"></span>
+              </div>
+            </div>
+          </div>
+          <p class="slider-note"><span class="dot" aria-hidden="true"></span>Speed follows the Slow Wave cycle.</p>
+        </section>
+      </div>
+    </div>
+
+    <section class="card effects-card" aria-labelledby="fx-title">
+      <div class="card-head">
+        <div class="head-left"><h2 id="fx-title">Lighting effect</h2><span class="count">17</span></div>
+        <span class="head-note">Fn + Tab cycles on-board</span>
+      </div>
+      <div class="fx-grid" role="group" aria-label="Lighting effects">
+        <button type="button" class="fx" aria-pressed="false">Off</button>
+        <button type="button" class="fx" aria-pressed="false">Fixed On</button>
+        <button type="button" class="fx" aria-pressed="false">Breathing</button>
+        <button type="button" class="fx" aria-pressed="false">Spectrum Cycle</button>
+        <button type="button" class="fx" aria-pressed="false">Row Ripple</button>
+        <button type="button" class="fx" aria-pressed="false">Raindrops</button>
+        <button type="button" class="fx sel" aria-pressed="true"><i class="pip" aria-hidden="true"></i>Slow Wave</button>
+        <button type="button" class="fx" aria-pressed="false">Board Ripple</button>
+        <button type="button" class="fx" aria-pressed="false">Stars Twinkle</button>
+        <button type="button" class="fx" aria-pressed="false">Snake</button>
+        <button type="button" class="fx" aria-pressed="false">Neon Stream</button>
+        <button type="button" class="fx" aria-pressed="false">Reactive</button>
+        <button type="button" class="fx" aria-pressed="false">Center Wave</button>
+        <button type="button" class="fx" aria-pressed="false">Rainbow Wheel</button>
+        <button type="button" class="fx" aria-pressed="false">Waterfall</button>
+        <button type="button" class="fx" aria-pressed="false">Fast Flicker</button>
+        <button type="button" class="fx" aria-pressed="false">Per-Key Custom</button>
+      </div>
+    </section>
+
+    <div class="row-bottom">
+      <section class="card presets-card" aria-labelledby="preset-title">
+        <div class="card-head">
+          <h2 id="preset-title">Presets</h2>
+          <span class="head-note">3 slots</span>
+        </div>
+        <div class="preset-grid" role="group" aria-label="Lighting presets">
+          <button type="button" class="preset on" aria-pressed="true">
+            <span class="preset-head"><span class="preset-name">Warm Study</span><span class="pdot" aria-hidden="true"></span></span>
+            <span class="mini" aria-hidden="true"><i style="--p:#D98E6A;--o:0.24"></i><i style="--p:#D98E6A;--o:0.36"></i><i style="--p:#D98E6A;--o:0.52"></i><i style="--p:#D98E6A;--o:0.7"></i><i style="--p:#D98E6A;--o:0.92"></i><i style="--p:#D98E6A;--o:0.64"></i><i style="--p:#D98E6A;--o:0.42"></i></span>
+            <span class="preset-fx">Slow Wave</span>
+            <span class="preset-lv">Ember · 80% · 40%</span>
+          </button>
+          <button type="button" class="preset" aria-pressed="false">
+            <span class="preset-head"><span class="preset-name">Ocean Drift</span><span class="pdot" aria-hidden="true"></span></span>
+            <span class="mini" aria-hidden="true"><i style="--p:#6E9F9E;--o:0.24"></i><i style="--p:#6E9F9E;--o:0.36"></i><i style="--p:#6E9F9E;--o:0.52"></i><i style="--p:#6E9F9E;--o:0.7"></i><i style="--p:#6E9F9E;--o:0.92"></i><i style="--p:#6E9F9E;--o:0.64"></i><i style="--p:#6E9F9E;--o:0.42"></i></span>
+            <span class="preset-fx">Raindrops</span>
+            <span class="preset-lv">Lagoon · 55% · 30%</span>
+          </button>
+          <button type="button" class="preset" aria-pressed="false">
+            <span class="preset-head"><span class="preset-name">Night Shift</span><span class="pdot" aria-hidden="true"></span></span>
+            <span class="mini" aria-hidden="true"><i style="--p:#A48BBA;--o:0.24"></i><i style="--p:#A48BBA;--o:0.36"></i><i style="--p:#A48BBA;--o:0.52"></i><i style="--p:#A48BBA;--o:0.7"></i><i style="--p:#A48BBA;--o:0.92"></i><i style="--p:#A48BBA;--o:0.64"></i><i style="--p:#A48BBA;--o:0.42"></i></span>
+            <span class="preset-fx">Breathing</span>
+            <span class="preset-lv">Iris · 28% · 18%</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="card session-card" aria-labelledby="summary-title">
+        <div class="session-main">
+          <p class="micro" id="summary-title">Running summary</p>
+          <div class="session-effect">
+            <h3>Slow Wave</h3>
+            <span class="pill">Warm Study</span>
+          </div>
+          <p class="session-meta">Ember<span class="sep">·</span>80% brightness<span class="sep">·</span>40% speed</p>
+          <p class="session-foot"><span class="dot" aria-hidden="true"></span>Applied to 81 keys · 14:41:08</p>
+        </div>
+        <div class="actions" role="group" aria-label="Profile actions">
+          <p class="micro">Actions</p>
+          <button type="button" class="action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5v9m0 0 3.2-3.2M12 12.5 8.8 9.3M4.5 14.5v3.2a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-3.2"/></svg>Import</button>
+          <button type="button" class="action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 10.2a8 8 0 1 1 1.6 5.6M4.2 4.6v5.6h5.6"/></svg>Restore</button>
+          <button type="button" class="action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5V6.2a2.2 2.2 0 0 1 2.2-2.2h2.3M15.5 4h2.3A2.2 2.2 0 0 1 20 6.2v2.3M20 15.5v2.3a2.2 2.2 0 0 1-2.2 2.2h-2.3M8.5 20H6.2A2.2 2.2 0 0 1 4 17.8v-2.3"/><path d="M4 12h16"/></svg>Rescan</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

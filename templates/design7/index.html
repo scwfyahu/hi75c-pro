@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180">
+<meta name="color-scheme" content="dark">
+<title>LEOBOG Hi75C Pro — Control Deck / Lighting</title>
+<!-- Static UI specimen, 1180 × 900. Single file, no external assets, no scripts. -->
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;width:1180px;height:900px;background:#0B0E0F}
+body{overflow:hidden;font-family:ui-monospace,SFMono-Regular,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,"Liberation Mono",monospace;font-size:11px;line-height:1.45;color:#D8DFDB;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+h1,h2,p{margin:0;font-weight:500}
+:focus{outline:none}
+:focus-visible{outline:1px solid #E8A23C;outline-offset:2px}
+::selection{background:rgba(232,162,60,.30);color:#FFF6E6}
+.dot{width:5px;height:5px;border-radius:50%;background:#5FD3A6;box-shadow:0 0 6px rgba(95,211,166,.65);display:inline-block;flex:none}
+.app{width:1180px;height:900px;display:flex;flex-direction:column;background:radial-gradient(1100px 560px at 46% -20%,#121819 0%,#0B0E0F 60%)}
+
+/* ---------------------------------------------------------------- top bar */
+.topbar{height:34px;flex:none;display:flex;align-items:center;gap:14px;padding-left:14px;background:#0D1112;border-bottom:1px solid #242C2D;position:relative}
+.tb-brand{display:flex;align-items:center;gap:9px;font-size:9px;letter-spacing:.16em;color:#D8DFDB;white-space:nowrap}
+.tb-brand .mk{font-size:14px;line-height:1;color:#E8A23C;letter-spacing:0;transform:translateY(-1px)}
+.tb-brand b{font-weight:600;color:#E7EDE9}
+.tb-url{font-size:8px;letter-spacing:.08em;color:#6A7772;border-left:1px solid #2E3839;padding-left:12px;white-space:nowrap}
+.tb-mid{position:absolute;left:50%;transform:translateX(-50%);font-size:8.5px;letter-spacing:.1em;color:#6F7D77;white-space:nowrap}
+.tb-right{margin-left:auto;display:flex;align-items:center;height:34px;border-left:1px solid #1A2122}
+.tb-sync{display:flex;align-items:center;gap:6px;height:34px;padding:0 13px;font-size:8.5px;letter-spacing:.05em;color:#93A09A;border-right:1px solid #1A2122;white-space:nowrap}
+.tb-btn{width:36px;height:34px;display:grid;place-items:center;color:#6F7D77;font-size:10px;border-left:1px solid #1A2122}
+.tb-btn + .tb-btn{border-left:1px solid #1A2122}
+.tb-btn.x{font-size:12px;color:#93A09A}
+
+/* ---------------------------------------------------------------- shell */
+.shell{flex:1;display:flex;min-height:0}
+.rail{width:232px;flex:none;display:flex;flex-direction:column;gap:14px;padding:16px;overflow:hidden;background:linear-gradient(180deg,#0C1011 0%,#0B0E0F 100%);border-right:1px solid #242C2D}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;padding:18px 22px 16px}
+
+/* ---------------------------------------------------------------- rail */
+.rail-id{padding-bottom:10px;border-bottom:1px solid #1A2122}
+.ri-1{display:flex;justify-content:space-between;align-items:baseline;font-size:8px;letter-spacing:.18em;color:#6F7D77}
+.ri-1 b{font-weight:400;color:#A6B2AC;letter-spacing:.06em}
+.ri-2{margin-top:5px;font-size:9px;letter-spacing:.03em;color:#C3CDC8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-2::before{content:"\25b8";color:#7A5520;margin-right:6px}
+.sec-h{display:flex;align-items:center;gap:7px;height:12px;font-size:8px;letter-spacing:.18em;color:#7C8A84;white-space:nowrap}
+.sec-h .g{font-size:9.5px;line-height:1;letter-spacing:0;color:#3A4643}
+.sec-h .t{letter-spacing:.18em}
+.sec-h .r{flex:1;height:1px;background:#1F2728;margin:1px 1px 0}
+.sec-h .m{font-size:7.5px;letter-spacing:.08em;color:#6F7D77}
+.sec-h .ok{color:#5FD3A6}
+
+.dev{margin-top:8px;padding:9px 10px 8px;border:1px solid #242C2D;border-radius:3px;background:#101516;box-shadow:inset 0 1px 0 rgba(255,255,255,.02)}
+.dev-n{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.dev-n b{font-size:11px;font-weight:500;letter-spacing:.02em;color:#E7EDE9}
+.dev-n span{font-size:7.5px;letter-spacing:.08em;color:#6F7D77}
+.dev-id{margin-top:2px;font-size:8.5px;letter-spacing:.02em;color:#6F7D77;white-space:nowrap}
+.dev-st{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:8px;letter-spacing:.12em;color:#5FD3A6}
+.dev-st .sig{display:flex;align-items:flex-end;gap:1px;height:9px;margin-left:auto}
+.dev-st .sig i{width:2px;background:#5FD3A6;opacity:.8;border-radius:1px 1px 0 0}
+.dev-st .hz{margin-left:6px;padding-left:6px;border-left:1px solid #2E3839;font-size:7.5px;letter-spacing:.04em;color:#93A09A}
+.dev-io{display:flex;justify-content:space-between;margin-top:7px;padding-top:6px;border-top:1px solid #1A2122;font-size:7.5px;letter-spacing:.06em;color:#6F7D77}
+
+.nav{display:flex;flex-direction:column;gap:1px;margin-top:7px}
+.nav-i{display:flex;align-items:center;gap:7px;height:41px;padding:0 7px;border:0;border-left:2px solid transparent;background:transparent;text-align:left;font-size:9.5px;letter-spacing:.1em;color:#A6B2AC;cursor:pointer;border-radius:0 2px 2px 0;transition:background .12s ease,color .12s ease}
+.nav-i .g{width:13px;font-size:9px;letter-spacing:0;color:#3E4A47}
+.nav-i .i{width:15px;font-size:8.5px;letter-spacing:.02em;color:#4F5C57}
+.nav-i .n{flex:1;white-space:nowrap}
+.nav-i .k{font-size:7.5px;letter-spacing:.02em;color:#54615C;border:1px solid #293132;border-radius:2px;padding:1px 4px}
+.nav-i:hover{background:#111718;color:#D8DFDB}
+.nav-i:hover .g{color:#6F7D77}
+.nav-i[aria-current="page"]{background:linear-gradient(90deg,rgba(232,162,60,.12),rgba(232,162,60,.012) 88%,transparent);border-left-color:#E8A23C;color:#E8A23C}
+.nav-i[aria-current="page"] .g,.nav-i[aria-current="page"] .i{color:#C98B36}
+.nav-i[aria-current="page"] .k{border-color:#5C4523;color:#D6A052}
+
+.tel{display:flex;flex-direction:column;gap:1px;margin-top:7px}
+.tel .row{display:flex;align-items:baseline;gap:6px;height:18px;font-size:8.5px;letter-spacing:.04em}
+.tel .k{color:#6F7D77;white-space:nowrap}
+.tel .ld{flex:1;border-bottom:1px dotted #26302E;margin:0 1px 3px;opacity:.9}
+.tel .v{color:#C3CDC8;font-size:9px;white-space:nowrap}
+.tel .v em{font-style:normal;font-size:7.5px;color:#93A09A}
+
+.log{display:flex;flex-direction:column;gap:3px;margin-top:7px}
+.log .row{display:flex;align-items:baseline;gap:6px;font-size:8px;line-height:14px;white-space:nowrap;color:#7C8A84}
+.log time{font-size:8px;letter-spacing:.01em;color:#6A7772}
+.log .v{width:32px;flex:none;color:#7C8A84;letter-spacing:.02em}
+.log .msg{min-width:0;overflow:hidden;text-overflow:ellipsis;color:#84928C}
+.log .ok{color:#5FD3A6}
+
+.link{margin-top:8px;padding:8px 9px 7px;border:1px solid #1F2728;border-radius:3px;background:#0F1415}
+.link-h{display:flex;justify-content:space-between;align-items:baseline;font-size:7.5px;letter-spacing:.1em;color:#6F7D77}
+.link-h b{font-weight:400;font-size:9px;letter-spacing:.02em;color:#C3CDC8}
+.bars{display:flex;align-items:flex-end;gap:2px;height:18px;margin-top:6px}
+.bars i{flex:1;background:#314B41;border-radius:1px 1px 0 0}
+.bars i.on{background:#5FD3A6;opacity:.85}
+.link-ft{display:flex;justify-content:space-between;margin-top:6px;font-size:7.5px;letter-spacing:.04em;color:#6F7D77}
+
+.rail-ft{margin-top:auto;padding-top:11px;border-top:1px solid #1A2122}
+.ft-h{display:flex;justify-content:space-between;font-size:7.5px;letter-spacing:.14em;color:#6F7D77;margin-bottom:6px}
+.ramp{display:flex;gap:3px;height:5px;margin-bottom:8px}
+.ramp i{flex:1;border-radius:1px;opacity:.9}
+.ft-b{display:flex;justify-content:space-between;font-size:7.5px;letter-spacing:.06em;color:#6A7772}
+
+/* ---------------------------------------------------------------- page header */
+.page-hd{height:48px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.ph-i{font-size:9.5px;letter-spacing:.12em;color:#C98B36;margin-right:9px}
+.ph-i .sl{color:#3E4A47;margin:0 4px}
+h1{display:inline;font-size:21px;line-height:1;letter-spacing:.12em;font-weight:500;color:#E9EFEB}
+.ph-s{margin-top:6px;font-size:8.5px;letter-spacing:.04em;color:#6F7D77;white-space:nowrap}
+.ph-s b{font-weight:400;color:#A6B2AC}
+.ph-s .s{color:#3E4A47;margin:0 5px}
+.ph-r{display:flex;align-items:center;gap:6px;flex:none}
+.chip{height:23px;display:inline-flex;align-items:center;gap:6px;padding:0 9px;border:1px solid #283132;border-radius:2px;font-size:8px;letter-spacing:.09em;color:#93A09A;background:#0F1415;white-space:nowrap}
+.chip b{font-weight:400;color:#C3CDC8}
+.chip.live{border-color:rgba(95,211,166,.34);background:rgba(95,211,166,.06);color:#5FD3A6}
+
+/* ---------------------------------------------------------------- cards */
+.card{display:flex;flex-direction:column;min-height:0;overflow:hidden;background:#101516;border:1px solid #242C2D;border-radius:3px;box-shadow:inset 0 1px 0 rgba(255,255,255,.018)}
+.card-h{height:28px;flex:none;display:flex;align-items:center;gap:7px;padding:0 10px;border-bottom:1px solid #242C2D;background:linear-gradient(180deg,#141A1B,#111617);font-size:8px;letter-spacing:.18em;color:#93A09A;white-space:nowrap}
+.card-h .g{font-size:9.5px;line-height:1;letter-spacing:0;color:#3A4643}
+.card-h .t{font-size:8.5px;font-weight:500;letter-spacing:.16em;color:#A6B2AC}
+.card-h .r{flex:1;height:1px;background:#212A2B;margin:1px 2px 0}
+.card-h .m{font-size:7.5px;letter-spacing:.12em;color:#6F7D77}
+.card-h .slash{font-size:7.5px;color:#36413E;letter-spacing:0}
+
+/* ---------------------------------------------------------------- board */
+.board-card{flex:none}
+.board-body{display:flex;gap:16px;padding:12px 16px;flex:none}
+.deck{position:relative;flex:none;width:650px;height:260px;border:1px solid #2A3233;border-radius:5px;overflow:hidden;background:linear-gradient(180deg,#0E1314,#0B0F10);box-shadow:inset 0 1px 0 #1B2223,inset 0 -16px 26px #070A0B}
+.deck-glow{position:absolute;left:7%;right:7%;top:9%;bottom:5%;background:radial-gradient(58% 58% at 50% 52%,rgba(242,163,60,.21),rgba(242,163,60,.055) 56%,transparent 77%);filter:blur(10px);animation:breathe 6.4s ease-in-out infinite;pointer-events:none}
+@keyframes breathe{0%,100%{opacity:.55}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.deck-glow{animation:none;opacity:.85}}
+.deck-in{position:absolute;inset:0;transform:translate(-1px,-1px)}
+.key{position:absolute;display:flex;align-items:center;justify-content:center;border:1px solid #293132;border-radius:3px;background:linear-gradient(180deg,#1B2223 0%,#161C1D 48%,#111718 100%);color:#B9C5BF;user-select:none}
+.key .lg{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1;width:100%;height:100%;text-align:center}
+.key .main{font-size:9.5px;letter-spacing:.02em}
+.key .sub{font-size:7px;letter-spacing:.02em;line-height:1;opacity:.85}
+.key.word .main{font-size:7.5px;letter-spacing:.03em}
+.key.fn .main{font-size:8px;letter-spacing:.02em}
+.key.arrow .main{font-size:11px;letter-spacing:0}
+.key.k-hi{color:#FFE3B4}
+.key.k-mid{color:#DCD3C0}
+.key.k-lo{color:#A9B6B0}
+.key.k-hi .sub{color:#C79A5C}
+.key.k-mid .sub{color:#9C8D75}
+.key.k-lo .sub{color:#6C7974}
+.key::after{content:"";position:absolute;left:1px;right:1px;bottom:1px;height:58%;border-radius:0 0 2px 2px;background:linear-gradient(180deg,rgba(242,163,60,0) 0%,rgba(242,163,60,var(--b)) 100%);pointer-events:none}
+.key.space{border-color:#252D2E}
+.deck-badge{position:absolute;left:525px;top:11.5px;width:70px;height:37px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:7px;letter-spacing:.22em;color:#44504C;z-index:2}
+.deck-badge .b{width:3px;height:3px;background:#3A4643;flex:none;border-radius:50%}
+.deck-badge b{font-weight:400;letter-spacing:.2em;color:#56635E}
+.knob{position:absolute;left:595px;top:11.5px;width:50px;height:37px;display:grid;place-items:center;z-index:3}
+.knob-dial{position:relative;width:34px;height:34px;border-radius:50%;border:1px solid #3B4643;background:repeating-conic-gradient(from 0deg,#2C3434 0 6deg,#232A2B 6deg 12deg);box-shadow:0 2px 5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06)}
+.knob-dial::before{content:"";position:absolute;inset:6px;border-radius:50%;border:1px solid #333D3C;background:radial-gradient(circle at 35% 30%,#252C2C,#161C1D 72%);box-shadow:inset 0 1px 1px rgba(255,255,255,.05)}
+.knob-dial::after{content:"";position:absolute;left:50%;top:2px;width:2px;height:7px;margin-left:-1px;border-radius:1px;background:#E8A23C;box-shadow:0 0 7px rgba(232,162,60,.8)}
+
+/* board side readout */
+.now{flex:1;min-width:0;display:flex;flex-direction:column;padding-left:16px;border-left:1px solid #1A2122}
+.now-h{display:flex;align-items:center;justify-content:space-between;font-size:8px;letter-spacing:.18em;color:#6F7D77}
+.live{display:flex;align-items:center;gap:5px;font-size:7.5px;letter-spacing:.14em;color:#5FD3A6}
+.now-t{margin-top:5px;font-size:16px;line-height:1.1;letter-spacing:.01em;color:#E8A23C}
+.now-m{margin-top:3px;font-size:8px;letter-spacing:.05em;color:#7C8A84}
+.hr{height:1px;background:#1E2526;margin:10px 0}
+.col-pick{display:flex;align-items:center;gap:8px}
+.sq{width:14px;height:14px;flex:none;border-radius:2px;background:var(--c,#F2A33C);box-shadow:0 0 10px rgba(242,163,60,.35)}
+.col-n{font-size:9px;letter-spacing:.1em;color:#C9D3CE}
+.col-x{margin-left:auto;font-size:8.5px;letter-spacing:.02em;color:#93A09A}
+.col-rgb{margin-top:4px;font-size:8px;letter-spacing:.04em;color:#7C8A84}
+.wave-h{display:flex;justify-content:space-between;font-size:7.5px;letter-spacing:.14em;color:#6F7D77}
+.wave{display:flex;align-items:flex-end;gap:3px;height:27px;margin-top:6px;padding-bottom:2px;border-bottom:1px solid #1E2526}
+.wave i{flex:1;min-height:2px;border-radius:1px 1px 0 0;background:#6B4A20}
+.wave i.hot{background:#E8A23C;box-shadow:0 0 6px rgba(232,162,60,.35)}
+.nstats{margin-top:10px;display:flex;flex-direction:column;gap:2px}
+.nstat{display:flex;align-items:baseline;gap:6px;height:16px;font-size:8px;letter-spacing:.08em}
+.nstat span{color:#6F7D77;white-space:nowrap}
+.nstat i{flex:1;border-bottom:1px dotted #26302E;margin:0 1px 3px}
+.nstat b{font-weight:400;font-size:8.5px;letter-spacing:.02em;color:#C3CDC8;white-space:nowrap}
+.now-ft{margin-top:auto;padding-top:8px;font-size:7.5px;letter-spacing:.1em;color:#6A7772}
+
+/* ---------------------------------------------------------------- bottom */
+.bottom{flex:1;min-height:0;display:grid;grid-template-columns:1fr 428px;gap:12px}
+.fx-card{min-width:0}
+.fx-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px;padding:8px 12px}
+.fx-grid{position:relative;flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(9,minmax(0,1fr));grid-auto-flow:column;column-gap:12px}
+.fx-grid::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:#1A2122;pointer-events:none}
+.fx{display:flex;align-items:center;gap:7px;width:100%;min-height:0;padding:0 8px;border:0;border-bottom:1px solid #1A2122;border-radius:0;background:transparent;text-align:left;font-size:10px;letter-spacing:.02em;color:#A6B2AC;cursor:pointer;transition:background .12s ease,color .12s ease}
+.fx .ix{width:16px;flex:none;font-size:8px;letter-spacing:.04em;color:#6A7772}
+.fx .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx .sp{width:16px;height:10px;flex:none;display:flex;align-items:flex-end;gap:1px}
+.fx .sp i{flex:1;background:#33403C;border-radius:0}
+.fx .id{width:25px;flex:none;text-align:right;font-size:7.5px;letter-spacing:.02em;color:#6F7D77}
+.fx:hover{background:#141A1B;color:#D8DFDB}
+.fx:hover .ix{color:#7C8A84}
+.fx.sel{background:rgba(232,162,60,.075);box-shadow:inset 2px 0 0 #E8A23C;color:#F0B45E}
+.fx.sel .ix{color:#C98B36}
+.fx.sel .sp i{background:#B98233}
+.fx.sel .id{color:#8A6A39}
+.fx:nth-child(9),.fx:nth-child(18){border-bottom:0}
+.fx-note{display:flex;align-items:center;padding:0 8px;font-size:7.5px;letter-spacing:.12em;color:#6A7772;white-space:nowrap;overflow:hidden}
+.fx-ft{flex:none;display:flex;justify-content:space-between;padding-top:6px;border-top:1px solid #1A2122;font-size:7.5px;letter-spacing:.09em;color:#6F7D77}
+.fx-ft .ok{color:#5FD3A6}
+
+.out-card{min-width:0}
+.out-body{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;padding:12px 14px 10px}
+.sec-h2{display:flex;align-items:center;gap:7px;height:13px;font-size:8px;letter-spacing:.16em;color:#7C8A84;white-space:nowrap}
+.sec-h2 .r{flex:1;height:1px;background:#1F2728;margin-top:1px}
+.sec-h2 .hex{display:flex;align-items:center;gap:5px;font-size:8px;letter-spacing:.02em;color:#C3CDC8}
+.sec-h2 .sq-mini{width:6px;height:6px;background:#F2A33C;border-radius:1px}
+.sec-h2 .m{font-size:7.5px;letter-spacing:.08em;color:#4F5C57}
+.sw-row{display:flex;gap:6px}
+.sw{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding:0;border:0;background:none;cursor:pointer}
+.sw .chip{height:26px;border-radius:2px;background:var(--c);box-shadow:inset 0 0 0 1px rgba(255,255,255,.13);transition:box-shadow .12s ease}
+.sw .nm{font-size:8px;letter-spacing:.07em;color:#6F7D77;text-align:center;white-space:nowrap;overflow:hidden}
+.sw:hover .chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.38)}
+.sw.sel .chip{box-shadow:inset 0 0 0 1px rgba(255,255,255,.16),0 0 0 1px #0B0E0F,0 0 0 2px #E8A23C}
+.sw.sel .nm{color:#E8A23C}
+.hr2{height:1px;background:#1A2122}
+.ctl{display:flex;flex-direction:column;gap:4px;cursor:pointer}
+.ctl-h{display:flex;align-items:baseline;justify-content:space-between;font-size:8px;letter-spacing:.14em;color:#93A09A}
+.ctl-h b{font-weight:400;font-size:10px;letter-spacing:.02em;color:#E7EDE9}
+.ctl-h b span{font-size:8px;color:#5E6B66}
+.range{--p:78%;-webkit-appearance:none;appearance:none;width:100%;height:18px;margin:0;background:transparent;cursor:ew-resize}
+.range::-webkit-slider-runnable-track{height:4px;border-radius:0;background:linear-gradient(90deg,#E8A23C 0 var(--p),#232B2C var(--p) 100%);box-shadow:0 0 0 1px #0C1011}
+.range::-webkit-slider-thumb{-webkit-appearance:none;width:7px;height:16px;margin-top:-6px;border-radius:1px;border:1px solid #FFE0A6;background:#F2B864;box-shadow:0 0 8px rgba(232,162,60,.45)}
+.range::-moz-range-track{height:4px;background:#232B2C}
+.range::-moz-range-progress{height:4px;background:#E8A23C}
+.range::-moz-range-thumb{width:7px;height:16px;border-radius:1px;border:1px solid #FFE0A6;background:#F2B864}
+.ticks{display:flex;justify-content:space-between;padding:0 3px;margin-top:0}
+.ticks i{width:1px;height:3px;background:#2B3536}
+.p-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.preset{display:flex;flex-direction:column;gap:3px;min-width:0;padding:7px 8px;border:1px solid #293132;border-radius:2px;background:#121718;text-align:left;cursor:pointer;font-size:8px;transition:background .12s ease,border-color .12s ease}
+.preset:hover{border-color:#3A4544;background:#151B1C}
+.p-t{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:8px;letter-spacing:.09em;color:#C9D3CE}
+.p-dot{width:4px;height:4px;flex:none;border-radius:50%;background:#3E4A47}
+.p-s{font-size:7.5px;letter-spacing:.02em;color:#7C8A84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-bars{display:flex;gap:2px;margin-top:auto}
+.p-bars i{height:3px;flex:1;border-radius:1px;opacity:.85}
+.preset.sel{border-color:#7C5A26;background:linear-gradient(180deg,rgba(232,162,60,.10),rgba(232,162,60,.025))}
+.preset.sel .p-t{color:#F0B45E}
+.preset.sel .p-dot{background:#E8A23C;box-shadow:0 0 6px rgba(232,162,60,.6)}
+.preset.sel .p-s{color:#A98B5D}
+.out-ft{margin-top:auto;padding-top:7px;font-size:7.5px;letter-spacing:.09em;color:#6F7D77;display:flex;justify-content:space-between}
+.out-ft .ok{color:#5FD3A6}
+
+/* ---------------------------------------------------------------- run bar */
+.run{flex:none;height:46px;display:flex;align-items:center;gap:12px;padding:0 12px;border:1px solid #242C2D;border-radius:3px;background:#101516}
+.run-tag{display:flex;align-items:center;gap:6px;height:24px;padding-right:12px;border-right:1px solid #242C2D;font-size:8px;letter-spacing:.16em;color:#E8A23C;white-space:nowrap}
+.run-tag .sq-a{width:5px;height:5px;border-radius:1px;background:#E8A23C;box-shadow:0 0 6px rgba(232,162,60,.6)}
+.run-txt{display:flex;align-items:center;gap:7px;flex:1;min-width:0;font-size:9.5px;letter-spacing:.01em;white-space:nowrap;overflow:hidden}
+.run-txt b{font-weight:500;color:#E7EDE9}
+.run-txt .lbl{font-size:7.5px;letter-spacing:.1em;color:#6F7D77}
+.run-txt .v{color:#C3CDC8}
+.run-txt .s{color:#36413E}
+.run-meta{font-size:7.5px;letter-spacing:.08em;color:#7C8A84;white-space:nowrap}
+.acts{display:flex;align-items:center;gap:8px;height:24px;padding-left:12px;border-left:1px solid #242C2D}
+.btn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #2E3839;border-radius:2px;background:#141A1B;color:#A6B2AC;font-size:8px;letter-spacing:.1em;cursor:pointer;white-space:nowrap;transition:border-color .12s ease,color .12s ease,background .12s ease}
+.btn:hover{border-color:#44504E;color:#E7EDE9;background:#161D1E}
+.btn.pri{border-color:#6B4E22;background:rgba(232,162,60,.08);color:#F2B864}
+.btn.pri:hover{border-color:#A0742C;background:rgba(232,162,60,.13);color:#FFD28C}
+.btn.warn{border-style:dashed;border-color:#5A4522;background:transparent;color:#C9A15E}
+.btn.warn:hover{border-color:#8A6428;color:#F2B864}
+
+/* ---------------------------------------------------------------- status */
+.statusbar{height:26px;flex:none;display:flex;align-items:center;background:#0D1112;border-top:1px solid #242C2D;padding:0 14px;font-size:8px;letter-spacing:.05em;color:#6F7D77;white-space:nowrap;overflow:hidden}
+.sb-g{display:flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-right:1px solid #1A2122}
+.sb-g:first-child{padding-left:0}
+.sb-g b{font-weight:400;color:#93A09A}
+.sb-g .ok{color:#5FD3A6}
+.sb-r{margin-left:auto}
+.sb-g:last-child{border-right:0}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="topbar">
+  <div class="tb-brand"><span class="mk">▛</span><span><b>CONTROL DECK</b></span></div>
+  <span class="tb-url">HID://LEOBOG/HI75C-PRO</span>
+  <div class="tb-mid">Hi75C Pro — Lighting</div>
+  <div class="tb-right">
+    <span class="tb-sync"><span class="dot"></span>SYNCED 14:42:07</span>
+    <span class="tb-btn" aria-hidden="true">–</span>
+    <span class="tb-btn" aria-hidden="true">□</span>
+    <span class="tb-btn x" aria-hidden="true">×</span>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="rail">
+    <div class="rail-id">
+      <div class="ri-1"><span>SESSION <b>0A</b></span><span>14:42</span></div>
+      <div class="ri-2">hid://leobog/hi75c-pro</div>
+    </div>
+
+    <section aria-label="Device">
+      <div class="sec-h"><span class="g">├─</span><span class="t">DEVICE</span><span class="r"></span><span class="m">01</span><span class="g">─┤</span></div>
+      <div class="dev">
+        <div class="dev-n"><b>Hi75C Pro</b><span>REV B</span></div>
+        <div class="dev-id">3554:fa09 · 2.4 GHz dongle</div>
+        <div class="dev-st"><span class="dot"></span><span>LINKED</span><span class="sig" aria-hidden="true"><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span><span class="hz">1000 Hz</span></div>
+        <div class="dev-io"><span>IFACE 1</span><span>REPORT 0x13</span></div>
+      </div>
+    </section>
+
+    <nav aria-label="Sections">
+      <div class="sec-h"><span class="g">├─</span><span class="t">SECTIONS</span><span class="r"></span><span class="m">F1–F3</span><span class="g">─┤</span></div>
+      <div class="nav">
+        <button type="button" class="nav-i" aria-current="page" title="Lighting (F1)"><span class="g">├─</span><span class="i">01</span><span class="n">LIGHTING</span><span class="k">F1</span></button>
+        <button type="button" class="nav-i" title="Keymap (F2)"><span class="g">├─</span><span class="i">02</span><span class="n">KEYMAP</span><span class="k">F2</span></button>
+        <button type="button" class="nav-i" title="About (F3)"><span class="g">└─</span><span class="i">03</span><span class="n">ABOUT</span><span class="k">F3</span></button>
+      </div>
+    </nav>
+
+    <section aria-label="Telemetry">
+      <div class="sec-h"><span class="g">├─</span><span class="t">TELEMETRY</span><span class="r"></span><span class="m">LIVE</span><span class="g">─┤</span></div>
+      <div class="tel">
+        <div class="row"><span class="k">FIRMWARE</span><span class="ld"></span><span class="v">1.0.7</span></div>
+        <div class="row"><span class="k">MATRIX</span><span class="ld"></span><span class="v">81 KEYS</span></div>
+        <div class="row"><span class="k">REPORT</span><span class="ld"></span><span class="v">0x13</span></div>
+        <div class="row"><span class="k">POLL</span><span class="ld"></span><span class="v">1000 <em>HZ</em></span></div>
+        <div class="row"><span class="k">UPTIME</span><span class="ld"></span><span class="v">00:41:19</span></div>
+      </div>
+    </section>
+
+    <section aria-label="Activity">
+      <div class="sec-h"><span class="g">├─</span><span class="t">ACTIVITY</span><span class="r"></span><span class="m">LAST 20 s</span><span class="g">─┤</span></div>
+      <div class="log">
+        <div class="row"><time>14:42:07</time><span class="v">WRITE</span><span class="msg">fx 0x0D · ack 15 ms</span><span class="ok">✓</span></div>
+        <div class="row"><time>14:42:03</time><span class="v">COLOUR</span><span class="msg">palette · amber 01</span></div>
+        <div class="row"><time>14:41:59</time><span class="v">READ</span><span class="msg">cfg 0x44 · 10 pkts</span></div>
+        <div class="row"><time>14:41:52</time><span class="v">LINK</span><span class="msg">dongle 3554:fa09</span></div>
+        <div class="row"><time>14:41:51</time><span class="v">OPEN</span><span class="msg">iface 1 · report 0x13</span></div>
+        <div class="row"><time>14:41:48</time><span class="v">SCAN</span><span class="msg">2 interfaces · 1 cfg</span></div>
+      </div>
+    </section>
+
+    <section aria-label="Link quality">
+      <div class="sec-h"><span class="g">├─</span><span class="t">LINK</span><span class="r"></span><span class="m">2.4 GHZ</span><span class="g">─┤</span></div>
+      <div class="link">
+        <div class="link-h"><span>QUALITY</span><span><b>−54</b> dBm</span></div>
+        <div class="bars" aria-hidden="true"><i style="height:7px"></i><i style="height:9px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:11px"></i><i style="height:9px"></i><i style="height:12px"></i><i style="height:13px"></i><i style="height:11px"></i><i style="height:14px"></i><i style="height:13px"></i><i style="height:15px"></i><i style="height:14px"></i><i style="height:16px"></i><i style="height:15px"></i><i style="height:14px"></i><i style="height:16px"></i><i style="height:17px"></i><i style="height:15px"></i><i class="on" style="height:16px"></i><i class="on" style="height:17px"></i><i class="on" style="height:16px"></i><i class="on" style="height:17px"></i><i class="on" style="height:16px"></i></div>
+        <div class="link-ft"><span>TX 1,204</span><span>RX 1,202</span><span>LOSS 0.0%</span></div>
+      </div>
+    </section>
+
+    <div class="rail-ft">
+      <div class="ft-h"><span>PALETTE</span><span>7 SLOTS</span></div>
+      <div class="ramp" aria-hidden="true"><i style="background:#F2A33C"></i><i style="background:#E8613C"></i><i style="background:#D95BA3"></i><i style="background:#7B7BE8"></i><i style="background:#45C8D8"></i><i style="background:#4FD6A0"></i><i style="background:#E8EEEA"></i></div>
+      <div class="ft-b"><span>BUILD 2f7c9ae</span><span>v0.9.3</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-hd">
+      <div class="ph-l">
+        <div class="ph-t"><span class="ph-i">01<span class="sl">/</span></span><h1>LIGHTING</h1></div>
+        <div class="ph-s"><b>LEOBOG Hi75C Pro</b><span class="s">·</span>75% ANSI<span class="s">·</span>81 keys<span class="s">·</span>firmware 1.0.7</div>
+      </div>
+      <div class="ph-r">
+        <span class="chip live"><span class="dot"></span>LINKED</span>
+        <span class="chip">FW <b>1.0.7</b></span>
+        <span class="chip">SYNCED <b>14:42:07</b></span>
+      </div>
+    </div>
+
+    <section class="card board-card" aria-labelledby="h-kb">
+      <div class="card-h">
+        <span class="g">├─</span><h2 class="t" id="h-kb">KEYBOARD</h2><span class="r"></span>
+        <span class="m">LIVE PREVIEW</span><span class="slash">/</span><span class="m">81 KEYS</span><span class="g">─┤</span>
+      </div>
+      <div class="board-body">
+        <div class="deck" role="img" aria-label="Live lighting preview of the Hi75C Pro: Center Wave in amber, a ring of light expanding from the middle of the board.">
+          <div class="deck-glow" aria-hidden="true"></div>
+          <div class="deck-in" aria-hidden="true">
+      <div class="key k-lo word" style="left:6.5px;top:11.5px;width:37.0px;height:37px;--a:0.14;--b:0.07;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.11),0 0 10px rgba(242,163,60,0.01)" title="Escape" aria-hidden="true"><span class="lg"><span class="main">Esc</span></span></div>
+      <div class="key k-lo fn" style="left:46.5px;top:11.5px;width:37.0px;height:37px;--a:0.23;--b:0.11;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.19),0 0 10px rgba(242,163,60,0.02)" title="F1" aria-hidden="true"><span class="lg"><span class="main">F1</span></span></div>
+      <div class="key k-lo fn" style="left:86.5px;top:11.5px;width:37.0px;height:37px;--a:0.27;--b:0.13;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.22),0 0 10px rgba(242,163,60,0.02)" title="F2" aria-hidden="true"><span class="lg"><span class="main">F2</span></span></div>
+      <div class="key k-mid fn" style="left:126.5px;top:11.5px;width:37.0px;height:37px;--a:0.47;--b:0.23;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.38),0 0 10px rgba(242,163,60,0.04)" title="F3" aria-hidden="true"><span class="lg"><span class="main">F3</span></span></div>
+      <div class="key k-hi fn" style="left:166.5px;top:11.5px;width:37.0px;height:37px;--a:0.80;--b:0.40;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.66),0 0 10px rgba(242,163,60,0.07)" title="F4" aria-hidden="true"><span class="lg"><span class="main">F4</span></span></div>
+      <div class="key k-hi fn" style="left:206.5px;top:11.5px;width:37.0px;height:37px;--a:0.98;--b:0.49;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.80),0 0 10px rgba(242,163,60,0.09)" title="F5" aria-hidden="true"><span class="lg"><span class="main">F5</span></span></div>
+      <div class="key k-hi fn" style="left:246.5px;top:11.5px;width:37.0px;height:37px;--a:0.86;--b:0.43;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.70),0 0 10px rgba(242,163,60,0.08)" title="F6" aria-hidden="true"><span class="lg"><span class="main">F6</span></span></div>
+      <div class="key k-hi fn" style="left:286.5px;top:11.5px;width:37.0px;height:37px;--a:0.81;--b:0.40;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.66),0 0 10px rgba(242,163,60,0.07)" title="F7" aria-hidden="true"><span class="lg"><span class="main">F7</span></span></div>
+      <div class="key k-hi fn" style="left:326.5px;top:11.5px;width:37.0px;height:37px;--a:0.79;--b:0.40;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.65),0 0 10px rgba(242,163,60,0.07)" title="F8" aria-hidden="true"><span class="lg"><span class="main">F8</span></span></div>
+      <div class="key k-hi fn" style="left:366.5px;top:11.5px;width:37.0px;height:37px;--a:0.92;--b:0.46;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.76),0 0 10px rgba(242,163,60,0.08)" title="F9" aria-hidden="true"><span class="lg"><span class="main">F9</span></span></div>
+      <div class="key k-hi fn" style="left:406.5px;top:11.5px;width:37.0px;height:37px;--a:1.00;--b:0.50;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.82),0 0 10px rgba(242,163,60,0.09)" title="F10" aria-hidden="true"><span class="lg"><span class="main">F10</span></span></div>
+      <div class="key k-hi fn" style="left:446.5px;top:11.5px;width:37.0px;height:37px;--a:0.78;--b:0.39;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.64),0 0 10px rgba(242,163,60,0.07)" title="F11" aria-hidden="true"><span class="lg"><span class="main">F11</span></span></div>
+      <div class="key k-mid fn" style="left:486.5px;top:11.5px;width:37.0px;height:37px;--a:0.41;--b:0.21;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.34),0 0 10px rgba(242,163,60,0.04)" title="F12" aria-hidden="true"><span class="lg"><span class="main">F12</span></span></div>
+      <div class="key k-lo" style="left:6.5px;top:51.5px;width:37.0px;height:37px;--a:0.14;--b:0.07;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.11),0 0 10px rgba(242,163,60,0.01)" title="Grave" aria-hidden="true"><span class="lg"><span class="sub">~</span><span class="main">`</span></span></div>
+      <div class="key k-lo" style="left:46.5px;top:51.5px;width:37.0px;height:37px;--a:0.24;--b:0.12;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.19),0 0 10px rgba(242,163,60,0.02)" title="1" aria-hidden="true"><span class="lg"><span class="sub">!</span><span class="main">1</span></span></div>
+      <div class="key k-lo" style="left:86.5px;top:51.5px;width:37.0px;height:37px;--a:0.32;--b:0.16;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.26),0 0 10px rgba(242,163,60,0.03)" title="2" aria-hidden="true"><span class="lg"><span class="sub">@</span><span class="main">2</span></span></div>
+      <div class="key k-mid" style="left:126.5px;top:51.5px;width:37.0px;height:37px;--a:0.62;--b:0.31;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.51),0 0 10px rgba(242,163,60,0.06)" title="3" aria-hidden="true"><span class="lg"><span class="sub">#</span><span class="main">3</span></span></div>
+      <div class="key k-hi" style="left:166.5px;top:51.5px;width:37.0px;height:37px;--a:0.96;--b:0.48;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.78),0 0 10px rgba(242,163,60,0.09)" title="4" aria-hidden="true"><span class="lg"><span class="sub">$</span><span class="main">4</span></span></div>
+      <div class="key k-hi" style="left:206.5px;top:51.5px;width:37.0px;height:37px;--a:0.88;--b:0.44;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.72),0 0 10px rgba(242,163,60,0.08)" title="5" aria-hidden="true"><span class="lg"><span class="sub">%</span><span class="main">5</span></span></div>
+      <div class="key k-mid" style="left:246.5px;top:51.5px;width:37.0px;height:37px;--a:0.54;--b:0.27;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.44),0 0 10px rgba(242,163,60,0.05)" title="6" aria-hidden="true"><span class="lg"><span class="sub">^</span><span class="main">6</span></span></div>
+      <div class="key k-mid" style="left:286.5px;top:51.5px;width:37.0px;height:37px;--a:0.43;--b:0.21;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.35),0 0 10px rgba(242,163,60,0.04)" title="7" aria-hidden="true"><span class="lg"><span class="sub">&amp;</span><span class="main">7</span></span></div>
+      <div class="key k-mid" style="left:326.5px;top:51.5px;width:37.0px;height:37px;--a:0.42;--b:0.21;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.34),0 0 10px rgba(242,163,60,0.04)" title="8" aria-hidden="true"><span class="lg"><span class="sub">*</span><span class="main">8</span></span></div>
+      <div class="key k-mid" style="left:366.5px;top:51.5px;width:37.0px;height:37px;--a:0.61;--b:0.31;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.50),0 0 10px rgba(242,163,60,0.06)" title="9" aria-hidden="true"><span class="lg"><span class="sub">(</span><span class="main">9</span></span></div>
+      <div class="key k-hi" style="left:406.5px;top:51.5px;width:37.0px;height:37px;--a:0.92;--b:0.46;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.76),0 0 10px rgba(242,163,60,0.08)" title="0" aria-hidden="true"><span class="lg"><span class="sub">)</span><span class="main">0</span></span></div>
+      <div class="key k-hi" style="left:446.5px;top:51.5px;width:37.0px;height:37px;--a:0.94;--b:0.47;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.77),0 0 10px rgba(242,163,60,0.08)" title="Minus" aria-hidden="true"><span class="lg"><span class="sub">_</span><span class="main">-</span></span></div>
+      <div class="key k-mid" style="left:486.5px;top:51.5px;width:37.0px;height:37px;--a:0.56;--b:0.28;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.46),0 0 10px rgba(242,163,60,0.05)" title="Equals" aria-hidden="true"><span class="lg"><span class="sub">+</span><span class="main">=</span></span></div>
+      <div class="key k-lo word" style="left:526.5px;top:51.5px;width:77.0px;height:37px;--a:0.17;--b:0.09;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.14),0 0 10px rgba(242,163,60,0.02)" title="Backspace" aria-hidden="true"><span class="lg"><span class="main">Backspace</span></span></div>
+      <div class="key k-lo word" style="left:606.5px;top:51.5px;width:37.0px;height:37px;--a:0.22;--b:0.11;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.18),0 0 10px rgba(242,163,60,0.02)" title="Delete" aria-hidden="true"><span class="lg"><span class="main">Del</span></span></div>
+      <div class="key k-lo word" style="left:6.5px;top:91.5px;width:57.0px;height:37px;--a:0.21;--b:0.10;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.17),0 0 10px rgba(242,163,60,0.02)" title="Tab" aria-hidden="true"><span class="lg"><span class="main">Tab</span></span></div>
+      <div class="key k-lo" style="left:66.5px;top:91.5px;width:37.0px;height:37px;--a:0.25;--b:0.13;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.21),0 0 10px rgba(242,163,60,0.02)" title="Q" aria-hidden="true"><span class="lg"><span class="main">Q</span></span></div>
+      <div class="key k-mid" style="left:106.5px;top:91.5px;width:37.0px;height:37px;--a:0.48;--b:0.24;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.40),0 0 10px rgba(242,163,60,0.04)" title="W" aria-hidden="true"><span class="lg"><span class="main">W</span></span></div>
+      <div class="key k-hi" style="left:146.5px;top:91.5px;width:37.0px;height:37px;--a:0.87;--b:0.44;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.71),0 0 10px rgba(242,163,60,0.08)" title="E" aria-hidden="true"><span class="lg"><span class="main">E</span></span></div>
+      <div class="key k-hi" style="left:186.5px;top:91.5px;width:37.0px;height:37px;--a:0.91;--b:0.46;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.75),0 0 10px rgba(242,163,60,0.08)" title="R" aria-hidden="true"><span class="lg"><span class="main">R</span></span></div>
+      <div class="key k-mid" style="left:226.5px;top:91.5px;width:37.0px;height:37px;--a:0.62;--b:0.31;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.51),0 0 10px rgba(242,163,60,0.06)" title="T" aria-hidden="true"><span class="lg"><span class="main">T</span></span></div>
+      <div class="key k-lo" style="left:266.5px;top:91.5px;width:37.0px;height:37px;--a:0.31;--b:0.16;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.25),0 0 10px rgba(242,163,60,0.03)" title="Y" aria-hidden="true"><span class="lg"><span class="main">Y</span></span></div>
+      <div class="key k-lo" style="left:306.5px;top:91.5px;width:37.0px;height:37px;--a:0.22;--b:0.11;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.18),0 0 10px rgba(242,163,60,0.02)" title="U" aria-hidden="true"><span class="lg"><span class="main">U</span></span></div>
+      <div class="key k-lo" style="left:346.5px;top:91.5px;width:37.0px;height:37px;--a:0.29;--b:0.14;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.24),0 0 10px rgba(242,163,60,0.03)" title="I" aria-hidden="true"><span class="lg"><span class="main">I</span></span></div>
+      <div class="key k-mid" style="left:386.5px;top:91.5px;width:37.0px;height:37px;--a:0.58;--b:0.29;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.47),0 0 10px rgba(242,163,60,0.05)" title="O" aria-hidden="true"><span class="lg"><span class="main">O</span></span></div>
+      <div class="key k-hi" style="left:426.5px;top:91.5px;width:37.0px;height:37px;--a:0.93;--b:0.47;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.76),0 0 10px rgba(242,163,60,0.08)" title="P" aria-hidden="true"><span class="lg"><span class="main">P</span></span></div>
+      <div class="key k-hi" style="left:466.5px;top:91.5px;width:37.0px;height:37px;--a:0.83;--b:0.42;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.68),0 0 10px rgba(242,163,60,0.07)" title="Left bracket" aria-hidden="true"><span class="lg"><span class="main">[</span></span></div>
+      <div class="key k-mid" style="left:506.5px;top:91.5px;width:37.0px;height:37px;--a:0.51;--b:0.26;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.42),0 0 10px rgba(242,163,60,0.05)" title="Right bracket" aria-hidden="true"><span class="lg"><span class="main">]</span></span></div>
+      <div class="key k-lo" style="left:546.5px;top:91.5px;width:57.0px;height:37px;--a:0.24;--b:0.12;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.19),0 0 10px rgba(242,163,60,0.02)" title="Backslash" aria-hidden="true"><span class="lg"><span class="main">\</span></span></div>
+      <div class="key k-lo word" style="left:606.5px;top:91.5px;width:37.0px;height:37px;--a:0.19;--b:0.09;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.16),0 0 10px rgba(242,163,60,0.02)" title="Page Up" aria-hidden="true"><span class="lg"><span class="main">PgUp</span></span></div>
+      <div class="key k-lo word" style="left:6.5px;top:131.5px;width:67.0px;height:37px;--a:0.18;--b:0.09;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.14),0 0 10px rgba(242,163,60,0.02)" title="Caps Lock" aria-hidden="true"><span class="lg"><span class="main">Caps</span></span></div>
+      <div class="key k-lo" style="left:76.5px;top:131.5px;width:37.0px;height:37px;--a:0.25;--b:0.13;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.21),0 0 10px rgba(242,163,60,0.02)" title="A" aria-hidden="true"><span class="lg"><span class="main">A</span></span></div>
+      <div class="key k-mid" style="left:116.5px;top:131.5px;width:37.0px;height:37px;--a:0.54;--b:0.27;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.44),0 0 10px rgba(242,163,60,0.05)" title="S" aria-hidden="true"><span class="lg"><span class="main">S</span></span></div>
+      <div class="key k-hi" style="left:156.5px;top:131.5px;width:37.0px;height:37px;--a:1.00;--b:0.50;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.82),0 0 10px rgba(242,163,60,0.09)" title="D" aria-hidden="true"><span class="lg"><span class="main">D</span></span></div>
+      <div class="key k-hi" style="left:196.5px;top:131.5px;width:37.0px;height:37px;--a:0.92;--b:0.46;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.76),0 0 10px rgba(242,163,60,0.08)" title="F" aria-hidden="true"><span class="lg"><span class="main">F</span></span></div>
+      <div class="key k-mid" style="left:236.5px;top:131.5px;width:37.0px;height:37px;--a:0.51;--b:0.26;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.42),0 0 10px rgba(242,163,60,0.05)" title="G" aria-hidden="true"><span class="lg"><span class="main">G</span></span></div>
+      <div class="key k-lo" style="left:276.5px;top:131.5px;width:37.0px;height:37px;--a:0.26;--b:0.13;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.21),0 0 10px rgba(242,163,60,0.02)" title="H" aria-hidden="true"><span class="lg"><span class="main">H</span></span></div>
+      <div class="key k-lo" style="left:316.5px;top:131.5px;width:37.0px;height:37px;--a:0.21;--b:0.10;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.17),0 0 10px rgba(242,163,60,0.02)" title="J" aria-hidden="true"><span class="lg"><span class="main">J</span></span></div>
+      <div class="key k-lo" style="left:356.5px;top:131.5px;width:37.0px;height:37px;--a:0.33;--b:0.16;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.27),0 0 10px rgba(242,163,60,0.03)" title="K" aria-hidden="true"><span class="lg"><span class="main">K</span></span></div>
+      <div class="key k-mid" style="left:396.5px;top:131.5px;width:37.0px;height:37px;--a:0.67;--b:0.33;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.55),0 0 10px rgba(242,163,60,0.06)" title="L" aria-hidden="true"><span class="lg"><span class="main">L</span></span></div>
+      <div class="key k-hi" style="left:436.5px;top:131.5px;width:37.0px;height:37px;--a:1.00;--b:0.50;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.82),0 0 10px rgba(242,163,60,0.09)" title="Semicolon" aria-hidden="true"><span class="lg"><span class="main">;</span></span></div>
+      <div class="key k-hi" style="left:476.5px;top:131.5px;width:37.0px;height:37px;--a:0.80;--b:0.40;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.65),0 0 10px rgba(242,163,60,0.07)" title="Apostrophe" aria-hidden="true"><span class="lg"><span class="main">&#x27;</span></span></div>
+      <div class="key k-lo word" style="left:516.5px;top:131.5px;width:87.0px;height:37px;--a:0.26;--b:0.13;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.21),0 0 10px rgba(242,163,60,0.02)" title="Enter" aria-hidden="true"><span class="lg"><span class="main">Enter</span></span></div>
+      <div class="key k-lo word" style="left:606.5px;top:131.5px;width:37.0px;height:37px;--a:0.17;--b:0.09;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.14),0 0 10px rgba(242,163,60,0.02)" title="Page Down" aria-hidden="true"><span class="lg"><span class="main">PgDn</span></span></div>
+      <div class="key k-lo word" style="left:6.5px;top:171.5px;width:87.0px;height:37px;--a:0.16;--b:0.08;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.13),0 0 10px rgba(242,163,60,0.01)" title="Left Shift" aria-hidden="true"><span class="lg"><span class="main">Shift</span></span></div>
+      <div class="key k-lo" style="left:96.5px;top:171.5px;width:37.0px;height:37px;--a:0.30;--b:0.15;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.25),0 0 10px rgba(242,163,60,0.03)" title="Z" aria-hidden="true"><span class="lg"><span class="main">Z</span></span></div>
+      <div class="key k-hi" style="left:136.5px;top:171.5px;width:37.0px;height:37px;--a:0.74;--b:0.37;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.60),0 0 10px rgba(242,163,60,0.07)" title="X" aria-hidden="true"><span class="lg"><span class="main">X</span></span></div>
+      <div class="key k-hi" style="left:176.5px;top:171.5px;width:37.0px;height:37px;--a:1.00;--b:0.50;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.82),0 0 10px rgba(242,163,60,0.09)" title="C" aria-hidden="true"><span class="lg"><span class="main">C</span></span></div>
+      <div class="key k-hi" style="left:216.5px;top:171.5px;width:37.0px;height:37px;--a:0.89;--b:0.44;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.73),0 0 10px rgba(242,163,60,0.08)" title="V" aria-hidden="true"><span class="lg"><span class="main">V</span></span></div>
+      <div class="key k-mid" style="left:256.5px;top:171.5px;width:37.0px;height:37px;--a:0.57;--b:0.29;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.47),0 0 10px rgba(242,163,60,0.05)" title="B" aria-hidden="true"><span class="lg"><span class="main">B</span></span></div>
+      <div class="key k-mid" style="left:296.5px;top:171.5px;width:37.0px;height:37px;--a:0.41;--b:0.20;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.33),0 0 10px rgba(242,163,60,0.04)" title="N" aria-hidden="true"><span class="lg"><span class="main">N</span></span></div>
+      <div class="key k-mid" style="left:336.5px;top:171.5px;width:37.0px;height:37px;--a:0.45;--b:0.22;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.37),0 0 10px rgba(242,163,60,0.04)" title="M" aria-hidden="true"><span class="lg"><span class="main">M</span></span></div>
+      <div class="key k-mid" style="left:376.5px;top:171.5px;width:37.0px;height:37px;--a:0.69;--b:0.34;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.56),0 0 10px rgba(242,163,60,0.06)" title="Comma" aria-hidden="true"><span class="lg"><span class="main">,</span></span></div>
+      <div class="key k-hi" style="left:416.5px;top:171.5px;width:37.0px;height:37px;--a:1.00;--b:0.50;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.82),0 0 10px rgba(242,163,60,0.09)" title="Period" aria-hidden="true"><span class="lg"><span class="main">.</span></span></div>
+      <div class="key k-hi" style="left:456.5px;top:171.5px;width:37.0px;height:37px;--a:0.88;--b:0.44;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.72),0 0 10px rgba(242,163,60,0.08)" title="Slash" aria-hidden="true"><span class="lg"><span class="main">/</span></span></div>
+      <div class="key k-lo word" style="left:496.5px;top:171.5px;width:67.0px;height:37px;--a:0.37;--b:0.18;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.30),0 0 10px rgba(242,163,60,0.03)" title="Right Shift" aria-hidden="true"><span class="lg"><span class="main">Shift</span></span></div>
+      <div class="key k-lo arrow" style="left:566.5px;top:171.5px;width:37.0px;height:37px;--a:0.18;--b:0.09;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.15),0 0 10px rgba(242,163,60,0.02)" title="Arrow Up" aria-hidden="true"><span class="lg"><span class="main">↑</span></span></div>
+      <div class="key k-lo word" style="left:6.5px;top:211.5px;width:47.0px;height:37px;--a:0.16;--b:0.08;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.13),0 0 10px rgba(242,163,60,0.01)" title="Left Ctrl" aria-hidden="true"><span class="lg"><span class="main">Ctrl</span></span></div>
+      <div class="key k-lo word" style="left:56.5px;top:211.5px;width:47.0px;height:37px;--a:0.15;--b:0.08;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.13),0 0 10px rgba(242,163,60,0.01)" title="Windows key" aria-hidden="true"><span class="lg"><span class="main">Win</span></span></div>
+      <div class="key k-lo word" style="left:106.5px;top:211.5px;width:47.0px;height:37px;--a:0.38;--b:0.19;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.31),0 0 10px rgba(242,163,60,0.03)" title="Left Alt" aria-hidden="true"><span class="lg"><span class="main">Alt</span></span></div>
+      <div class="key k-hi space" style="left:156.5px;top:211.5px;width:217.0px;height:37px;--a:0.98;--b:0.49;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.80),0 0 10px rgba(242,163,60,0.09)" title="Spacebar" aria-hidden="true"><span class="lg"></span></div>
+      <div class="key k-hi word" style="left:376.5px;top:211.5px;width:47.0px;height:37px;--a:1.00;--b:0.50;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.82),0 0 10px rgba(242,163,60,0.09)" title="Right Alt" aria-hidden="true"><span class="lg"><span class="main">Alt</span></span></div>
+      <div class="key k-hi word" style="left:426.5px;top:211.5px;width:47.0px;height:37px;--a:0.86;--b:0.43;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.71),0 0 10px rgba(242,163,60,0.08)" title="Function layer" aria-hidden="true"><span class="lg"><span class="main">Fn</span></span></div>
+      <div class="key k-mid word" style="left:476.5px;top:211.5px;width:47.0px;height:37px;--a:0.43;--b:0.22;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.35),0 0 10px rgba(242,163,60,0.04)" title="Right Ctrl" aria-hidden="true"><span class="lg"><span class="main">Ctrl</span></span></div>
+      <div class="key k-lo arrow" style="left:526.5px;top:211.5px;width:37.0px;height:37px;--a:0.20;--b:0.10;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.16),0 0 10px rgba(242,163,60,0.02)" title="Arrow Left" aria-hidden="true"><span class="lg"><span class="main">←</span></span></div>
+      <div class="key k-lo arrow" style="left:566.5px;top:211.5px;width:37.0px;height:37px;--a:0.14;--b:0.07;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.11),0 0 10px rgba(242,163,60,0.01)" title="Arrow Down" aria-hidden="true"><span class="lg"><span class="main">↓</span></span></div>
+      <div class="key k-lo arrow" style="left:606.5px;top:211.5px;width:37.0px;height:37px;--a:0.22;--b:0.11;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 1px 0 rgba(0,0,0,.36),inset 0 -2px 0 rgba(242,163,60,0.18),0 0 10px rgba(242,163,60,0.02)" title="Arrow Right" aria-hidden="true"><span class="lg"><span class="main">→</span></span></div>
+            <div class="deck-badge"><span>H75C</span><span class="b"></span><b>PRO</b></div>
+            <div class="knob" title="Encoder — rotate to adjust, press to mute"><div class="knob-dial"></div></div>
+          </div>
+        </div>
+        <div class="now">
+          <div class="now-h"><span>NOW PLAYING</span><span class="live"><span class="dot"></span>LIVE</span></div>
+          <div class="now-t">Center Wave</div>
+          <div class="now-m">FIRMWARE EFFECT · ID 0x0D</div>
+          <div class="hr"></div>
+          <div class="col-pick"><span class="sq" style="--c:#F2A33C"></span><span class="col-n">AMBER</span><span class="col-x">#F2A33C</span></div>
+          <div class="col-rgb">RGB 242 163 60 · 01/07</div>
+          <div class="hr"></div>
+          <div class="wave-h"><span>ENVELOPE</span><span>60 FPS</span></div>
+          <div class="wave" aria-hidden="true"><i style="height:3px"></i><i style="height:7px"></i><i style="height:12px"></i><i style="height:18px"></i><i class="hot" style="height:24px"></i><i class="hot" style="height:28px"></i><i class="hot" style="height:26px"></i><i style="height:20px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:15px"></i><i style="height:20px"></i><i class="hot" style="height:24px"></i><i class="hot" style="height:26px"></i><i class="hot" style="height:23px"></i><i style="height:17px"></i><i style="height:10px"></i></div>
+          <div class="nstats">
+            <div class="nstat"><span>BRIGHT</span><i></i><b>7 / 9</b></div>
+            <div class="nstat"><span>SPEED</span><i></i><b>4 / 9</b></div>
+            <div class="nstat"><span>BUS</span><i></i><b>0x13 · 19 B</b></div>
+          </div>
+          <div class="now-ft">PREVIEW ≈ DEVICE OUTPUT</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="bottom">
+      <section class="card fx-card" aria-labelledby="h-fx">
+        <div class="card-h">
+          <span class="g">├─</span><h2 class="t" id="h-fx">EFFECTS</h2><span class="r"></span>
+          <span class="m">17</span><span class="slash">/</span><span class="m">FIRMWARE</span><span class="g">─┤</span>
+        </div>
+        <div class="fx-body">
+          <div class="fx-grid" role="group" aria-label="Lighting effects">
+        <button type="button" class="fx" aria-pressed="false" title="Off · firmware 0x00"><span class="ix">01</span><span class="nm">Off</span><span class="sp" aria-hidden="true"><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i><i style="height:1px"></i></span><span class="id">0x00</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Fixed On · firmware 0x01"><span class="ix">02</span><span class="nm">Fixed On</span><span class="sp" aria-hidden="true"><i style="height:5px"></i><i style="height:5px"></i><i style="height:5px"></i><i style="height:5px"></i><i style="height:5px"></i></span><span class="id">0x01</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Breathing · firmware 0x02"><span class="ix">03</span><span class="nm">Breathing</span><span class="sp" aria-hidden="true"><i style="height:2px"></i><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:6px"></i></span><span class="id">0x02</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Spectrum Cycle · firmware 0x03"><span class="ix">04</span><span class="nm">Spectrum Cycle</span><span class="sp" aria-hidden="true"><i style="height:2px"></i><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="id">0x03</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Row Ripple · firmware 0x04"><span class="ix">05</span><span class="nm">Row Ripple</span><span class="sp" aria-hidden="true"><i style="height:3px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:5px"></i><i style="height:2px"></i></span><span class="id">0x04</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Raindrops · firmware 0x05"><span class="ix">06</span><span class="nm">Raindrops</span><span class="sp" aria-hidden="true"><i style="height:8px"></i><i style="height:2px"></i><i style="height:6px"></i><i style="height:3px"></i><i style="height:9px"></i></span><span class="id">0x05</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Slow Wave · firmware 0x06"><span class="ix">07</span><span class="nm">Slow Wave</span><span class="sp" aria-hidden="true"><i style="height:2px"></i><i style="height:3px"></i><i style="height:5px"></i><i style="height:7px"></i><i style="height:9px"></i></span><span class="id">0x06</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Board Ripple · firmware 0x07"><span class="ix">08</span><span class="nm">Board Ripple</span><span class="sp" aria-hidden="true"><i style="height:4px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:8px"></i><i style="height:4px"></i></span><span class="id">0x07</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Stars Twinkle · firmware 0x08"><span class="ix">09</span><span class="nm">Stars Twinkle</span><span class="sp" aria-hidden="true"><i style="height:3px"></i><i style="height:7px"></i><i style="height:2px"></i><i style="height:8px"></i><i style="height:4px"></i></span><span class="id">0x08</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Snake · firmware 0x0A"><span class="ix">10</span><span class="nm">Snake</span><span class="sp" aria-hidden="true"><i style="height:2px"></i><i style="height:3px"></i><i style="height:4px"></i><i style="height:6px"></i><i style="height:9px"></i></span><span class="id">0x0A</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Neon Stream · firmware 0x0B"><span class="ix">11</span><span class="nm">Neon Stream</span><span class="sp" aria-hidden="true"><i style="height:9px"></i><i style="height:7px"></i><i style="height:5px"></i><i style="height:3px"></i><i style="height:2px"></i></span><span class="id">0x0B</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Reactive · firmware 0x0C"><span class="ix">12</span><span class="nm">Reactive</span><span class="sp" aria-hidden="true"><i style="height:2px"></i><i style="height:2px"></i><i style="height:9px"></i><i style="height:3px"></i><i style="height:2px"></i></span><span class="id">0x0C</span></button>
+        <button type="button" class="fx sel" aria-pressed="true" title="Center Wave · firmware 0x0D"><span class="ix">13</span><span class="nm">Center Wave</span><span class="sp" aria-hidden="true"><i style="height:3px"></i><i style="height:8px"></i><i style="height:10px"></i><i style="height:8px"></i><i style="height:3px"></i></span><span class="id">0x0D</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Rainbow Wheel · firmware 0x0F"><span class="ix">14</span><span class="nm">Rainbow Wheel</span><span class="sp" aria-hidden="true"><i style="height:6px"></i><i style="height:10px"></i><i style="height:7px"></i><i style="height:4px"></i><i style="height:9px"></i></span><span class="id">0x0F</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Waterfall · firmware 0x10"><span class="ix">15</span><span class="nm">Waterfall</span><span class="sp" aria-hidden="true"><i style="height:9px"></i><i style="height:7px"></i><i style="height:5px"></i><i style="height:2px"></i><i style="height:3px"></i></span><span class="id">0x10</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Fast Flicker · firmware 0x11"><span class="ix">16</span><span class="nm">Fast Flicker</span><span class="sp" aria-hidden="true"><i style="height:10px"></i><i style="height:3px"></i><i style="height:7px"></i><i style="height:2px"></i><i style="height:9px"></i></span><span class="id">0x11</span></button>
+        <button type="button" class="fx" aria-pressed="false" title="Per-Key Custom · firmware 0x20"><span class="ix">17</span><span class="nm">Per-Key Custom</span><span class="sp" aria-hidden="true"><i style="height:3px"></i><i style="height:6px"></i><i style="height:9px"></i><i style="height:6px"></i><i style="height:3px"></i></span><span class="id">0x20</span></button>
+        <div class="fx-note" aria-hidden="true">ON-DEVICE · NO HOST STREAM</div>
+          </div>
+          <div class="fx-ft"><span>FW IDS 0x00–0x20 · ALL ON-DEVICE</span><span>PALETTE 23 × 7</span></div>
+        </div>
+      </section>
+
+      <section class="card out-card" aria-labelledby="h-out">
+        <div class="card-h">
+          <span class="g">├─</span><h2 class="t" id="h-out">OUTPUT</h2><span class="r"></span>
+          <span class="m">PERSISTED</span><span class="g">─┤</span>
+        </div>
+        <div class="out-body">
+          <div class="sec-h2"><span>COLOUR</span><span class="r"></span><span class="hex"><span class="sq-mini"></span>#F2A33C</span></div>
+          <div class="sw-row" role="radiogroup" aria-label="Lighting colour">
+        <button type="button" class="sw sel" role="radio" aria-checked="true" aria-label="Amber, #F2A33C" title="Amber · #F2A33C"><span class="chip" style="--c:#F2A33C"></span><span class="nm">AMBER</span></button>
+        <button type="button" class="sw" role="radio" aria-checked="false" aria-label="Coral, #E8613C" title="Coral · #E8613C"><span class="chip" style="--c:#E8613C"></span><span class="nm">CORAL</span></button>
+        <button type="button" class="sw" role="radio" aria-checked="false" aria-label="Magenta, #D95BA3" title="Magenta · #D95BA3"><span class="chip" style="--c:#D95BA3"></span><span class="nm">MAGENTA</span></button>
+        <button type="button" class="sw" role="radio" aria-checked="false" aria-label="Indigo, #7B7BE8" title="Indigo · #7B7BE8"><span class="chip" style="--c:#7B7BE8"></span><span class="nm">INDIGO</span></button>
+        <button type="button" class="sw" role="radio" aria-checked="false" aria-label="Cyan, #45C8D8" title="Cyan · #45C8D8"><span class="chip" style="--c:#45C8D8"></span><span class="nm">CYAN</span></button>
+        <button type="button" class="sw" role="radio" aria-checked="false" aria-label="Mint, #4FD6A0" title="Mint · #4FD6A0"><span class="chip" style="--c:#4FD6A0"></span><span class="nm">MINT</span></button>
+        <button type="button" class="sw" role="radio" aria-checked="false" aria-label="Ice, #E8EEEA" title="Ice · #E8EEEA"><span class="chip" style="--c:#E8EEEA"></span><span class="nm">ICE</span></button>
+          </div>
+          <div class="hr2"></div>
+
+          <label class="ctl" for="bri">
+            <span class="ctl-h"><span>BRIGHTNESS</span><span><b>7</b> <span>/ 9</span></span></span>
+            <input id="bri" class="range" type="range" min="0" max="9" step="1" value="7" style="--p:77.8%" aria-label="Brightness" aria-valuetext="7 of 9">
+            <span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </label>
+
+          <label class="ctl" for="spd">
+            <span class="ctl-h"><span>SPEED</span><span><b>4</b> <span>/ 9</span></span></span>
+            <input id="spd" class="range" type="range" min="0" max="9" step="1" value="4" style="--p:44.4%" aria-label="Effect speed" aria-valuetext="4 of 9">
+            <span class="ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </label>
+
+          <div class="hr2"></div>
+          <div class="sec-h2"><span>PRESETS</span><span class="r"></span><span class="m">SLOTS 01–03</span></div>
+          <div class="p-row" role="radiogroup" aria-label="Preset">
+        <button type="button" class="preset" role="radio" aria-checked="false" title="Draft — Fixed On, ice, brightness 9, speed 1"><span class="p-t"><span>DRAFT</span><span class="p-dot"></span></span><span class="p-s">Fixed On · ice</span><span class="p-s">bri 9 · spd 1</span><span class="p-bars" aria-hidden="true"><i style="background:#E8EEEA"></i><i style="background:#B8C6C1"></i><i style="background:#7C8A84"></i><i style="background:#4F5C57"></i></span></button>
+        <button type="button" class="preset sel" role="radio" aria-checked="true" title="Night Shift — Center Wave, amber, brightness 7, speed 4"><span class="p-t"><span>NIGHT SHIFT</span><span class="p-dot"></span></span><span class="p-s">Center Wave · amber</span><span class="p-s">bri 7 · spd 4</span><span class="p-bars" aria-hidden="true"><i style="background:#F2A33C"></i><i style="background:#C98B36"></i><i style="background:#7A5520"></i><i style="background:#3A2C18"></i></span></button>
+        <button type="button" class="preset" role="radio" aria-checked="false" title="Showcase — Spectrum Cycle, multi, brightness 8, speed 6"><span class="p-t"><span>SHOWCASE</span><span class="p-dot"></span></span><span class="p-s">Spectrum Cycle · multi</span><span class="p-s">bri 8 · spd 6</span><span class="p-bars" aria-hidden="true"><i style="background:#E8613C"></i><i style="background:#D95BA3"></i><i style="background:#7B7BE8"></i><i style="background:#45C8D8"></i></span></button>
+          </div>
+          <div class="out-ft"><span>ONBOARD 128 B CFG</span><span>WRITE ACK <b class="ok">✓</b></span></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="run">
+      <span class="run-tag"><span class="sq-a"></span>RUNNING</span>
+      <div class="run-txt">
+        <b>Center Wave</b><span class="s">/</span>
+        <span class="lbl">COLOUR</span><span class="v">#F2A33C</span><span class="s">/</span>
+        <span class="lbl">BRI</span><span class="v">7/9</span><span class="s">/</span>
+        <span class="lbl">SPD</span><span class="v">4/9</span><span class="s">/</span>
+        <span class="lbl">PRESET</span><span class="v">02</span>
+      </div>
+      <span class="run-meta">APPLIED 14:42:07</span>
+      <div class="acts">
+        <button type="button" class="btn" title="Import a lighting profile (JSON)">↓ IMPORT</button>
+        <button type="button" class="btn warn" title="Restore factory lighting — hold Shift to confirm">⇧ RESTORE</button>
+        <button type="button" class="btn pri" title="Re-scan HID interfaces and reconnect">⟳ RESCAN</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="statusbar">
+  <span class="sb-g"><span class="dot"></span><b>LINKED</b></span>
+  <span class="sb-g">DONGLE <b>3554:fa09</b></span>
+  <span class="sb-g">REPORT <b>0x13</b> · IFACE <b>1</b> · <b>19 B</b> OUT</span>
+  <span class="sb-g">1000 HZ</span>
+  <span class="sb-g sb-r">LOCAL ONLY · NO TELEMETRY</span>
+  <span class="sb-g"><b>v0.9.3</b> · 2f7c9ae</span>
+</footer>
+
+</div>
+</body>
+</html>

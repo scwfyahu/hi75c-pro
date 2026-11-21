@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180">
+<title>LEOBOG Hi75C Pro — Lighting Control</title>
+<style>
+:root{
+  --ink:#0E0D0B;
+  --ink-2:#201E18;
+  --paper:#EDE9DC;
+  --paper-2:#DFDACA;
+  --block:#E4DFCF;
+  --cap:#FAF7EC;
+  --cap-dim:#FFC0AA;
+  --orange:#FF4B1F;
+  --yellow:#F2E106;
+  --lime:#B6F500;
+  --track:#D6D0BE;
+  --muted:#6F6856;
+  --on-black:#8A8474;
+  --line-dark:#29251D;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:#15130F;
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Segoe UI",Helvetica,Arial,sans-serif;
+  color:var(--ink);
+}
+.app{
+  width:1180px;height:900px;flex:none;
+  display:grid;grid-template-columns:236px 944px;grid-template-rows:72px 828px;
+  background:var(--paper);overflow:hidden;position:relative;
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+
+/* ---------- header ---------- */
+.topbar{
+  grid-column:1 / 3;grid-row:1;background:var(--ink);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;border-bottom:1px solid #2B271F;
+}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand-mark{
+  width:38px;height:38px;background:var(--yellow);color:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:14px;letter-spacing:-.05em;
+}
+.brand-div{width:1px;height:26px;background:#39342A;display:block;}
+.brand-name{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:27px;line-height:1;
+  color:var(--cap);letter-spacing:-.035em;
+}
+.brand-tag{
+  border:1px solid #4B463A;color:#CFC9B8;
+  font-family:Consolas,"Courier New",monospace;font-size:8px;line-height:1;
+  letter-spacing:.13em;padding:5px 7px;margin-left:2px;text-transform:uppercase;
+}
+.top-meta{display:flex;align-items:center;gap:18px;}
+.top-meta .m{
+  font-family:Consolas,"Courier New",monospace;font-size:7.5px;line-height:1.6;
+  letter-spacing:.12em;color:#78725F;text-align:right;text-transform:uppercase;
+}
+.top-meta .m b{display:block;font-weight:400;font-size:8.5px;color:#DBD6C5;letter-spacing:.09em;}
+.top-div{width:1px;height:28px;background:#332F26;display:block;}
+.profile{
+  display:flex;align-items:center;gap:8px;
+  font-family:Consolas,"Courier New",monospace;font-size:9px;font-weight:700;
+  letter-spacing:.1em;color:var(--cap);text-transform:uppercase;
+}
+.profile i{width:6px;height:6px;background:var(--orange);display:block;}
+
+/* ---------- rail ---------- */
+.rail{
+  grid-column:1;grid-row:2;background:var(--ink);
+  padding:20px 18px 14px;display:flex;flex-direction:column;overflow:hidden;
+}
+.rail-eyebrow{
+  display:flex;justify-content:space-between;
+  font-family:Consolas,"Courier New",monospace;font-size:7.5px;line-height:1;
+  color:#7D7765;letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;
+}
+.nav{margin:0 -18px;}
+.nav-item{
+  padding:14px 18px 15px;border-bottom:1px solid var(--line-dark);
+  display:flex;flex-direction:column;position:relative;
+}
+.nav-item .idx{
+  font-family:Consolas,"Courier New",monospace;font-size:7.5px;line-height:1;
+  color:#797361;letter-spacing:.14em;margin-bottom:7px;text-transform:uppercase;
+}
+.nav-item .label{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:21px;line-height:.95;
+  letter-spacing:-.03em;color:var(--paper);text-transform:uppercase;
+}
+.nav-item .meta{
+  font-family:Consolas,"Courier New",monospace;font-size:7px;line-height:1;
+  color:#736D5B;letter-spacing:.1em;margin-top:7px;text-transform:uppercase;
+}
+.nav-item.on{background:var(--yellow);padding-top:18px;padding-bottom:17px;}
+.nav-item.on .idx{color:#48420C;}
+.nav-item.on .label{font-size:31px;line-height:.95;letter-spacing:-.045em;color:var(--ink);}
+.nav-item.on .meta{color:#48420C;}
+.nav-item.on::after{
+  content:"";position:absolute;top:18px;right:18px;width:8px;height:8px;background:var(--ink);
+}
+.rail-block{margin-top:24px;border-top:1px solid var(--line-dark);padding-top:15px;}
+.rail-k{
+  font-family:Consolas,"Courier New",monospace;font-size:7px;line-height:1;
+  color:#7C7664;letter-spacing:.18em;margin-bottom:8px;text-transform:uppercase;
+}
+.rail-board{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:17px;line-height:1;
+  color:var(--paper);letter-spacing:-.02em;text-transform:uppercase;
+}
+.rail-spec{
+  font-family:Consolas,"Courier New",monospace;font-size:7.5px;line-height:1.8;
+  color:#8F8978;letter-spacing:.03em;margin-top:6px;text-transform:uppercase;
+}
+.knob-list{margin-top:22px;}
+.knob-list .rail-k{margin-bottom:2px;}
+.krow{
+  display:flex;justify-content:space-between;padding:6px 0;
+  border-top:1px solid #252119;
+  font-family:Consolas,"Courier New",monospace;font-size:7.5px;line-height:1;letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.krow span{color:#797361;}
+.krow b{font-weight:400;color:#C9C3B0;}
+.rail-big{margin-top:auto;text-align:right;padding-top:20px;}
+.rail-big b{
+  display:block;font-family:"Arial Black",Arial,sans-serif;font-weight:900;
+  font-size:104px;line-height:.78;letter-spacing:-.07em;color:#383126;
+}
+.rail-big span{
+  display:block;font-family:Consolas,"Courier New",monospace;font-size:7px;line-height:1;
+  color:#726C58;letter-spacing:.14em;margin-top:9px;text-transform:uppercase;
+}
+.conn{
+  border:2px solid #373126;background:#14120D;padding:11px 12px 9px;margin-top:16px;
+}
+.conn-head{
+  display:flex;align-items:center;gap:8px;
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:17px;line-height:1;
+  color:var(--lime);letter-spacing:-.01em;text-transform:uppercase;
+}
+.conn-head i{width:7px;height:7px;background:var(--lime);display:block;flex:none;}
+.conn-row{
+  display:flex;justify-content:space-between;border-top:1px solid #2B261B;
+  margin-top:5px;padding-top:5px;
+  font-family:Consolas,"Courier New",monospace;font-size:7.5px;line-height:1;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.conn-row span{color:#797361;}
+.conn-row b{font-weight:400;color:#E5E0CF;}
+.rail-foot{
+  display:flex;justify-content:space-between;margin-top:12px;
+  font-family:Consolas,"Courier New",monospace;font-size:6.5px;line-height:1;
+  color:#5C5645;letter-spacing:.13em;text-transform:uppercase;
+}
+
+/* ---------- main ---------- */
+.main{
+  grid-column:2;grid-row:2;padding:24px 28px 22px;
+  display:flex;flex-direction:column;min-width:0;
+}
+.kicker{
+  flex:none;height:16px;display:flex;align-items:center;justify-content:space-between;
+  font-family:Consolas,"Courier New",monospace;font-size:8px;line-height:1;
+  letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;
+}
+.kicker .l{display:flex;align-items:center;gap:8px;}
+.kicker .l i{width:6px;height:6px;background:var(--ink);display:block;}
+.hero{flex:none;height:84px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;}
+h1{
+  margin:0;font-family:"Arial Black",Arial,sans-serif;font-weight:900;
+  font-size:96px;line-height:.84;letter-spacing:-.06em;text-transform:uppercase;white-space:nowrap;
+}
+.count{
+  width:200px;height:84px;flex:none;background:var(--ink);
+  display:flex;align-items:center;gap:9px;padding:9px 11px;
+}
+.count .num{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:54px;line-height:.8;
+  letter-spacing:-.06em;color:var(--yellow);
+}
+.count .cm{
+  flex:1;min-width:0;height:56px;border-left:1px solid #3A3429;padding-left:9px;
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.count .cm span{
+  display:block;font-family:Consolas,"Courier New",monospace;font-size:6.5px;line-height:1.3;
+  letter-spacing:.1em;color:#B6B09F;text-transform:uppercase;
+}
+.count .cm span + span{border-top:1px solid #322D23;padding-top:3px;}
+.rule{flex:none;height:4px;background:var(--ink);margin:8px 0 12px;}
+
+/* ---------- keyboard stage ---------- */
+.stage{
+  flex:none;height:344px;background:var(--ink-2);border:4px solid var(--ink);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+.stage-head{
+  flex:none;height:20px;margin:10px 16px 0;
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:Consolas,"Courier New",monospace;font-size:8px;line-height:1;
+  letter-spacing:.1em;color:#847E6D;text-transform:uppercase;
+}
+.stage-head .live{display:flex;align-items:center;gap:7px;color:#E9E4D5;}
+.stage-head .live i{width:6px;height:6px;background:var(--yellow);display:block;}
+.board-wrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;}
+.board{position:relative;width:799px;height:241px;flex:none;}
+
+.key{
+  position:absolute;height:36px;border:1.5px solid var(--ink);background:var(--cap);
+  color:var(--ink);display:flex;align-items:center;justify-content:center;
+  font-family:Arial,Helvetica,sans-serif;font-weight:800;font-size:10.5px;line-height:1;
+  text-transform:uppercase;text-align:center;padding:0 2px;white-space:nowrap;
+  box-shadow:0 3px 0 #070604;
+}
+.key.dim{background:var(--cap-dim);}
+.key.lit{background:var(--orange);}
+.key .leg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1;}
+.key .sy{font-size:6.5px;font-weight:700;line-height:1;}
+.key .ch{font-size:10.5px;font-weight:800;line-height:1;letter-spacing:-.02em;}
+.key.mod{font-size:8px;font-weight:700;letter-spacing:.04em;padding:0 3px;}
+.key.esc{font-size:9px;}
+.key.fn{font-size:8.5px;letter-spacing:.02em;}
+.key.nav{font-size:7.5px;font-weight:700;letter-spacing:.03em;}
+.key.arrow{font-size:13px;font-weight:700;}
+.key.space{padding:0;}
+.knob{
+  position:absolute;left:692px;top:-8px;width:44px;height:44px;border-radius:50%;
+  background:var(--yellow);border:2px solid var(--ink);box-shadow:0 3px 0 #070604;z-index:2;
+}
+.knob:before{
+  content:"";position:absolute;inset:7px;border:1.5px solid var(--ink);border-radius:50%;
+}
+.knob:after{
+  content:"";position:absolute;left:50%;top:5px;width:3px;height:11px;margin-left:-1.5px;
+  background:var(--ink);transform-origin:50% 17px;transform:rotate(-38deg);
+}
+
+/* running summary */
+.runbar{flex:none;height:40px;background:var(--orange);display:flex;}
+.run-led{
+  width:88px;flex:none;background:var(--ink);padding:0 12px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.run-led em{
+  font-family:Consolas,"Courier New",monospace;font-style:normal;font-size:6px;line-height:1;
+  letter-spacing:.14em;color:#B4AE9D;text-transform:uppercase;margin-bottom:4px;
+}
+.run-led b{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:10px;line-height:1;
+  letter-spacing:.02em;color:var(--yellow);text-transform:uppercase;
+}
+.run-seg{
+  flex:1;min-width:0;border-left:1px solid var(--ink);padding:0 10px;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.run-seg em{
+  font-family:Consolas,"Courier New",monospace;font-style:normal;font-size:6px;line-height:1;
+  letter-spacing:.14em;color:#3D190D;text-transform:uppercase;margin-bottom:4px;
+}
+.run-seg b{
+  font-family:Consolas,"Courier New",monospace;font-weight:700;font-size:9px;line-height:1;
+  letter-spacing:.02em;color:var(--ink);text-transform:uppercase;white-space:nowrap;overflow:hidden;
+}
+
+/* ---------- console ---------- */
+.console{
+  flex:none;height:294px;margin-top:14px;border:4px solid var(--ink);
+  display:flex;flex-direction:column;background:var(--paper);
+}
+.console-top{height:244px;flex:none;display:grid;grid-template-columns:430px 268px 182px;}
+.zone{min-width:0;padding:12px 14px;border-left:3px solid var(--ink);}
+.zone:first-child{border-left:0;}
+.zone-head{
+  height:22px;display:flex;align-items:flex-start;justify-content:space-between;
+  border-bottom:2px solid var(--ink);margin-bottom:8px;
+}
+.zone-head b{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:11px;line-height:1;
+  letter-spacing:.07em;text-transform:uppercase;
+}
+.zone-head span{
+  font-family:Consolas,"Courier New",monospace;font-size:7px;line-height:1;
+  color:#736C58;letter-spacing:.1em;text-transform:uppercase;
+}
+
+/* effects */
+.fx-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:26px;gap:5px;}
+.fx{
+  min-width:0;height:26px;display:flex;align-items:center;gap:5px;
+  border:1.5px solid var(--ink);background:var(--block);border-radius:0;appearance:none;-webkit-appearance:none;
+  padding:0 6px;text-align:left;font-family:Arial,Helvetica,sans-serif;cursor:default;overflow:hidden;
+}
+.fx i{
+  flex:none;font-family:Consolas,"Courier New",monospace;font-style:normal;font-size:6.5px;
+  line-height:1;color:#797261;letter-spacing:.02em;
+}
+.fx span{
+  font-size:9px;font-weight:800;line-height:1;letter-spacing:.01em;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fx.on{background:var(--ink);border-color:var(--ink);}
+.fx.on i{color:var(--yellow);}
+.fx.on span{color:var(--paper);}
+.fx:last-child{grid-column:span 2;}
+.fx .end-txt{
+  margin-left:auto;flex:none;font-family:Consolas,"Courier New",monospace;
+  font-size:6.5px;font-weight:400;font-style:normal;letter-spacing:.12em;color:#6F6856;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;white-space:nowrap;
+}
+.fx .end-txt:before{content:"";width:5px;height:5px;background:var(--orange);display:block;}
+
+/* colour */
+.swatches{display:flex;align-items:center;gap:4px;height:40px;margin-bottom:10px;}
+.sw{width:30px;height:30px;flex:none;border:2px solid var(--ink);background:var(--sw);}
+.sw.on{box-shadow:0 0 0 2px var(--paper),0 0 0 4px var(--ink);}
+.sw-read{
+  height:34px;display:flex;align-items:center;justify-content:space-between;
+  border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);margin-bottom:12px;
+}
+.sw-read .nm{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:12px;line-height:1;
+  letter-spacing:-.01em;text-transform:uppercase;
+}
+.sw-read .ix{
+  display:block;font-family:Consolas,"Courier New",monospace;font-size:6.5px;line-height:1;
+  color:#6F6856;letter-spacing:.1em;margin-top:4px;text-transform:uppercase;
+}
+.sw-read code{
+  font-family:Consolas,"Courier New",monospace;font-size:9px;font-weight:700;line-height:1;
+  background:var(--ink);color:var(--paper);padding:5px 6px;letter-spacing:.03em;
+}
+.ctrl{height:42px;}
+.ctrl + .ctrl{margin-top:10px;}
+.ctrl-top{height:16px;display:flex;align-items:center;justify-content:space-between;}
+.ctrl-top span{
+  font-family:Arial,Helvetica,sans-serif;font-size:8.5px;font-weight:800;line-height:1;
+  letter-spacing:.1em;text-transform:uppercase;
+}
+.ctrl-top b{
+  font-family:Consolas,"Courier New",monospace;font-weight:400;font-size:8px;line-height:1;
+  background:var(--ink);color:var(--paper);padding:3px 5px;
+}
+.track{
+  height:14px;margin-top:5px;border:2px solid var(--ink);background:var(--track);position:relative;
+}
+.fill{height:100%;background:var(--orange);}
+.thumb{
+  position:absolute;top:-3px;width:10px;height:20px;background:var(--paper);
+  border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transform:translateX(-5px);
+}
+.ticks{display:flex;justify-content:space-between;height:4px;margin-top:3px;}
+.ticks i{display:block;width:1px;height:4px;background:#B7B09E;}
+
+/* presets */
+.presets{display:flex;flex-direction:column;gap:8px;}
+.preset{
+  width:100%;height:54px;border:2px solid var(--ink);background:var(--block);border-radius:0;
+  padding:7px 8px;display:flex;flex-direction:column;justify-content:space-between;
+  text-align:left;cursor:default;font-family:inherit;appearance:none;-webkit-appearance:none;
+}
+.pr-top{display:flex;align-items:center;justify-content:space-between;}
+.preset .idx{
+  font-family:Consolas,"Courier New",monospace;font-size:6.5px;line-height:1;
+  color:#6F6856;letter-spacing:.1em;
+}
+.preset .dot{width:5px;height:5px;background:transparent;display:block;}
+.preset .nm{
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:16px;line-height:1;
+  letter-spacing:-.02em;text-transform:uppercase;
+}
+.preset .mt{
+  font-family:Consolas,"Courier New",monospace;font-size:6.5px;line-height:1;
+  color:#6F6856;letter-spacing:.03em;text-transform:uppercase;
+}
+.preset.on{background:var(--ink);border-color:var(--ink);}
+.preset.on .idx{color:var(--yellow);}
+.preset.on .nm{color:var(--paper);}
+.preset.on .mt{color:#A8A292;}
+.preset.on .dot{background:var(--orange);}
+
+/* actions */
+.console-actions{
+  flex:none;height:42px;border-top:4px solid var(--ink);background:var(--ink);
+  display:grid;grid-template-columns:86px repeat(3,1fr);
+}
+.act-label{
+  background:var(--yellow);color:var(--ink);display:flex;align-items:center;padding:0 12px;
+  font-family:"Arial Black",Arial,sans-serif;font-weight:900;font-size:9px;line-height:1;
+  letter-spacing:.1em;text-transform:uppercase;
+}
+.act{
+  height:100%;border:0;border-left:1px solid #2E2A21;background:transparent;border-radius:0;
+  appearance:none;-webkit-appearance:none;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 14px;
+  font-family:Consolas,"Courier New",monospace;font-size:9px;line-height:1;
+  letter-spacing:.1em;color:var(--paper);text-transform:uppercase;cursor:default;
+}
+.act b{font-weight:400;}
+.act span{font-size:7px;color:#7C7562;letter-spacing:.08em;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">75</div>
+      <span class="brand-div"></span>
+      <span class="brand-name">LEOBOG</span>
+      <span class="brand-tag">Hi75C Pro</span>
+    </div>
+    <div class="top-meta">
+      <div class="m">Desktop control<br><b>Build 2.4.1 / Windows</b></div>
+      <span class="top-div"></span>
+      <div class="profile"><i></i>Profile 01 — Desk</div>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <div class="rail-eyebrow"><span>Sections / 03</span><span>Control</span></div>
+
+    <nav class="nav">
+      <div class="nav-item on">
+        <span class="idx">01 / Active</span>
+        <span class="label">Lighting</span>
+        <span class="meta">17 Effects / 07 Colours</span>
+      </div>
+      <div class="nav-item">
+        <span class="idx">02</span>
+        <span class="label">Keymap</span>
+        <span class="meta">04 Layers / 81 Keys</span>
+      </div>
+      <div class="nav-item">
+        <span class="idx">03</span>
+        <span class="label">About</span>
+        <span class="meta">Firmware 1.0.7</span>
+      </div>
+    </nav>
+
+    <div class="rail-block">
+      <div class="rail-k">Board</div>
+      <div class="rail-board">Hi75C Pro</div>
+      <div class="rail-spec">75% ANSI / 81 Keys<br>Hot-swap / South RGB</div>
+    </div>
+
+    <div class="knob-list">
+      <div class="rail-k">Knob</div>
+      <div class="krow"><span>Turn</span><b>Volume</b></div>
+      <div class="krow"><span>Press</span><b>Mute</b></div>
+      <div class="krow"><span>Fn + ←</span><b>Prev FX</b></div>
+      <div class="krow"><span>Fn + →</span><b>Next FX</b></div>
+    </div>
+
+    <div class="rail-big"><b>81</b><span>Keys / ANSI 75%</span></div>
+
+    <div class="conn">
+      <div class="conn-head"><i></i>Connected</div>
+      <div class="conn-row"><span>Port</span><b>USB-C</b></div>
+      <div class="conn-row"><span>Poll</span><b>1000 Hz</b></div>
+      <div class="conn-row"><span>Firmware</span><b>1.0.7</b></div>
+    </div>
+    <div class="rail-foot"><span>LEOBOG / Desktop</span><span>© 2026</span></div>
+  </aside>
+
+  <main class="main">
+    <div class="kicker">
+      <div class="l"><i></i>Per-key RGB / 16.8M Colours</div>
+      <div class="r">Synced 14:48 / USB-C</div>
+    </div>
+
+    <div class="hero">
+      <h1>Lighting</h1>
+      <div class="count">
+        <div class="num">17</div>
+        <div class="cm"><span>Effects</span><span>07 Colours</span><span>03 Presets</span></div>
+      </div>
+    </div>
+    <div class="rule"></div>
+
+    <section class="stage" aria-label="Live keycap preview">
+      <div class="stage-head">
+        <div class="live"><i></i>Live preview</div>
+        <div>75% ANSI / 81 keys / Knob: vol + RGB</div>
+      </div>
+      <div class="board-wrap">
+        <div class="board">
+      <div class="key mod esc" style="left:0px;top:0px;width:43px">Esc</div>
+      <div class="key fn" style="left:60.0px;top:0px;width:43px">F1</div>
+      <div class="key fn" style="left:108.0px;top:0px;width:43px">F2</div>
+      <div class="key fn" style="left:156.0px;top:0px;width:43px">F3</div>
+      <div class="key fn" style="left:204.0px;top:0px;width:43px">F4</div>
+      <div class="key fn" style="left:264.0px;top:0px;width:43px">F5</div>
+      <div class="key fn" style="left:312.0px;top:0px;width:43px">F6</div>
+      <div class="key fn" style="left:360.0px;top:0px;width:43px">F7</div>
+      <div class="key fn" style="left:408.0px;top:0px;width:43px">F8</div>
+      <div class="key fn" style="left:468.0px;top:0px;width:43px">F9</div>
+      <div class="key fn" style="left:516.0px;top:0px;width:43px">F10</div>
+      <div class="key fn" style="left:564.0px;top:0px;width:43px">F11</div>
+      <div class="key fn" style="left:612.0px;top:0px;width:43px">F12</div>
+      <div class="key mod" style="left:756.0px;top:0px;width:43px">Del</div>
+      <div class="key dim sym" style="left:0px;top:41px;width:43px"><span class="leg"><span class="sy">~</span><span class="ch">`</span></span></div>
+      <div class="key dim sym" style="left:48px;top:41px;width:43px"><span class="leg"><span class="sy">!</span><span class="ch">1</span></span></div>
+      <div class="key dim sym" style="left:96px;top:41px;width:43px"><span class="leg"><span class="sy">@</span><span class="ch">2</span></span></div>
+      <div class="key dim sym" style="left:144px;top:41px;width:43px"><span class="leg"><span class="sy">#</span><span class="ch">3</span></span></div>
+      <div class="key dim sym" style="left:192px;top:41px;width:43px"><span class="leg"><span class="sy">$</span><span class="ch">4</span></span></div>
+      <div class="key dim sym" style="left:240px;top:41px;width:43px"><span class="leg"><span class="sy">%</span><span class="ch">5</span></span></div>
+      <div class="key dim sym" style="left:288px;top:41px;width:43px"><span class="leg"><span class="sy">^</span><span class="ch">6</span></span></div>
+      <div class="key dim sym" style="left:336px;top:41px;width:43px"><span class="leg"><span class="sy">&amp;</span><span class="ch">7</span></span></div>
+      <div class="key dim sym" style="left:384px;top:41px;width:43px"><span class="leg"><span class="sy">*</span><span class="ch">8</span></span></div>
+      <div class="key dim sym" style="left:432px;top:41px;width:43px"><span class="leg"><span class="sy">(</span><span class="ch">9</span></span></div>
+      <div class="key dim sym" style="left:480px;top:41px;width:43px"><span class="leg"><span class="sy">)</span><span class="ch">0</span></span></div>
+      <div class="key dim sym" style="left:528px;top:41px;width:43px"><span class="leg"><span class="sy">_</span><span class="ch">-</span></span></div>
+      <div class="key dim sym" style="left:576px;top:41px;width:43px"><span class="leg"><span class="sy">+</span><span class="ch">=</span></span></div>
+      <div class="key dim mod" style="left:624px;top:41px;width:91px">Backspace</div>
+      <div class="key dim nav" style="left:756.0px;top:41px;width:43px">Home</div>
+      <div class="key lit mod" style="left:0px;top:82px;width:67.0px">Tab</div>
+      <div class="key lit" style="left:72.0px;top:82px;width:43px">Q</div>
+      <div class="key lit" style="left:120.0px;top:82px;width:43px">W</div>
+      <div class="key lit" style="left:168.0px;top:82px;width:43px">E</div>
+      <div class="key lit" style="left:216.0px;top:82px;width:43px">R</div>
+      <div class="key lit" style="left:264.0px;top:82px;width:43px">T</div>
+      <div class="key lit" style="left:312.0px;top:82px;width:43px">Y</div>
+      <div class="key lit" style="left:360.0px;top:82px;width:43px">U</div>
+      <div class="key lit" style="left:408.0px;top:82px;width:43px">I</div>
+      <div class="key lit" style="left:456.0px;top:82px;width:43px">O</div>
+      <div class="key lit" style="left:504.0px;top:82px;width:43px">P</div>
+      <div class="key lit sym" style="left:552.0px;top:82px;width:43px"><span class="leg"><span class="sy">{</span><span class="ch">[</span></span></div>
+      <div class="key lit sym" style="left:600.0px;top:82px;width:43px"><span class="leg"><span class="sy">}</span><span class="ch">]</span></span></div>
+      <div class="key lit sym" style="left:648.0px;top:82px;width:67.0px"><span class="leg"><span class="sy">|</span><span class="ch">\</span></span></div>
+      <div class="key lit nav" style="left:756.0px;top:82px;width:43px">PgUp</div>
+      <div class="key lit mod" style="left:0px;top:123px;width:79.0px">Caps</div>
+      <div class="key lit" style="left:84.0px;top:123px;width:43px">A</div>
+      <div class="key lit" style="left:132.0px;top:123px;width:43px">S</div>
+      <div class="key lit" style="left:180.0px;top:123px;width:43px">D</div>
+      <div class="key lit" style="left:228.0px;top:123px;width:43px">F</div>
+      <div class="key lit" style="left:276.0px;top:123px;width:43px">G</div>
+      <div class="key lit" style="left:324.0px;top:123px;width:43px">H</div>
+      <div class="key lit" style="left:372.0px;top:123px;width:43px">J</div>
+      <div class="key lit" style="left:420.0px;top:123px;width:43px">K</div>
+      <div class="key lit" style="left:468.0px;top:123px;width:43px">L</div>
+      <div class="key lit sym" style="left:516.0px;top:123px;width:43px"><span class="leg"><span class="sy">:</span><span class="ch">;</span></span></div>
+      <div class="key lit sym" style="left:564.0px;top:123px;width:43px"><span class="leg"><span class="sy">&quot;</span><span class="ch">&#x27;</span></span></div>
+      <div class="key lit mod" style="left:612.0px;top:123px;width:103.0px">Enter</div>
+      <div class="key lit nav" style="left:756.0px;top:123px;width:43px">End</div>
+      <div class="key dim mod" style="left:0px;top:164px;width:103.0px">Shift</div>
+      <div class="key dim" style="left:108.0px;top:164px;width:43px">Z</div>
+      <div class="key dim" style="left:156.0px;top:164px;width:43px">X</div>
+      <div class="key dim" style="left:204.0px;top:164px;width:43px">C</div>
+      <div class="key dim" style="left:252.0px;top:164px;width:43px">V</div>
+      <div class="key dim" style="left:300.0px;top:164px;width:43px">B</div>
+      <div class="key dim" style="left:348.0px;top:164px;width:43px">N</div>
+      <div class="key dim" style="left:396.0px;top:164px;width:43px">M</div>
+      <div class="key dim sym" style="left:444.0px;top:164px;width:43px"><span class="leg"><span class="sy">&lt;</span><span class="ch">,</span></span></div>
+      <div class="key dim sym" style="left:492.0px;top:164px;width:43px"><span class="leg"><span class="sy">&gt;</span><span class="ch">.</span></span></div>
+      <div class="key dim sym" style="left:540.0px;top:164px;width:43px"><span class="leg"><span class="sy">?</span><span class="ch">/</span></span></div>
+      <div class="key dim mod" style="left:588.0px;top:164px;width:79.0px">Shift</div>
+      <div class="key dim arrow" style="left:708.0px;top:164px;width:43px">↑</div>
+      <div class="key mod" style="left:0px;top:205px;width:55.0px">Ctrl</div>
+      <div class="key mod" style="left:60.0px;top:205px;width:55.0px">Win</div>
+      <div class="key mod" style="left:120.0px;top:205px;width:55.0px">Alt</div>
+      <div class="key space" style="left:180.0px;top:205px;width:295.0px"><span class="sr">Space</span></div>
+      <div class="key mod" style="left:480px;top:205px;width:55.0px">Alt</div>
+      <div class="key mod" style="left:540.0px;top:205px;width:55.0px">Fn</div>
+      <div class="key mod" style="left:600.0px;top:205px;width:55.0px">Ctrl</div>
+      <div class="key arrow" style="left:660.0px;top:205px;width:43px">←</div>
+      <div class="key arrow" style="left:708.0px;top:205px;width:43px">↓</div>
+      <div class="key arrow" style="left:756.0px;top:205px;width:43px">→</div>
+      <div class="knob" title="Rotary encoder"><span class="knob-cap"></span></div>
+        </div>
+      </div>
+      <div class="runbar">
+        <div class="run-led"><em>Live</em><b>Running</b></div>
+        <div class="run-seg"><em>Effect</em><b>Row Ripple</b></div>
+        <div class="run-seg"><em>Colour</em><b>#FF4B1F</b></div>
+        <div class="run-seg"><em>Bright</em><b>70%</b></div>
+        <div class="run-seg"><em>Speed</em><b>3 of 5</b></div>
+        <div class="run-seg"><em>Preset</em><b>Studio</b></div>
+      </div>
+    </section>
+
+    <section class="console" aria-label="Lighting controls">
+      <div class="console-top">
+        <div class="zone">
+          <div class="zone-head"><b>Effects</b><span>17 total</span></div>
+          <div class="fx-grid">
+            <button class="fx"><i>01</i><span>Off</span></button>
+            <button class="fx"><i>02</i><span>Fixed On</span></button>
+            <button class="fx"><i>03</i><span>Breathing</span></button>
+            <button class="fx"><i>04</i><span>Spectrum Cycle</span></button>
+            <button class="fx on"><i>05</i><span>Row Ripple</span></button>
+            <button class="fx"><i>06</i><span>Raindrops</span></button>
+            <button class="fx"><i>07</i><span>Slow Wave</span></button>
+            <button class="fx"><i>08</i><span>Board Ripple</span></button>
+            <button class="fx"><i>09</i><span>Stars Twinkle</span></button>
+            <button class="fx"><i>10</i><span>Snake</span></button>
+            <button class="fx"><i>11</i><span>Neon Stream</span></button>
+            <button class="fx"><i>12</i><span>Reactive</span></button>
+            <button class="fx"><i>13</i><span>Center Wave</span></button>
+            <button class="fx"><i>14</i><span>Rainbow Wheel</span></button>
+            <button class="fx"><i>15</i><span>Waterfall</span></button>
+            <button class="fx"><i>16</i><span>Fast Flicker</span></button>
+            <button class="fx"><i>17</i><span>Per-Key Custom</span><em class="end-txt">Setup</em></button>
+          </div>
+        </div>
+
+        <div class="zone">
+          <div class="zone-head"><b>Colour</b><span>07 swatches</span></div>
+          <div class="swatches">
+            <span class="sw on" style="--sw:#FF4B1F" title="Signal Orange"></span>
+            <span class="sw" style="--sw:#F2E106" title="Acid Yellow"></span>
+            <span class="sw" style="--sw:#FAF7EC" title="Bone"></span>
+            <span class="sw" style="--sw:#2436FF" title="Cobalt"></span>
+            <span class="sw" style="--sw:#B6F500" title="Lime"></span>
+            <span class="sw" style="--sw:#FF2E93" title="Hot Pink"></span>
+            <span class="sw" style="--sw:#7B4BFF" title="Violet"></span>
+          </div>
+          <div class="sw-read">
+            <div><div class="nm">Signal Orange</div><span class="ix">Swatch 01 / 07</span></div>
+            <code>#FF4B1F</code>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><span>Brightness</span><b>70%</b></div>
+            <div class="track"><div class="fill" style="width:70%"></div><div class="thumb" style="left:70%"></div></div>
+            <div class="ticks"><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="ctrl">
+            <div class="ctrl-top"><span>Speed</span><b>3/5</b></div>
+            <div class="track"><div class="fill" style="width:60%"></div><div class="thumb" style="left:60%"></div></div>
+            <div class="ticks"><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+
+        <div class="zone">
+          <div class="zone-head"><b>Presets</b><span>03 slots</span></div>
+          <div class="presets">
+            <button class="preset on">
+              <span class="pr-top"><span class="idx">01</span><i class="dot"></i></span>
+              <span class="nm">Studio</span>
+              <span class="mt">70% / 3 of 5 / Orange</span>
+            </button>
+            <button class="preset">
+              <span class="pr-top"><span class="idx">02</span><i class="dot"></i></span>
+              <span class="nm">Game</span>
+              <span class="mt">100% / 5 of 5 / Cobalt</span>
+            </button>
+            <button class="preset">
+              <span class="pr-top"><span class="idx">03</span><i class="dot"></i></span>
+              <span class="nm">Night</span>
+              <span class="mt">20% / 1 of 5 / Violet</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="console-actions">
+        <div class="act-label">Actions</div>
+        <button class="act"><b>Import profile</b><span>JSON</span></button>
+        <button class="act"><b>Restore defaults</b><span>DEF</span></button>
+        <button class="act"><b>Rescan device</b><span>USB</span></button>
+      </div>
+    </section>
+  </main>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180">
+<meta name="color-scheme" content="light">
+<title>LEOBOG Hi75C Pro — Lighting</title>
+<style>
+
+:root{
+  color-scheme: light;
+  --paper:#F8F5EE;
+  --rail:#EFEAE0;
+  --card:#FCFAF5;
+  --sunk:#F2EDE3;
+  --line:#DCD4C5;
+  --line-strong:#CDC4B2;
+  --ink:#23211C;
+  --ink-2:#544E43;
+  --muted:#736C5E;
+  --faint:#968E7F;
+  --accent:#C9762F;
+  --ok:#3C7354;
+  --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --font-mono:"Cascadia Mono","SFMono-Regular","Segoe UI Mono",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  display:grid;place-items:center;min-height:100vh;padding:28px;
+  background:radial-gradient(1400px 820px at 50% -12%,#F0EBE2 0%,#E8E2D7 55%,#E3DCD0 100%);
+  font-family:var(--font-ui);color:var(--ink);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;transition:background-color .14s ease,border-color .14s ease,color .14s ease}
+a{color:inherit;text-decoration:none}
+svg{display:block}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+::selection{background:#EEDCC6;color:var(--ink)}
+
+.app{
+  position:relative;width:1180px;height:900px;display:flex;overflow:hidden;
+  background:var(--paper);border-radius:12px;isolation:isolate;
+  box-shadow:inset 0 0 0 1px var(--line-strong),0 40px 80px -44px rgba(52,40,18,.55),0 3px 8px rgba(52,40,18,.06);
+}
+
+/* ---------- rail ---------- */
+.rail{
+  width:224px;flex:0 0 224px;height:900px;display:flex;flex-direction:column;
+  padding:22px 16px 16px;background:var(--rail);border-right:1px solid var(--line);
+}
+.brand{height:32px;display:flex;align-items:center;gap:10px;padding:0 4px}
+.brand>svg{width:30px;height:30px;flex:none;filter:drop-shadow(0 1px 0 rgba(255,255,255,.75))}
+.brand-copy{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand-kicker{font-size:7.5px;line-height:9px;font-weight:700;letter-spacing:.2em;color:var(--muted)}
+.brand-model{font-size:13px;line-height:15px;font-weight:600;letter-spacing:-.012em;color:var(--ink);white-space:nowrap}
+
+.nav{margin-top:30px}
+.nav-label{font-size:8px;line-height:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#797263;padding:0 10px;margin-bottom:9px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;height:42px;margin-bottom:3px;padding:0 10px 0 11px;
+  border:1px solid transparent;border-radius:7px;color:var(--ink-2);
+}
+.nav-item svg{width:15px;height:15px;flex:none;color:#7C7465}
+.nav-text{font-size:12.5px;line-height:16px;font-weight:500;letter-spacing:-.004em}
+.nav-index{margin-left:auto;font-family:var(--font-mono);font-size:7.5px;letter-spacing:.08em;color:#8B8476}
+.nav-item:not(.active):hover{background:rgba(252,250,245,.5)}
+.nav-item.active{
+  background:var(--card);border-color:var(--line-strong);color:var(--ink);
+  box-shadow:inset 2px 0 0 var(--ink),0 1px 2px rgba(45,34,14,.04);
+}
+.nav-item.active svg{color:var(--ink)}
+.nav-item.active .nav-text{font-weight:600}
+.nav-item.active .nav-index{color:#5E584C}
+.nav-item:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+.rail-rule{height:1px;background:var(--line);margin:22px 10px 0}
+.rail-note{padding:16px 10px 0}
+.section-label{font-size:8px;line-height:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#6E675A}
+.rail-note strong{display:block;margin-top:6px;font-size:10px;line-height:13px;font-weight:600;color:var(--ink-2);letter-spacing:-.005em}
+.rail-note p{margin:4px 0 0;max-width:152px;font-size:8.5px;line-height:13px;color:var(--muted)}
+
+.bank{margin:26px 10px 0}
+.bank-head{display:flex;align-items:baseline;justify-content:space-between}
+.mono-small{font-family:var(--font-mono);font-size:7.5px;letter-spacing:.07em;color:var(--faint);font-variant-numeric:tabular-nums}
+.bank-strip{display:grid;grid-template-columns:repeat(17,1fr);gap:3px;height:14px;margin-top:8px}
+.bank-strip i{display:block;border-radius:1.5px;background:#D8D0C1}
+.bank-strip i.on{background:var(--accent);box-shadow:0 0 8px rgba(201,118,47,.32)}
+.bank-foot{display:flex;align-items:center;justify-content:space-between;margin-top:7px;font-size:8px;line-height:10px;color:var(--muted)}
+.bank-colour{display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:7px;letter-spacing:.05em}
+.bank-colour i{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+.rail-bottom{margin-top:auto;display:flex;flex-direction:column;gap:12px}
+.conn{background:rgba(252,250,245,.78);border:1px solid var(--line);border-radius:8px;padding:12px}
+.conn-top{display:flex;align-items:center;justify-content:space-between}
+.conn-mode{font-family:var(--font-mono);font-size:7px;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:2px 5px;background:var(--card)}
+.conn-status{display:flex;align-items:center;gap:7px;margin-top:10px}
+.conn-dot{width:6px;height:6px;flex:none;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(60,115,84,.12)}
+.conn-status b{font-size:11px;line-height:13px;font-weight:600;letter-spacing:-.006em;color:var(--ink)}
+.conn-device{margin-top:9px;font-size:9.5px;line-height:12px;color:var(--ink-2)}
+.conn-device span{color:var(--muted)}
+.conn-meta{margin-top:3px;font-family:var(--font-mono);font-size:7.5px;line-height:11px;letter-spacing:.02em;color:var(--muted)}
+.rail-build{display:flex;align-items:center;justify-content:space-between;padding:0 4px;font-family:var(--font-mono);font-size:6.8px;line-height:9px;letter-spacing:.1em;color:#9C9484}
+
+/* ---------- main / masthead ---------- */
+.main{width:956px;flex:1;min-width:0;height:900px;display:flex;flex-direction:column;padding-top:24px;background:var(--paper)}
+.masthead{margin:0 32px;height:60px;flex:0 0 60px;display:flex;justify-content:space-between;gap:24px}
+.mast-left{min-width:0}
+.eyebrow{display:flex;align-items:center;gap:8px;height:11px;font-size:7.5px;line-height:11px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:#6E675A}
+.eyebrow i{display:block;width:15px;height:1px;background:#B9B0A0}
+.title-line{display:flex;align-items:center;margin-top:7px;min-width:0}
+h1{margin:0;font-size:31px;line-height:32px;font-weight:600;letter-spacing:-.032em;color:var(--ink)}
+.lede{margin:0 0 0 18px;padding-left:18px;border-left:1px solid var(--line-strong);font-size:11.5px;line-height:14px;color:#6B6457;white-space:nowrap}
+.mast-actions{flex:none;display:flex;flex-direction:column;align-items:flex-end}
+.action-row{display:flex;gap:7px;margin-top:7px}
+.btn{
+  height:30px;display:inline-flex;align-items:center;gap:6px;padding:0 10px;
+  border:1px solid var(--line-strong);border-radius:7px;background:var(--card);
+  color:var(--ink-2);font-size:10.5px;line-height:12px;font-weight:500;letter-spacing:.004em;
+  box-shadow:0 1px 0 rgba(255,255,255,.7) inset;white-space:nowrap;
+}
+.btn svg{width:12px;height:12px;flex:none;color:#6E6759}
+.btn:hover{border-color:#B7AD9A;background:#FFFDF9;color:var(--ink)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* ---------- stage ---------- */
+.stage{
+  height:420px;flex:0 0 420px;margin:14px 32px 0;display:flex;flex-direction:column;
+  background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7);
+}
+.panel-head{
+  height:44px;flex:0 0 44px;padding:0 18px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
+}
+.head-left{display:flex;align-items:baseline;gap:9px;min-width:0}
+.panel-title{margin:0;font-size:8px;line-height:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#675F52;white-space:nowrap}
+.head-sub{font-size:8.5px;line-height:11px;color:var(--muted);white-space:nowrap}
+.head-right{display:flex;align-items:center;gap:12px;flex:none}
+.head-rule{width:1px;height:12px;background:var(--line)}
+.live{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:7.5px;line-height:10px;letter-spacing:.14em;color:var(--ink-2)}
+.live-dot{position:relative;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.live-dot::after{content:"";position:absolute;inset:-3px;border:1px solid var(--accent);border-radius:50%;opacity:0;animation:ping 3.4s ease-out infinite}
+@keyframes ping{0%{transform:scale(.55);opacity:.5}70%,100%{transform:scale(1.7);opacity:0}}
+.head-colour{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:7.5px;line-height:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}
+.head-colour i{width:5px;height:5px;border-radius:50%;background:var(--accent)}
+
+.stage-body{position:relative;flex:1;min-height:0;display:grid;place-items:center;padding:0}
+.board-halo{
+  position:absolute;left:50%;top:50%;width:830px;height:230px;transform:translate(-50%,-42%);
+  background:radial-gradient(ellipse at 50% 50%,rgba(201,118,47,.18) 0%,rgba(201,118,47,.06) 44%,rgba(201,118,47,0) 72%);
+  filter:blur(18px);pointer-events:none;animation:halo 11s ease-in-out infinite;
+}
+@keyframes halo{0%,100%{opacity:.82}50%{opacity:1}}
+.stage-corners{position:absolute;left:18px;right:18px;bottom:11px;display:flex;justify-content:space-between;gap:20px;font-family:var(--font-mono);font-size:7px;line-height:9px;letter-spacing:.13em;text-transform:uppercase;color:#9B9384;pointer-events:none}
+
+/* ---------- keyboard ---------- */
+.board{
+  position:relative;z-index:1;width:748px;height:299px;border-radius:11px;border:1px solid #C7BEAC;
+  background:linear-gradient(180deg,#EDE7DB 0%,#E6DFD1 56%,#DED6C5 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.82),inset 0 -2px 0 rgba(113,96,67,.08),0 18px 28px -22px rgba(62,48,24,.6),0 2px 4px rgba(62,48,24,.05);
+}
+.board::before{
+  content:"";position:absolute;inset:8px;border-radius:7px;border:1px solid rgba(95,80,53,.16);
+  background:linear-gradient(180deg,#DCD4C4,#D7CEBD);box-shadow:inset 0 1px 3px rgba(95,80,53,.12);
+}
+.keys{position:absolute;inset:0;z-index:2}
+.key{
+  position:absolute;border:1px solid;border-radius:4px;overflow:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  background-image:linear-gradient(180deg,rgba(255,255,255,.5) 0%,rgba(255,255,255,.08) 44%,rgba(92,74,45,.035) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.68),inset 0 -2px 0 rgba(88,70,42,.11),0 1px 1px rgba(55,44,24,.05);
+  user-select:none;
+}
+.key .main{position:relative;z-index:1;font-size:10.5px;line-height:1;font-weight:500;letter-spacing:0;color:#2C2821}
+.key .sub{position:relative;z-index:1;margin-bottom:3px;font-size:6.2px;line-height:1;color:rgba(44,40,33,.55)}
+.key--mod .main{font-size:7px;font-weight:600;letter-spacing:.025em;color:#3E392F}
+.key--f .main{font-size:8px;font-weight:600;letter-spacing:.015em;color:#3E392F}
+.key--arrow .main{font-size:11px;font-weight:500;color:#3A352C}
+.key--space .main{font-size:5.4px;font-weight:600;letter-spacing:.3em;padding-left:.3em;color:rgba(72,61,43,.38)}
+.key .homing{position:absolute;left:50%;bottom:5px;width:6px;height:1px;background:rgba(44,40,33,.28);transform:translateX(-50%)}
+.knob-wrap{position:absolute;z-index:4;display:flex;align-items:center;justify-content:center}
+.knob-wrap::before{content:"";position:absolute;width:40px;height:40px;border-radius:50%;border:1px solid rgba(201,118,47,.38);box-shadow:0 0 11px rgba(201,118,47,.24)}
+.knob{position:relative;width:36px;height:36px;filter:drop-shadow(0 2px 2px rgba(58,46,24,.24))}
+.case-mark{position:absolute;z-index:3;bottom:5px;font-family:var(--font-mono);font-size:5.5px;line-height:7px;letter-spacing:.2em;color:rgba(72,60,40,.42)}
+.case-mark-left{left:18px}
+.case-mark-right{right:18px}
+
+/* ---------- lower ---------- */
+.lower{height:280px;flex:0 0 280px;margin:14px 32px 0;display:grid;grid-template-columns:584px 292px;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}
+.effects{display:flex;flex-direction:column;overflow:hidden}
+.card-head{height:38px;flex:0 0 38px;padding:0 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.fx-grid{padding:12px 14px 14px;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:36px;gap:6px;align-content:start}
+.fx{
+  display:flex;align-items:center;gap:7px;min-width:0;height:36px;padding:0 9px;
+  border:1px solid transparent;border-radius:6px;text-align:left;color:var(--ink-2);
+}
+.fx-num{flex:0 0 15px;font-family:var(--font-mono);font-size:7.5px;line-height:10px;letter-spacing:.03em;color:#8C8475}
+.fx-name{font-size:11px;line-height:13px;font-weight:500;letter-spacing:-.003em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx:hover{background:rgba(35,33,28,.045)}
+.fx.selected{background:var(--ink);border-color:var(--ink);color:#F7F2E7;box-shadow:0 1px 2px rgba(30,25,15,.15)}
+.fx.selected .fx-num{color:rgba(247,242,231,.5)}
+.fx.selected .fx-name{font-weight:600}
+.fx.selected:hover{background:#1B1916}
+.fx:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+.fx-wide{grid-column:1 / -1;background:#F5F0E6;border-color:#E9E2D4}
+.fx-wide:hover{background:#F0EADE;border-color:#DCD4C4}
+.fx-note{margin-left:auto;font-family:var(--font-mono);font-size:7px;line-height:9px;letter-spacing:.08em;color:#8F8778;white-space:nowrap}
+
+.inspector{padding:16px;display:flex;flex-direction:column;overflow:hidden}
+.field-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.field-value{font-family:var(--font-mono);font-size:8px;line-height:11px;letter-spacing:.03em;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.swatches{display:flex;align-items:center;gap:9px;height:26px;margin-top:9px}
+.swatch{
+  position:relative;width:26px;height:26px;flex:none;border-radius:50%;
+  box-shadow:inset 0 0 0 1px rgba(35,31,22,.16),inset 0 1px 1px rgba(255,255,255,.35);
+}
+.swatch[aria-pressed="true"]{box-shadow:inset 0 0 0 1px rgba(35,31,22,.14),0 0 0 2px var(--card),0 0 0 3px var(--ink)}
+.swatch:hover{filter:brightness(1.03)}
+.swatch:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.hr{height:1px;flex:0 0 1px;background:var(--line);margin:11px 0}
+.sliders{display:flex;flex-direction:column;gap:10px}
+.slider{min-width:0}
+.slider-head{height:12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.slider-name{font-size:9.5px;line-height:12px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.slider-val{font-family:var(--font-mono);font-size:8.5px;line-height:11px;color:var(--ink);font-variant-numeric:tabular-nums}
+.range{position:relative;height:16px;margin-top:5px}
+.range-track{position:absolute;left:0;right:0;top:6.5px;height:3px;border-radius:2px;background:#E3DCCD;box-shadow:inset 0 1px 1px rgba(60,48,25,.08)}
+.range-fill{display:block;width:var(--p);height:100%;border-radius:2px;background:var(--ink)}
+.range input{
+  position:absolute;inset:0;width:100%;height:16px;margin:0;padding:0;
+  -webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;
+}
+.range input::-webkit-slider-runnable-track{height:16px;background:transparent;border:0}
+.range input::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;margin-top:1px;border-radius:50%;
+  background:var(--card);border:1.5px solid var(--ink);box-shadow:0 1px 2px rgba(50,40,20,.16);
+}
+.range input::-moz-range-track{height:16px;background:transparent;border:0}
+.range input::-moz-range-thumb{width:11px;height:11px;border-radius:50%;background:var(--card);border:1.5px solid var(--ink);box-shadow:0 1px 2px rgba(50,40,20,.16)}
+.range input:focus{outline:none}
+.range input:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px rgba(35,33,28,.16)}
+.range input:focus-visible::-moz-range-thumb{box-shadow:0 0 0 3px rgba(35,33,28,.16)}
+.ticks{display:flex;justify-content:space-between;height:3px;margin-top:2px;padding:0 6px}
+.ticks i{width:1px;height:3px;background:#D7CFC0}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.preset{position:relative;height:44px;overflow:hidden;border:1px solid var(--line);border-radius:6px;background:#FAF6EF;padding:15px 7px 5px;text-align:left}
+.preset:hover{border-color:#BFB5A2;background:#FEFBF5}
+.preset:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.preset-strip{position:absolute;left:0;right:0;top:0;height:3px}
+.preset-name{display:block;font-size:9.5px;line-height:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset-meta{display:block;margin-top:2px;font-family:var(--font-mono);font-size:7px;line-height:8px;letter-spacing:.015em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- status bar ---------- */
+.statusbar{
+  height:74px;flex:0 0 74px;margin-top:14px;padding:0 32px;border-top:1px solid var(--line);
+  background:linear-gradient(180deg,#F2EDE3 0%,#EEE8DD 100%);
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+}
+.run-kicker{font-size:7.5px;line-height:10px;font-weight:700;letter-spacing:.17em;text-transform:uppercase;color:#6E675A}
+.run-line{display:flex;align-items:center;gap:10px;margin-top:5px;white-space:nowrap}
+.run-line strong{font-size:13px;line-height:16px;font-weight:600;letter-spacing:-.012em;color:var(--ink)}
+.run-sep{width:3px;height:3px;flex:none;border-radius:50%;background:#B8AF9E}
+.run-colour{display:flex;align-items:center;gap:5px;font-size:10.5px;line-height:13px;color:var(--ink-2)}
+.run-colour i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.run-stat{font-size:10px;line-height:13px;color:var(--muted)}
+.run-stat b{margin-left:3px;font-family:var(--font-mono);font-size:9px;font-weight:500;color:var(--ink-2)}
+.run-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+.saved{display:flex;align-items:center;gap:5px;font-size:9px;line-height:12px;color:var(--ink-2)}
+.saved svg{width:11px;height:11px;color:var(--ok)}
+.mono-time{margin-left:3px;font-family:var(--font-mono);font-size:7.5px;letter-spacing:.03em;color:var(--muted)}
+.run-profile{font-family:var(--font-mono);font-size:7px;line-height:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <svg viewBox="0 0 30 30" aria-hidden="true">
+        <rect x="1" y="1" width="28" height="28" rx="7" fill="#FCFAF5" stroke="#CDC4B2"/>
+        <rect x="8.25" y="8.25" width="13.5" height="13.5" rx="3.6" fill="none" stroke="#23211C" stroke-width="1.35"/>
+        <circle cx="15" cy="15" r="3" fill="#C9762F"/>
+      </svg>
+      <div class="brand-copy">
+        <span class="brand-kicker">LEOBOG</span>
+        <span class="brand-model">Hi75C Pro</span>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Sections">
+      <div class="nav-label">Workspace</div>
+      <a class="nav-item active" href="#lighting" aria-current="page">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="3.1"/>
+          <path d="M8 1.4v1.7M8 12.9v1.7M1.4 8h1.7M12.9 8h1.7M3.3 3.3l1.2 1.2M11.5 11.5l1.2 1.2M12.7 3.3l-1.2 1.2M4.5 11.5l-1.2 1.2"/>
+        </svg>
+        <span class="nav-text">Lighting</span>
+        <span class="nav-index">01</span>
+      </a>
+      <a class="nav-item" href="#keymap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true">
+          <rect x="1.8" y="3" width="5" height="4" rx="1.2"/>
+          <rect x="9.2" y="3" width="5" height="4" rx="1.2"/>
+          <rect x="1.8" y="9" width="5" height="4" rx="1.2"/>
+          <rect x="9.2" y="9" width="5" height="4" rx="1.2"/>
+        </svg>
+        <span class="nav-text">Keymap</span>
+        <span class="nav-index">02</span>
+      </a>
+      <a class="nav-item" href="#about">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.3"/>
+          <path d="M8 7.2v3.6"/>
+          <circle cx="8" cy="4.9" r=".7" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="nav-text">About</span>
+        <span class="nav-index">03</span>
+      </a>
+    </nav>
+
+    <div class="rail-rule"></div>
+    <div class="rail-note">
+      <div class="section-label">Write mode</div>
+      <strong>Live — no apply step</strong>
+      <p>Every adjustment is saved to the board.</p>
+    </div>
+
+    <div class="bank" aria-hidden="true">
+      <div class="bank-head">
+        <span class="section-label">Effect bank</span>
+        <span class="mono-small">05 / 17</span>
+      </div>
+      <div class="bank-strip">
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i class="on"></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+            <i></i>
+      </div>
+      <div class="bank-foot">
+        <span>Row Ripple</span>
+        <span class="bank-colour"><i></i>AMBER</span>
+      </div>
+    </div>
+
+    <div class="rail-bottom">
+      <div class="conn">
+        <div class="conn-top">
+          <span class="section-label">Connection</span>
+          <span class="conn-mode">USB-C</span>
+        </div>
+        <div class="conn-status">
+          <span class="conn-dot" aria-hidden="true"></span>
+          <b>Connected</b>
+        </div>
+        <div class="conn-device">Hi75C Pro <span>· wired</span></div>
+        <div class="conn-meta">258A:010C · FW 1.2.7</div>
+      </div>
+      <div class="rail-build"><span>CONSOLE 1.4.2</span><span>© 2026</span></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="masthead">
+      <div class="mast-left">
+        <div class="eyebrow"><i></i>Hardware console · Hi75C Pro</div>
+        <div class="title-line">
+          <h1>Lighting</h1>
+          <p class="lede">17 firmware effects, applied as you choose.</p>
+        </div>
+      </div>
+      <div class="mast-actions">
+        <div class="eyebrow">Board actions</div>
+        <div class="action-row">
+          <button class="btn" type="button" title="Import a lighting profile">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 1.8v7.1M4.2 6.2 7 9l2.8-2.8M2 10.6v1.6h10v-1.6"/>
+            </svg>
+            Import
+          </button>
+          <button class="btn" type="button" title="Restore factory lighting">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.4 7a4.6 4.6 0 1 0 1.5-3.4"/>
+              <path d="M2.4 2.3v3.4h3.4"/>
+            </svg>
+            Restore
+          </button>
+          <button class="btn" type="button" title="Rescan USB devices">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M11.7 7a4.7 4.7 0 1 1-1.4-3.3"/>
+              <path d="M11.7 2.2v3.4H8.3"/>
+            </svg>
+            Rescan
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <section class="stage" aria-label="Keyboard lighting preview">
+      <div class="panel-head">
+        <div class="head-left">
+          <span class="panel-title">Lighting preview</span>
+          <span class="head-sub">Hi75C Pro</span>
+        </div>
+        <div class="head-right">
+          <span class="live"><span class="live-dot" aria-hidden="true"></span>LIVE</span>
+          <span class="head-rule" aria-hidden="true"></span>
+          <span class="head-colour"><i aria-hidden="true"></i>Amber</span>
+        </div>
+      </div>
+      <div class="stage-body">
+        <div class="board-halo" aria-hidden="true"></div>
+        <div class="board" role="img" aria-label="Top view of the Hi75C Pro lit by the Row Ripple effect in amber">
+          <div class="keys" aria-hidden="true">
+        <div class="key key--mod" style="left:18.75px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">Esc</span></div>
+        <div class="key key--f" style="left:76.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F1</span></div>
+        <div class="key key--f" style="left:122.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F2</span></div>
+        <div class="key key--f" style="left:168.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F3</span></div>
+        <div class="key key--f" style="left:214.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F4</span></div>
+        <div class="key key--f" style="left:260.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F5</span></div>
+        <div class="key key--f" style="left:306.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F6</span></div>
+        <div class="key key--f" style="left:352.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F7</span></div>
+        <div class="key key--f" style="left:398.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F8</span></div>
+        <div class="key key--f" style="left:444.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F9</span></div>
+        <div class="key key--f" style="left:490.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F10</span></div>
+        <div class="key key--f" style="left:536.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F11</span></div>
+        <div class="key key--f" style="left:582.25px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">F12</span></div>
+        <div class="key key--mod" style="left:639.75px;top:17.14px;width:43.00px;height:38.40px;background-color:rgb(251,247,241);border-color:rgb(215,205,190)"><span class="main">Del</span></div>
+        <div class="key key--sub" style="left:18.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,233,219);border-color:rgb(211,197,178)"><span class="sub">~</span><span class="main">`</span></div>
+        <div class="key key--sub" style="left:64.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,232,218);border-color:rgb(210,196,177)"><span class="sub">!</span><span class="main">1</span></div>
+        <div class="key key--sub" style="left:110.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,232,217);border-color:rgb(210,196,177)"><span class="sub">@</span><span class="main">2</span></div>
+        <div class="key key--sub" style="left:156.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,231,217);border-color:rgb(210,195,176)"><span class="sub">#</span><span class="main">3</span></div>
+        <div class="key key--sub" style="left:202.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,231,216);border-color:rgb(210,195,176)"><span class="sub">$</span><span class="main">4</span></div>
+        <div class="key key--sub" style="left:248.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,231,217);border-color:rgb(210,196,177)"><span class="sub">%</span><span class="main">5</span></div>
+        <div class="key key--sub" style="left:294.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,232,218);border-color:rgb(210,196,177)"><span class="sub">^</span><span class="main">6</span></div>
+        <div class="key key--sub" style="left:340.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,232,219);border-color:rgb(210,196,178)"><span class="sub">&amp;</span><span class="main">7</span></div>
+        <div class="key key--sub" style="left:386.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,233,220);border-color:rgb(211,197,178)"><span class="sub">*</span><span class="main">8</span></div>
+        <div class="key key--sub" style="left:432.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(246,233,220);border-color:rgb(211,197,178)"><span class="sub">(</span><span class="main">9</span></div>
+        <div class="key key--sub" style="left:478.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,233,220);border-color:rgb(211,197,178)"><span class="sub">)</span><span class="main">0</span></div>
+        <div class="key key--sub" style="left:524.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,233,219);border-color:rgb(210,196,178)"><span class="sub">_</span><span class="main">-</span></div>
+        <div class="key key--sub" style="left:570.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,232,218);border-color:rgb(210,196,177)"><span class="sub">+</span><span class="main">=</span></div>
+        <div class="key key--mod" style="left:616.75px;top:64.98px;width:66.00px;height:38.40px;background-color:rgb(245,231,217);border-color:rgb(210,196,177)"><span class="main">Backspace</span></div>
+        <div class="key key--mod" style="left:685.75px;top:64.98px;width:43.00px;height:38.40px;background-color:rgb(245,231,216);border-color:rgb(210,195,176)"><span class="main">Home</span></div>
+        <div class="key key--mod" style="left:18.75px;top:109.14px;width:66.00px;height:38.40px;background-color:rgb(237,210,186);border-color:rgb(203,183,159)"><span class="main">Tab</span></div>
+        <div class="key" style="left:87.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,209,183);border-color:rgb(203,182,158)"><span class="main">Q</span></div>
+        <div class="key" style="left:133.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,208,182);border-color:rgb(203,181,158)"><span class="main">W</span></div>
+        <div class="key" style="left:179.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,209,183);border-color:rgb(203,182,158)"><span class="main">E</span></div>
+        <div class="key" style="left:225.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(237,210,185);border-color:rgb(203,182,159)"><span class="main">R</span></div>
+        <div class="key" style="left:271.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(237,211,187);border-color:rgb(204,183,160)"><span class="main">T</span></div>
+        <div class="key" style="left:317.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(238,213,189);border-color:rgb(204,184,161)"><span class="main">Y</span></div>
+        <div class="key" style="left:363.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(238,213,190);border-color:rgb(204,184,162)"><span class="main">U</span></div>
+        <div class="key" style="left:409.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(238,213,189);border-color:rgb(204,184,161)"><span class="main">I</span></div>
+        <div class="key" style="left:455.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(237,212,188);border-color:rgb(204,184,161)"><span class="main">O</span></div>
+        <div class="key" style="left:501.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(237,210,185);border-color:rgb(203,183,159)"><span class="main">P</span></div>
+        <div class="key key--sub" style="left:547.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,209,183);border-color:rgb(203,182,158)"><span class="sub">{</span><span class="main">[</span></div>
+        <div class="key key--sub" style="left:593.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,208,182);border-color:rgb(203,181,158)"><span class="sub">}</span><span class="main">]</span></div>
+        <div class="key key--sub" style="left:639.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,208,183);border-color:rgb(203,182,158)"><span class="sub">|</span><span class="main">\</span></div>
+        <div class="key key--mod" style="left:685.75px;top:109.14px;width:43.00px;height:38.40px;background-color:rgb(236,209,184);border-color:rgb(203,182,158)"><span class="main">PgUp</span></div>
+        <div class="key key--mod" style="left:18.75px;top:153.30px;width:77.50px;height:38.40px;background-color:rgb(226,182,143);border-color:rgb(194,165,136)"><span class="main">Caps</span></div>
+        <div class="key" style="left:99.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(226,182,143);border-color:rgb(194,165,136)"><span class="main">A</span></div>
+        <div class="key" style="left:145.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(226,184,146);border-color:rgb(195,167,137)"><span class="main">S</span></div>
+        <div class="key" style="left:191.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(227,186,149);border-color:rgb(195,168,139)"><span class="main">D</span></div>
+        <div class="key" style="left:237.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(228,188,153);border-color:rgb(196,169,141)"><span class="main">F</span><i class="homing" aria-hidden="true"></i></div>
+        <div class="key" style="left:283.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(229,190,155);border-color:rgb(197,170,142)"><span class="main">G</span></div>
+        <div class="key" style="left:329.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(229,190,154);border-color:rgb(197,170,142)"><span class="main">H</span></div>
+        <div class="key" style="left:375.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(228,188,152);border-color:rgb(196,169,141)"><span class="main">J</span><i class="homing" aria-hidden="true"></i></div>
+        <div class="key" style="left:421.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(227,186,149);border-color:rgb(195,168,139)"><span class="main">K</span></div>
+        <div class="key" style="left:467.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(226,183,145);border-color:rgb(195,166,137)"><span class="main">L</span></div>
+        <div class="key key--sub" style="left:513.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(226,182,143);border-color:rgb(194,165,136)"><span class="sub">:</span><span class="main">;</span></div>
+        <div class="key key--sub" style="left:559.25px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(226,182,143);border-color:rgb(194,165,136)"><span class="sub">&quot;</span><span class="main">&#x27;</span></div>
+        <div class="key key--mod" style="left:605.25px;top:153.30px;width:77.50px;height:38.40px;background-color:rgb(226,183,144);border-color:rgb(194,166,137)"><span class="main">Enter</span></div>
+        <div class="key key--mod" style="left:685.75px;top:153.30px;width:43.00px;height:38.40px;background-color:rgb(228,187,150);border-color:rgb(196,168,140)"><span class="main">PgDn</span></div>
+        <div class="key key--mod" style="left:18.75px;top:197.46px;width:100.50px;height:38.40px;background-color:rgb(241,222,202);border-color:rgb(207,190,169)"><span class="main">Shift</span></div>
+        <div class="key" style="left:122.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,223,205);border-color:rgb(207,191,170)"><span class="main">Z</span></div>
+        <div class="key" style="left:168.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,224,207);border-color:rgb(208,191,171)"><span class="main">X</span></div>
+        <div class="key" style="left:214.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,225,207);border-color:rgb(208,192,171)"><span class="main">C</span></div>
+        <div class="key" style="left:260.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,225,207);border-color:rgb(208,192,171)"><span class="main">V</span></div>
+        <div class="key" style="left:306.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,224,206);border-color:rgb(208,191,171)"><span class="main">B</span></div>
+        <div class="key" style="left:352.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,223,205);border-color:rgb(207,191,170)"><span class="main">N</span></div>
+        <div class="key" style="left:398.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(241,222,203);border-color:rgb(207,190,169)"><span class="main">M</span></div>
+        <div class="key key--sub" style="left:444.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(241,222,202);border-color:rgb(207,190,169)"><span class="sub">&lt;</span><span class="main">,</span></div>
+        <div class="key key--sub" style="left:490.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(241,222,202);border-color:rgb(207,190,169)"><span class="sub">&gt;</span><span class="main">.</span></div>
+        <div class="key key--sub" style="left:536.25px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(241,222,203);border-color:rgb(207,190,169)"><span class="sub">?</span><span class="main">/</span></div>
+        <div class="key key--mod" style="left:582.25px;top:197.46px;width:54.50px;height:38.40px;background-color:rgb(242,223,204);border-color:rgb(207,190,170)"><span class="main">Shift</span></div>
+        <div class="key key--arrow" style="left:639.75px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,224,206);border-color:rgb(208,191,171)"><span class="main">↑</span></div>
+        <div class="key key--mod" style="left:685.75px;top:197.46px;width:43.00px;height:38.40px;background-color:rgb(242,225,207);border-color:rgb(208,192,171)"><span class="main">End</span></div>
+        <div class="key key--mod" style="left:18.75px;top:241.62px;width:54.50px;height:38.40px;background-color:rgb(250,244,235);border-color:rgb(214,203,187)"><span class="main">Ctrl</span></div>
+        <div class="key key--mod" style="left:76.25px;top:241.62px;width:43.00px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">Win</span></div>
+        <div class="key key--mod" style="left:122.25px;top:241.62px;width:54.50px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">Alt</span></div>
+        <div class="key key--space" style="left:179.75px;top:241.62px;width:261.50px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">LEOBOG</span></div>
+        <div class="key key--mod" style="left:444.25px;top:241.62px;width:54.50px;height:38.40px;background-color:rgb(249,243,235);border-color:rgb(214,203,187)"><span class="main">Alt</span></div>
+        <div class="key key--mod" style="left:501.75px;top:241.62px;width:43.00px;height:38.40px;background-color:rgb(250,244,235);border-color:rgb(214,203,187)"><span class="main">Fn</span></div>
+        <div class="key key--mod" style="left:547.75px;top:241.62px;width:43.00px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">Ctrl</span></div>
+        <div class="key key--arrow" style="left:593.75px;top:241.62px;width:43.00px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">←</span></div>
+        <div class="key key--arrow" style="left:639.75px;top:241.62px;width:43.00px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">↓</span></div>
+        <div class="key key--arrow" style="left:685.75px;top:241.62px;width:43.00px;height:38.40px;background-color:rgb(250,244,236);border-color:rgb(214,203,187)"><span class="main">→</span></div>
+          </div>
+          <div class="knob-wrap" style="left:685.75px;top:17.14px;width:43px;height:38.40px" aria-hidden="true">
+            <svg class="knob" viewBox="0 0 38 38">
+              <defs>
+                <radialGradient id="knobface" cx="34%" cy="28%" r="78%">
+                  <stop offset="0" stop-color="#FAF6ED"/>
+                  <stop offset=".62" stop-color="#E7E0D2"/>
+                  <stop offset="1" stop-color="#D0C7B4"/>
+                </radialGradient>
+              </defs>
+              <circle cx="19" cy="19" r="18.2" fill="url(#knobface)" stroke="#BDB3A0" stroke-width="1"/>
+              <circle cx="19" cy="19" r="13.6" fill="none" stroke="rgba(90,76,52,.2)" stroke-width=".8"/>
+              <circle cx="19" cy="19" r="9.2" fill="none" stroke="rgba(90,76,52,.1)" stroke-width=".6"/>
+              <line x1="19" y1="19" x2="25.6" y2="10.4" stroke="#3B352B" stroke-width="1.6" stroke-linecap="round"/>
+              <circle cx="19" cy="19" r="1.1" fill="#3B352B"/>
+            </svg>
+          </div>
+          <span class="case-mark case-mark-left">LEOBOG</span>
+          <span class="case-mark case-mark-right">HI75C PRO</span>
+        </div>
+        <div class="stage-corners">
+          <span>Top view · 16.25u × 6.5u</span>
+          <span>ANSI · Aluminium</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="lower">
+      <section class="card effects" aria-labelledby="effects-title">
+        <div class="card-head">
+          <div class="head-left">
+            <h2 class="panel-title" id="effects-title">Effects</h2>
+            <span class="head-sub">17 on-board</span>
+          </div>
+          <span class="mono-small">05 / 17</span>
+        </div>
+        <div class="fx-grid" role="group" aria-label="Lighting effect">
+        <button class="fx" type="button" aria-pressed="false" title="Off — All key lighting is off."><span class="fx-num">01</span><span class="fx-name">Off</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Fixed On — One colour, no motion."><span class="fx-num">02</span><span class="fx-name">Fixed On</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Breathing — A slow pulse across every key."><span class="fx-num">03</span><span class="fx-name">Breathing</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Spectrum Cycle — Full-spectrum drift across the board."><span class="fx-num">04</span><span class="fx-name">Spectrum Cycle</span></button>
+        <button class="fx selected" type="button" aria-pressed="true" title="Row Ripple — A lit band moves down the rows."><span class="fx-num">05</span><span class="fx-name">Row Ripple</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Raindrops — Random keys fall like rain."><span class="fx-num">06</span><span class="fx-name">Raindrops</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Slow Wave — A wide gradient sweeps left to right."><span class="fx-num">07</span><span class="fx-name">Slow Wave</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Board Ripple — Rings expand from the centre."><span class="fx-num">08</span><span class="fx-name">Board Ripple</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Stars Twinkle — Sparse keys flicker at random."><span class="fx-num">09</span><span class="fx-name">Stars Twinkle</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Snake — A trail circles the key grid."><span class="fx-num">10</span><span class="fx-name">Snake</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Neon Stream — Fast colour bands in one direction."><span class="fx-num">11</span><span class="fx-name">Neon Stream</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Reactive — Keys flare as you type."><span class="fx-num">12</span><span class="fx-name">Reactive</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Center Wave — Light spreads out from the middle."><span class="fx-num">13</span><span class="fx-name">Center Wave</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Rainbow Wheel — Hue rotates around the board."><span class="fx-num">14</span><span class="fx-name">Rainbow Wheel</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Waterfall — Colour pours down the columns."><span class="fx-num">15</span><span class="fx-name">Waterfall</span></button>
+        <button class="fx" type="button" aria-pressed="false" title="Fast Flicker — A rapid full-board stutter."><span class="fx-num">16</span><span class="fx-name">Fast Flicker</span></button>
+        <button class="fx fx-wide" type="button" aria-pressed="false" title="Per-Key Custom — Per-key colours drawn from your keymap."><span class="fx-num">17</span><span class="fx-name">Per-Key Custom</span><span class="fx-note">KEYMAP COLOURS</span></button>
+        </div>
+      </section>
+
+      <aside class="card inspector" aria-label="Lighting controls">
+        <div class="control-block">
+          <div class="field-head">
+            <span class="section-label">Colour</span>
+            <span class="field-value">Amber · #C9762F</span>
+          </div>
+          <div class="swatches" role="group" aria-label="Lighting colour">
+          <button class="swatch" type="button" style="background:#F3E6CE" aria-label="Porcelain, #F3E6CE" aria-pressed="false" title="Porcelain — warm white"></button>
+          <button class="swatch selected" type="button" style="background:#C9762F" aria-label="Amber, #C9762F" aria-pressed="true" title="Amber — warm amber"></button>
+          <button class="swatch" type="button" style="background:#C4573F" aria-label="Ember, #C4573F" aria-pressed="false" title="Ember — burnt coral"></button>
+          <button class="swatch" type="button" style="background:#7E9457" aria-label="Moss, #7E9457" aria-pressed="false" title="Moss — soft green"></button>
+          <button class="swatch" type="button" style="background:#3F8E86" aria-label="Lagoon, #3F8E86" aria-pressed="false" title="Lagoon — deep teal"></button>
+          <button class="swatch" type="button" style="background:#4E6FAE" aria-label="Cobalt, #4E6FAE" aria-pressed="false" title="Cobalt — muted blue"></button>
+          <button class="swatch" type="button" style="background:#8A6AAE" aria-label="Iris, #8A6AAE" aria-pressed="false" title="Iris — violet"></button>
+          </div>
+        </div>
+
+        <div class="hr" role="separator"></div>
+
+        <div class="sliders">
+          <div class="slider">
+            <div class="slider-head">
+              <label class="slider-name" for="brightness">Brightness</label>
+              <span class="slider-val" aria-hidden="true">76%</span>
+            </div>
+            <div class="range" style="--p:76%">
+              <div class="range-track"><span class="range-fill"></span></div>
+              <input id="brightness" type="range" min="0" max="100" value="76">
+            </div>
+            <div class="ticks" aria-hidden="true">
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+            </div>
+          </div>
+          <div class="slider">
+            <div class="slider-head">
+              <label class="slider-name" for="speed">Speed</label>
+              <span class="slider-val" aria-hidden="true">42%</span>
+            </div>
+            <div class="range" style="--p:42%">
+              <div class="range-track"><span class="range-fill"></span></div>
+              <input id="speed" type="range" min="0" max="100" value="42">
+            </div>
+            <div class="ticks" aria-hidden="true">
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+              <i></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="hr" role="separator"></div>
+
+        <div class="control-block">
+          <div class="field-head">
+            <span class="section-label">Presets</span>
+            <span class="field-value">3 saved</span>
+          </div>
+          <div class="presets">
+          <button class="preset" type="button" title="Daylight — Fixed On, warm white, 80% brightness"><span class="preset-strip" style="background:linear-gradient(90deg,#F3E6CE 0%,#E2B57B 100%)" aria-hidden="true"></span><span class="preset-name">Daylight</span><span class="preset-meta">FIXED · 80%</span></button>
+          <button class="preset" type="button" title="Evening — Breathing, amber, 45% speed"><span class="preset-strip" style="background:linear-gradient(90deg,#E0A166 0%,#C9762F 55%,#C4573F 100%)" aria-hidden="true"></span><span class="preset-name">Evening</span><span class="preset-meta">BREATHE · 45%</span></button>
+          <button class="preset" type="button" title="Showcase — Spectrum Cycle, full brightness"><span class="preset-strip" style="background:linear-gradient(90deg,#C4573F 0%,#D8A24C 22%,#7E9457 45%,#3F8E86 64%,#4E6FAE 82%,#8A6AAE 100%)" aria-hidden="true"></span><span class="preset-name">Showcase</span><span class="preset-meta">SPECTRUM · 100%</span></button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="statusbar" aria-label="Running state">
+      <div class="run">
+        <div class="run-kicker">Now running</div>
+        <div class="run-line">
+          <strong>Row Ripple</strong>
+          <span class="run-sep" aria-hidden="true"></span>
+          <span class="run-colour"><i aria-hidden="true"></i>Amber</span>
+          <span class="run-sep" aria-hidden="true"></span>
+          <span class="run-stat">Brightness<b>76%</b></span>
+          <span class="run-sep" aria-hidden="true"></span>
+          <span class="run-stat">Speed<b>42%</b></span>
+        </div>
+      </div>
+      <div class="run-meta">
+        <span class="saved">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M2.2 6.3 4.8 8.9 9.9 3.4"/>
+          </svg>
+          Saved on-board
+          <span class="mono-time">14:32</span>
+        </span>
+        <span class="run-profile">Profile 01 · Base layer</span>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

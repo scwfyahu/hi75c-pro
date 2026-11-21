@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>LEOBOG Studio — Hi75C Pro</title>
+<style>
+:root{
+  --bg:#050607;
+  --stage:#0A0C10;
+  --rail:#0B0D12;
+  --panel:#0E1015;
+  --card:#101319;
+  --raise:#12151B;
+  --line:#232833;
+  --line-soft:#1B1F27;
+  --text:#F2F4F8;
+  --dim:#98A1AF;
+  --mute:#687282;
+  --faint:#596372;
+  --rose:#FF4D8D;
+  --rose-2:#FF709F;
+  --rose-deep:#B02C63;
+  --green:#5BD6A2;
+  --sans:"Segoe UI Variable Text","Segoe UI",Inter,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Cascadia Mono","Cascadia Code",Consolas,"SF Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;overflow:hidden;background:radial-gradient(70% 70% at 50% 42%,#0A0C10 0%,#050607 72%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--sans);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+button{font-family:inherit;color:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+::selection{background:rgba(255,77,141,.30)}
+.app{
+  position:relative;width:1180px;height:900px;overflow:hidden;border-radius:12px;
+  display:grid;grid-template-columns:188px 664px 328px;grid-template-rows:56px 844px;
+  grid-template-areas:"top top top" "rail stage inspector";
+  background:var(--stage);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.055),0 50px 130px rgba(0,0,0,.72),0 10px 30px rgba(0,0,0,.5);
+}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.sec-label{font-size:8.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#5B6474;line-height:1;padding:0 9px}
+.dot{width:5px;height:5px;border-radius:50%;flex:0 0 auto}
+.dot.green{background:var(--green);box-shadow:0 0 7px rgba(91,214,162,.55)}
+.dot.rose{background:var(--rose);box-shadow:0 0 8px rgba(255,77,141,.7)}
+
+/* ---------------- top bar ---------------- */
+.topbar{grid-area:top;display:flex;align-items:stretch;background:linear-gradient(180deg,#0C0E13,#0A0C10);border-bottom:1px solid #1B1F27;position:relative;z-index:20}
+.brand{width:188px;flex:0 0 188px;display:flex;align-items:center;gap:10px;padding-left:15px;border-right:1px solid #1A1E26}
+.brand-mark{width:28px;height:28px;border-radius:8px;border:1px solid #2A303A;background:radial-gradient(circle at 32% 22%,rgba(255,77,141,.18),rgba(255,77,141,0) 62%),#12151B;display:grid;place-items:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.brand-mark svg{display:block}
+.wordmark b{display:block;font-size:10.5px;letter-spacing:.18em;line-height:1;color:#F4F6FA;font-weight:700}
+.wordmark span{display:block;font-size:7px;letter-spacing:.36em;color:#6A7382;margin-top:4px;line-height:1}
+.topbar-main{flex:1;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 18px;min-width:0}
+.tb-title{display:flex;align-items:center;gap:7px;font-size:10.5px;color:#8D96A5;letter-spacing:.01em}
+.tb-title b{color:#CED5DF;font-weight:500}
+.tb-title .slash{color:#38404B}
+.tb-title .page{color:#5F6878}
+.tb-title .conn{font-family:var(--mono);font-size:7.5px;color:#5E877A;letter-spacing:.05em;padding:3px 6px;border:1px solid #20352E;border-radius:4px;background:#0C1512;margin-left:4px}
+.tb-right{display:flex;align-items:center;gap:13px;min-width:0}
+.preset-select{height:28px;display:flex;align-items:center;gap:8px;padding:0 9px;border:1px solid #242A34;background:#11141A;border-radius:7px;color:#D8DEE7;font-size:10.5px;cursor:pointer;letter-spacing:.01em;transition:background .12s,border-color .12s}
+.preset-select:hover{background:#171B22;border-color:#333A46}
+.preset-select .tiny{font-family:var(--mono);font-size:7px;color:#5F6878;letter-spacing:.08em;margin-left:1px}
+.tri-dots{display:flex;gap:2px}
+.tri-dots i{width:5px;height:5px;border-radius:50%}
+.tri-dots i:nth-child(1){background:#FF4D8D}
+.tri-dots i:nth-child(2){background:#8C6CFF}
+.tri-dots i:nth-child(3){background:#42C8FF}
+.preset-select svg{width:11px;height:11px;color:#6E7887}
+.winbtns{display:flex;gap:1px;margin-left:1px}
+.winbtn{width:26px;height:26px;border:0;border-radius:5px;background:transparent;color:#727C8B;display:grid;place-items:center;cursor:pointer}
+.winbtn svg{width:9px;height:9px}
+.winbtn:hover{background:#171B22;color:#D2D8E1}
+.winbtn.close:hover{background:#3A1522;color:#FF6D9B}
+
+/* ---------------- rail ---------------- */
+.rail{grid-area:rail;display:flex;flex-direction:column;padding:20px 14px 14px;background:linear-gradient(180deg,#0C0E13 0%,#0A0C10 100%);border-right:1px solid #1A1E26;overflow:hidden;position:relative}
+.rail-top{flex:0 0 auto}
+.rail nav{margin-top:9px;display:flex;flex-direction:column;gap:2px}
+.nav-item{position:relative;height:38px;display:flex;align-items:center;gap:10px;padding:0 9px;border-radius:8px;border:1px solid transparent;color:#9AA3B1;font-size:11.5px;text-decoration:none;letter-spacing:.005em;transition:background .12s,color .12s,border-color .12s}
+.nav-item svg{width:15px;height:15px;flex:0 0 15px;color:#76808F;transition:color .12s}
+.nav-item .meta{margin-left:auto;font-family:var(--mono);font-size:8px;color:#5B6474;letter-spacing:.02em}
+.nav-item:hover{background:#12151B;color:#DDE2EA}
+.nav-item.active{background:linear-gradient(90deg,rgba(255,77,141,.135),rgba(255,77,141,.015));border-color:rgba(255,77,141,.14);color:#FFF}
+.nav-item.active::before{content:"";position:absolute;left:-14px;top:9px;bottom:9px;width:2px;border-radius:0 2px 2px 0;background:var(--rose);box-shadow:0 0 12px rgba(255,77,141,.8)}
+.nav-item.active svg{color:#FF6B9F}
+.nav-item.active .meta{color:#FF8FB4}
+.rail-rule{height:1px;background:linear-gradient(90deg,#20252E 0%,rgba(32,37,46,.15) 100%);margin:18px 0 16px}
+.onboard-card{margin-top:9px;border:1px solid #20252F;border-radius:10px;background:linear-gradient(180deg,#13161D,#0F1217);padding:11px 11px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.ob-top{display:flex;align-items:center;justify-content:space-between;font-family:var(--mono);font-size:8px;letter-spacing:.1em;color:#707A8A}
+.ob-active{display:inline-flex;align-items:center;gap:4px;color:#5BD6A2;font-size:7.5px;letter-spacing:.13em}
+.ob-active i{width:4px;height:4px;border-radius:50%;background:#5BD6A2;box-shadow:0 0 6px rgba(91,214,162,.55)}
+.ob-name{font-size:12px;font-weight:600;color:#EDEFF4;margin-top:7px;letter-spacing:-.005em}
+.ob-sub{font-size:8px;color:#66707F;margin-top:3px;letter-spacing:.01em}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:10px}
+.slot{height:4px;border-radius:2px;background:#242A33}
+.slot.on{background:linear-gradient(90deg,#B02C63,#FF4D8D);box-shadow:0 0 8px rgba(255,77,141,.4)}
+.ob-foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px;font-family:var(--mono);font-size:7.5px;color:#555F6F;letter-spacing:.03em}
+.sc-list{margin-top:9px;display:flex;flex-direction:column;gap:4px}
+.sc-row{height:23px;display:flex;align-items:center;justify-content:space-between;padding:0 9px;border-radius:6px;font-size:9.5px;color:#8993A2}
+.kbd{font-family:var(--mono);font-size:7.5px;line-height:1;color:#778192;background:#151920;border:1px solid #262C36;border-bottom-color:#303744;border-radius:4px;padding:3px 5px;letter-spacing:.02em}
+.rail-bottom{margin-top:auto;padding-top:10px}
+.rail-bottom .sec-label{margin-bottom:9px}
+.device-card{border:1px solid #20252F;border-radius:10px;background:linear-gradient(180deg,#13161D,#0E1116);padding:11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+.conn-line{display:flex;align-items:center;gap:6px;font-size:9.5px;font-weight:600;letter-spacing:.01em;color:#5BD6A2}
+.signal{margin-left:auto;display:flex;align-items:flex-end;gap:2px;height:9px}
+.signal i{width:2.5px;border-radius:1px;background:#27342F}
+.signal i:nth-child(1){height:3px;background:#5BD6A2}
+.signal i:nth-child(2){height:5px;background:#5BD6A2}
+.signal i:nth-child(3){height:7px;background:#5BD6A2}
+.signal i:nth-child(4){height:9px;background:#2B3833}
+.dev-name{font-size:12.5px;font-weight:600;color:#F0F2F6;margin-top:9px;letter-spacing:-.005em}
+.dev-sub{font-size:8px;color:#606A79;margin-top:3px;letter-spacing:.045em}
+.mini-board{height:47px;margin:10px 0 9px;border:1px solid #1C222B;border-radius:6px;background:#080A0E;overflow:hidden}
+.mini-board svg{display:block;width:100%;height:100%}
+.dev-meta{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #1D222B;padding-top:8px;font-family:var(--mono);font-size:7.5px;color:#788292;letter-spacing:.015em}
+.dev-meta .batt{display:flex;align-items:center;gap:4px}
+.battery{position:relative;display:inline-block;width:15px;height:8px;border:1px solid #49525F;border-radius:2px}
+.battery::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:4px;background:#49525F;border-radius:0 1px 1px 0}
+.battery i{position:absolute;left:1px;top:1px;bottom:1px;width:86%;background:#8A95A4;border-radius:1px}
+.rail-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding:0 2px;font-family:var(--mono);font-size:7.5px;color:#4F5867;letter-spacing:.08em}
+
+/* ---------------- stage ---------------- */
+.stage{grid-area:stage;display:flex;flex-direction:column;min-width:0;padding:20px 22px;background:
+  radial-gradient(100% 65% at 26% -16%,rgba(255,77,141,.055),rgba(255,77,141,0) 55%),
+  radial-gradient(90% 55% at 70% 115%,rgba(140,108,255,.035),rgba(140,108,255,0) 60%),
+  #0A0C10;position:relative}
+.stage-head{flex:0 0 auto;height:58px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.eyebrow{display:flex;align-items:center;gap:6px;font-size:8.5px;font-weight:600;letter-spacing:.155em;text-transform:uppercase;color:#7B8493}
+.eyebrow .rose-dot{width:5px;height:5px;border-radius:50%;background:var(--rose);box-shadow:0 0 8px rgba(255,77,141,.7)}
+h1{font-size:23px;line-height:1.1;font-weight:600;letter-spacing:-.027em;color:#F3F5F9;margin:4px 0 3px}
+.stage-sub{font-size:9.5px;color:#64707F;letter-spacing:.01em}
+.actions{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.btn{height:29px;display:inline-flex;align-items:center;gap:6px;padding:0 9px;border:1px solid #252A34;border-radius:7px;background:#111419;color:#AEB6C3;font-size:9.5px;letter-spacing:.015em;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.btn svg{width:13px;height:13px;color:#7D8796;transition:color .12s}
+.btn:hover{background:#171B22;border-color:#343B47;color:#F1F3F7}
+.btn:hover svg{color:#CAD1DC}
+.btn:active{background:#0F1217}
+.board-card{flex:1;min-height:0;display:grid;grid-template-rows:42px minmax(0,1fr) 48px 92px;overflow:hidden;border:1px solid #232832;border-radius:16px;background:linear-gradient(180deg,#101319,#0C0F14);box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.045)}
+.board-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 17px;border-bottom:1px solid #1B1F27;background:linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,0))}
+.live-badge{display:flex;align-items:center;gap:7px;font-size:8.5px;font-weight:600;letter-spacing:.155em;text-transform:uppercase;color:#8C95A4}
+.live-badge .pulse{width:5px;height:5px;border-radius:50%;background:var(--rose);box-shadow:0 0 0 0 rgba(255,77,141,.4);animation:pulse 2.2s ease-out infinite}
+.head-status{display:flex;align-items:center;gap:10px;font-size:8.5px;color:#77808F;white-space:nowrap}
+.head-status .dev{color:#9DA6B5;font-size:8.5px;letter-spacing:.015em}
+.head-status .sep{width:1px;height:10px;background:#2A2F39}
+.head-status .link{display:flex;align-items:center;gap:5px}
+.head-status .link .dot{width:4px;height:4px}
+.head-status .battline{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;color:#8A94A2}
+.head-status .battery{width:13px;height:7px}
+.hero{position:relative;display:flex;flex-direction:column;overflow:hidden;padding:19px 0 14px;background:radial-gradient(62% 60% at 50% 62%,rgba(255,77,141,.10),rgba(255,77,141,.025) 55%,rgba(255,77,141,0) 74%)}
+.hero-head{position:relative;z-index:4;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:0 20px}
+.hero-eyebrow{display:flex;align-items:center;gap:6px;font-size:8px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#7F8998}
+.hero-eyebrow .dot{width:4px;height:4px}
+.hero-eyebrow b{color:#FF7DA9;font-weight:600}
+.hero-eyebrow .sep{color:#3B424E;margin:0 1px}
+.hero h2{font-size:30px;line-height:1.05;font-weight:600;letter-spacing:-.035em;color:#F7F8FB;margin:7px 0 0}
+.hero-sub{font-size:9.5px;color:#6B7585;margin-top:7px;letter-spacing:.01em;line-height:1.4}
+.hero-chips{display:flex;align-items:center;gap:6px;padding-top:2px;flex:0 0 auto}
+.chip-lite{height:24px;display:inline-flex;align-items:center;gap:6px;padding:0 8px;border:1px solid #252A34;border-radius:6px;background:rgba(14,17,22,.72);font-size:8.5px;color:#C2C9D4;letter-spacing:.01em}
+.chip-lite .c{width:7px;height:7px;border-radius:50%;background:var(--rose);box-shadow:0 0 6px rgba(255,77,141,.55)}
+.chip-lite .tri{display:flex;gap:2px}
+.chip-lite .tri i{width:4px;height:4px;border-radius:50%}
+.hero-stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:2}
+.frame{position:absolute;inset:14px 22px 4px;pointer-events:none}
+.tick{position:absolute;width:13px;height:13px;border:0 solid rgba(255,255,255,.075)}
+.tick.tl{top:0;left:0;border-top-width:1px;border-left-width:1px}
+.tick.tr{top:0;right:0;border-top-width:1px;border-right-width:1px}
+.tick.bl{bottom:0;left:0;border-bottom-width:1px;border-left-width:1px}
+.tick.br{bottom:0;right:0;border-bottom-width:1px;border-right-width:1px}
+.case-glow{position:absolute;left:50%;top:52%;width:660px;height:230px;transform:translate(-50%,-50%);background:radial-gradient(closest-side,rgba(255,77,141,.18),rgba(255,77,141,.04) 58%,rgba(255,77,141,0) 76%);filter:blur(12px);pointer-events:none}
+.case-wrap{position:relative;z-index:3;width:588px;max-width:calc(100% - 30px)}
+.case-wrap::after{content:"";position:absolute;left:7%;right:7%;bottom:-14px;height:22px;background:radial-gradient(50% 50% at 50% 50%,rgba(255,77,141,.15),rgba(255,77,141,0) 72%);filter:blur(7px);pointer-events:none}
+.case{position:relative;width:100%;padding:8px;border-radius:14px;border:1px solid rgba(255,255,255,.095);background:linear-gradient(180deg,#272C35 0%,#1B1F26 13%,#14171D 56%,#0E1115 100%);box-shadow:0 30px 52px -12px rgba(0,0,0,.72),0 10px 22px rgba(0,0,0,.45),0 0 70px rgba(255,77,141,.07),inset 0 1px 0 rgba(255,255,255,.15)}
+.plate{padding:8px;border-radius:8px;border:1px solid rgba(0,0,0,.65);background:linear-gradient(180deg,#080A0D,#0B0D11);box-shadow:inset 0 2px 10px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.03)}
+.keys{position:relative;display:grid;grid-template-columns:repeat(65,1fr);grid-template-rows:repeat(26,1fr);width:100%;height:221px}
+.key{grid-column:var(--c)/span var(--w);grid-row:var(--r)/span var(--h);position:relative;z-index:1;display:flex;align-items:center;justify-content:center;margin:2px;border-radius:5px;border:1px solid rgba(255,255,255,.06);overflow:hidden;line-height:1;font-weight:500;letter-spacing:0}
+.key span{position:relative;z-index:1;transform:translateY(.4px)}
+.key.mod{font-size:7.5px;font-weight:500;letter-spacing:.025em;color:#9AA4B3}
+.key.fn{font-size:7.8px;font-weight:600;letter-spacing:.015em;color:#909AAA}
+.key.alpha{font-size:9.4px;font-weight:500}
+.key.space{font-size:6px;font-weight:600;letter-spacing:.34em;text-indent:.34em;color:rgba(198,208,222,.26)}
+.knob-cell{grid-column:62/span 4;grid-row:1/span 4;display:flex;align-items:center;justify-content:center;z-index:4}
+.knob{position:relative;width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.16);background:radial-gradient(circle at 34% 28%,#414854,#20252D 48%,#0F1217 100%);box-shadow:0 5px 12px rgba(0,0,0,.65),inset 0 1px 2px rgba(255,255,255,.28),0 0 18px rgba(255,77,141,.22)}
+.knob::before{content:"";position:absolute;inset:4px;border-radius:50%;background:conic-gradient(from 210deg,#343A45,#101318 28%,#3A414D 52%,#0E1116 76%,#343A45);border:1px solid rgba(0,0,0,.55);box-shadow:inset 0 1px 1px rgba(255,255,255,.14)}
+.knob::after{content:"";position:absolute;left:50%;top:4px;width:2px;height:8px;transform:translateX(-50%);border-radius:1px;background:#FF6AA0;box-shadow:0 0 7px rgba(255,77,141,.85)}
+.board-caption{display:flex;align-items:center;justify-content:center;gap:9px;font-family:var(--mono);font-size:7px;letter-spacing:.16em;color:#525C6B;text-transform:uppercase;white-space:nowrap}
+.board-caption .line{width:20px;height:1px;background:#282E38}
+.board-caption b{color:#788292;font-weight:500}
+.mod{display:flex;align-items:center;gap:13px;padding:0 17px;border-top:1px solid #1B1F27;background:#0C0F14;min-width:0}
+.mod-label{min-width:99px;flex:0 0 99px}
+.mod-label .m1{font-size:7.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:#5E6877}
+.mod-label .m2{font-family:var(--mono);font-size:8.5px;color:#AAB3C1;margin-top:3px;letter-spacing:.01em}
+.wave{flex:1;min-width:0;height:22px;display:flex;align-items:center}
+.wave svg{display:block;width:100%;height:22px;overflow:visible}
+.mod-right{display:flex;align-items:center;gap:8px;flex:0 0 auto;font-family:var(--mono);font-size:7.5px;color:#5E6877;letter-spacing:.055em}
+.mod-right .fps{padding:3px 5px;border:1px solid #242A34;border-radius:4px;background:#11151B;color:#A7B0BE;font-size:7px;letter-spacing:.04em}
+.running{display:grid;grid-template-columns:1.15fr 1.05fr .84fr .84fr 1.12fr;padding:0 17px;border-top:1px solid #1B1F27;background:#0B0E13;min-width:0}
+.run-cell{min-width:0;padding:14px 10px 12px 14px;border-left:1px solid #1A1E26;display:flex;flex-direction:column;justify-content:center;gap:5px}
+.run-cell:first-child{border-left:0;padding-left:0}
+.run-label{font-size:8px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#5C6675;line-height:1}
+.run-val{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:#E7EAF0;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.run-val .sw{width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:var(--rose);box-shadow:0 0 7px rgba(255,77,141,.6)}
+.run-sub{font-family:var(--mono);font-size:7.5px;color:#626D7C;line-height:1.1;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.run-meter{display:block;width:46px;height:3px;border-radius:2px;background:#242A34;position:relative;overflow:hidden;flex:0 0 auto}
+.run-meter i{position:absolute;left:0;top:0;bottom:0;width:78%;border-radius:2px;background:linear-gradient(90deg,#9D2C5D,#FF4D8D)}
+.status .run-val{color:#C9E9DD;font-size:10.5px}
+.status .run-val .dot{width:5px;height:5px}
+
+/* ---------------- inspector ---------------- */
+.inspector{grid-area:inspector;display:flex;flex-direction:column;padding:18px 20px 15px;background:linear-gradient(180deg,#0E1015 0%,#0C0E13 100%);border-left:1px solid #1A1E26;overflow:hidden}
+.insp-top{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;height:12px}
+.insp-top .sec-label{padding:0}
+.auto{display:flex;align-items:center;gap:7px;font-size:7.5px;font-weight:600;letter-spacing:.14em;color:#687282}
+.toggle{position:relative;width:25px;height:13px;border-radius:7px;background:var(--rose);box-shadow:0 0 12px rgba(255,77,141,.28)}
+.toggle i{position:absolute;top:2px;right:2px;width:9px;height:9px;border-radius:50%;background:#FFF;box-shadow:0 1px 2px rgba(0,0,0,.4)}
+.sec-row{display:flex;align-items:center;justify-content:space-between;height:11px;margin-bottom:9px}
+.sec-row .sec-label{padding:0}
+.sec-note{font-family:var(--mono);font-size:7.5px;color:#5A6473;letter-spacing:.02em}
+.effects{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.effect{height:30px;min-width:0;display:flex;align-items:center;gap:6px;padding:0 9px;border:1px solid #222731;border-radius:6px;background:#12151B;color:#A4ADBB;font-size:9.5px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;letter-spacing:.005em;transition:background .12s,border-color .12s,color .12s}
+.effect .name{overflow:hidden;text-overflow:ellipsis}
+.effect:hover{background:#171B22;border-color:#2E3540;color:#E0E4EC}
+.effect.active{background:linear-gradient(100deg,rgba(255,77,141,.17),rgba(255,77,141,.035));border-color:rgba(255,77,141,.50);color:#FFF;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 16px rgba(255,77,141,.07)}
+.effect .live-pin{width:4px;height:4px;border-radius:50%;background:var(--rose);box-shadow:0 0 7px var(--rose);margin-left:auto;flex:0 0 auto}
+.effect.wide{grid-column:1/-1}
+.effect .tag{margin-left:auto;font-family:var(--mono);font-size:6.5px;letter-spacing:.1em;color:#5C6675;border:1px solid #252B35;padding:2px 4px;border-radius:3px}
+.hair{height:1px;background:linear-gradient(90deg,#242A34 0%,rgba(36,42,52,.15) 100%);margin:15px 0;flex:0 0 auto}
+.swatches{display:flex;align-items:center;gap:9px;margin-top:2px}
+.swatch{width:30px;height:30px;flex:0 0 30px;padding:0;border:0;border-radius:50%;cursor:pointer;box-shadow:inset 0 1px 1px rgba(255,255,255,.32),inset 0 -2px 4px rgba(0,0,0,.35);transition:transform .12s,box-shadow .12s}
+.swatch:hover{transform:translateY(-1px)}
+.swatch.selected{box-shadow:0 0 0 3px #0E1015,0 0 0 4.5px #E9DDE4,0 0 16px rgba(255,77,141,.32),inset 0 1px 1px rgba(255,255,255,.35)}
+.colour-meta{display:flex;align-items:center;justify-content:space-between;margin-top:9px;font-size:8.5px;color:#66707F}
+.colour-meta .cname{display:flex;align-items:center;gap:6px;color:#BFC6D1;font-size:9px}
+.colour-meta .mini-dot{width:6px;height:6px;border-radius:50%;background:var(--rose);box-shadow:0 0 6px rgba(255,77,141,.5)}
+.colour-meta .mono{font-size:7.5px;color:#5A6473}
+.slider{margin-top:2px}
+.slider + .slider{margin-top:13px}
+.s-head{display:flex;align-items:baseline;justify-content:space-between;height:14px}
+.s-label{font-size:8.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#7C8695}
+.s-val{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12px;color:#EDEFF4;letter-spacing:-.02em;line-height:1}
+.s-val i{font-style:normal;font-size:8px;color:#77818F;margin-left:1px}
+.track{position:relative;height:18px;margin-top:5px}
+.track::before{content:"";position:absolute;left:0;right:0;top:7px;height:4px;border-radius:2px;background:#242A34;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.track .fill{position:absolute;left:0;top:7px;height:4px;border-radius:2px;background:linear-gradient(90deg,#9A2B5D,#FF4D8D);box-shadow:0 0 10px rgba(255,77,141,.3)}
+.track .thumb{position:absolute;top:3px;width:12px;height:12px;border-radius:50%;background:#FFF;transform:translateX(-50%);box-shadow:0 0 0 3px rgba(255,77,141,.15),0 2px 5px rgba(0,0,0,.5)}
+.presets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.preset{position:relative;min-width:0;height:63px;display:flex;flex-direction:column;padding:8px 9px 7px;border:1px solid #222731;border-radius:8px;background:#11141A;text-align:left;cursor:pointer;color:#8D96A5;transition:background .12s,border-color .12s}
+.preset:hover{border-color:#343B47;background:#161A21}
+.preset.active{border-color:rgba(255,77,141,.55);background:linear-gradient(155deg,rgba(255,77,141,.14),rgba(255,77,141,.03) 58%,#11141A);box-shadow:0 4px 18px rgba(255,77,141,.06)}
+.p-top{display:flex;align-items:center;justify-content:space-between;height:9px;font-family:var(--mono);font-size:7px;color:#596372;letter-spacing:.08em}
+.p-check{width:10px;height:10px;color:var(--rose)}
+.p-name{margin-top:3px;font-size:10px;font-weight:600;color:#DCE2EB;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset.active .p-name{color:#FFF}
+.p-eff{margin-top:2px;font-size:7.5px;color:#687382;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset.active .p-eff{color:#D79AB2}
+.p-dots{display:flex;gap:3px;margin-top:auto}
+.p-dots i{width:5px;height:5px;border-radius:50%}
+.insp-foot{margin-top:auto;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #1B1F27;font-size:8.5px;color:#6C7685}
+.write{display:flex;align-items:center;gap:6px}
+.insp-foot .mono{font-size:7.5px;color:#596372;letter-spacing:.04em}
+
+/* ---------------- motion ---------------- */
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,141,.45)}70%{box-shadow:0 0 0 5px rgba(255,77,141,0)}100%{box-shadow:0 0 0 0 rgba(255,77,141,0)}}
+@keyframes wave{from{stroke-dashoffset:0}to{stroke-dashoffset:-380}}
+@keyframes drift{0%,100%{opacity:.55}50%{opacity:.9}}
+.wave .runpath{stroke-dasharray:30 350;animation:wave 4.2s linear infinite}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="9" cy="9" r="5.4" stroke="#FF4D8D" stroke-opacity=".85" stroke-width="1.1"/>
+          <circle cx="9" cy="9" r="2.1" fill="#FF4D8D" fill-opacity=".16" stroke="#FF4D8D" stroke-opacity=".55" stroke-width="1"/>
+          <path d="M9 3.4v2M3.4 9h2M9 14.6v-2M14.6 9h-2" stroke="#6B7483" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="wordmark"><b>LEOBOG</b><span>STUDIO</span></div>
+    </div>
+    <div class="topbar-main">
+      <div class="tb-title">
+        <span class="dot green"></span><b>Hi75C Pro</b><span class="slash">/</span><span class="page">Lighting</span>
+        <span class="conn">2.4 GHz</span>
+      </div>
+      <div class="tb-right">
+        <button class="preset-select" type="button" aria-label="Preset selector, Late Shift selected">
+          <span class="tri-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          Late Shift
+          <span class="tiny">02</span>
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 5 3 3 3-3"/></svg>
+        </button>
+        <div class="winbtns" aria-hidden="true">
+          <button class="winbtn" type="button" tabindex="-1" aria-label="Minimise"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M3 7h8"/></svg></button>
+          <button class="winbtn" type="button" tabindex="-1" aria-label="Maximise"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3.2" y="3.2" width="7.6" height="7.6" rx="1"/></svg></button>
+          <button class="winbtn close" type="button" tabindex="-1" aria-label="Close"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="m3.6 3.6 6.8 6.8M10.4 3.6l-6.8 6.8"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <div class="rail-top">
+      <div class="sec-label">Sections</div>
+      <nav aria-label="Sections">
+        <a class="nav-item active" href="#" aria-current="page">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="2.7"/><path d="M8 1.4v1.5M8 13.1v1.5M1.4 8h1.5M13.1 8h1.5M3.3 3.3l1.1 1.1M11.6 11.6l1.1 1.1M3.3 12.7l1.1-1.1M11.6 4.4l1.1-1.1"/></svg>
+          Lighting<span class="meta">LIVE</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"/><path d="M4.5 6.3h.01M6.9 6.3h.01M9.3 6.3h.01M11.7 6.3h.01M4.5 9.2h7"/></svg>
+          Keymap<span class="meta">81</span>
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6.1"/><path d="M8 7.2v3.4M8 4.9h.01"/></svg>
+          About<span class="meta">0.9.4</span>
+        </a>
+      </nav>
+      <div class="rail-rule"></div>
+      <div class="sec-label">Onboard</div>
+      <div class="onboard-card">
+        <div class="ob-top"><span>SLOT 02</span><span class="ob-active"><i></i>ACTIVE</span></div>
+        <div class="ob-name">Late Shift</div>
+        <div class="ob-sub">Saved on board · 14:31</div>
+        <div class="slots" aria-hidden="true"><span class="slot"></span><span class="slot on"></span><span class="slot"></span><span class="slot"></span></div>
+        <div class="ob-foot"><span>1 OF 4 SLOTS</span><span>4 KB</span></div>
+      </div>
+      <div class="rail-rule"></div>
+      <div class="sec-label">Shortcuts</div>
+      <div class="sc-list" aria-hidden="true">
+        <div class="sc-row"><span>Import</span><span class="kbd">CTRL O</span></div>
+        <div class="sc-row"><span>Restore</span><span class="kbd">CTRL SHIFT R</span></div>
+        <div class="sc-row"><span>Rescan</span><span class="kbd">CTRL R</span></div>
+      </div>
+    </div>
+    <div class="rail-bottom">
+      <div class="sec-label">Device</div>
+      <div class="device-card">
+        <div class="conn-line"><span class="dot green"></span>Connected
+          <span class="signal" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        </div>
+        <div class="dev-name">Hi75C Pro</div>
+        <div class="dev-sub">75% · KNOB · HOT-SWAP</div>
+        <div class="mini-board"><svg viewBox="0 0 146 46" width="100%" height="46" role="img" aria-label="Hi75C Pro compact keyboard"><rect x="1" y="2.5" width="144" height="41" rx="6.5" fill="#080A0E" stroke="#262C36" stroke-width="1"/><rect x="6.0" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="13.4" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="20.8" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="28.200000000000003" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="35.6" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="43.0" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="50.400000000000006" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="57.800000000000004" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="65.2" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="72.60000000000001" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="80.0" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="87.4" y="7.5" width="6.2" height="4.5" rx="1" fill="#A8356D"/><rect x="94.80000000000001" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="102.2" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="109.60000000000001" y="7.5" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="6.0" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="13.4" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="20.8" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="28.200000000000003" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="35.6" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="43.0" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="50.400000000000006" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="57.800000000000004" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="65.2" y="13.65" width="6.2" height="4.5" rx="1" fill="#FF4D8D"/><rect x="72.60000000000001" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="80.0" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="87.4" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="94.80000000000001" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="102.2" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="109.60000000000001" y="13.65" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="6.0" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="13.4" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="20.8" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="28.200000000000003" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="35.6" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="43.0" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="50.400000000000006" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="57.800000000000004" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="65.2" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="72.60000000000001" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="80.0" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="87.4" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="94.80000000000001" y="19.8" width="6.2" height="4.5" rx="1" fill="#7E2D72"/><rect x="102.2" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="109.60000000000001" y="19.8" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="6.0" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="13.4" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="20.8" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="28.200000000000003" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="35.6" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#C23A80"/><rect x="43.0" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="50.400000000000006" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="57.800000000000004" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="65.2" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="72.60000000000001" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="80.0" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="87.4" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="94.80000000000001" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="102.2" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="109.60000000000001" y="25.950000000000003" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="6.0" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="13.4" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="20.8" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="28.200000000000003" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="35.6" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="43.0" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="50.400000000000006" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="57.800000000000004" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="65.2" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="72.60000000000001" y="32.1" width="6.2" height="4.5" rx="1" fill="#5A2A55"/><rect x="80.0" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="87.4" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="94.80000000000001" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="102.2" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><rect x="109.60000000000001" y="32.1" width="6.2" height="4.5" rx="1" fill="#1B2028"/><circle cx="133" cy="13.4" r="5.7" fill="#14181F" stroke="#3A414D" stroke-width="1"/><circle cx="133" cy="13.4" r="2.2" fill="#0D1015" stroke="#2A303A" stroke-width=".8"/><path d="M133 8.2v1.7" stroke="#FF4D8D" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+        <div class="dev-meta">
+          <span>2.4 GHz · −42 dBm</span>
+          <span class="batt"><span class="battery" aria-hidden="true"><i></i></span>86%</span>
+        </div>
+      </div>
+      <div class="rail-foot"><span>LOCAL · NO CLOUD</span><span>FW 1.0.7</span></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="stage-head">
+      <div>
+        <div class="eyebrow"><span class="rose-dot"></span>Preset 02 · Late Shift</div>
+        <h1>Lighting</h1>
+        <div class="stage-sub">The board is the preview. Changes apply as you tune.</div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8v7.2M8 9l2.8-2.8M8 9 5.2 6.2"/><path d="M2.4 10.4v2.1c0 .8.6 1.5 1.5 1.5h8.2c.8 0 1.5-.6 1.5-1.5v-2.1"/></svg>
+          Import
+        </button>
+        <button class="btn" type="button">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.2 7.9a4.8 4.8 0 1 1 1.4 3.9"/><path d="M3.1 2.8v3.6h3.6"/></svg>
+          Restore
+        </button>
+        <button class="btn" type="button">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 6.2A5.3 5.3 0 1 0 13.1 10"/><path d="M13.2 2.8v3.6H9.6"/></svg>
+          Rescan
+        </button>
+      </div>
+    </div>
+
+    <section class="board-card" aria-label="Live board preview and running summary">
+      <div class="board-head">
+        <div class="live-badge"><span class="pulse"></span>Live preview</div>
+        <div class="head-status">
+          <span class="dev">Hi75C Pro</span>
+          <span class="sep"></span>
+          <span class="link"><span class="dot green"></span>2.4 GHz</span>
+          <span class="sep"></span>
+          <span class="battline"><span class="battery" aria-hidden="true"><i></i></span>86%</span>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="hero-head">
+          <div>
+            <div class="hero-eyebrow"><span class="dot rose"></span>Now running<span class="sep">/</span><span>Effect 11 of 17</span></div>
+            <h2>Neon Stream</h2>
+            <div class="hero-sub">Soft sine band, rose core with a violet wake, drifting left to right.</div>
+          </div>
+          <div class="hero-chips">
+            <span class="chip-lite"><span class="c"></span>Rose</span>
+            <span class="chip-lite"><span class="tri" aria-hidden="true"><i style="background:#FF4D8D"></i><i style="background:#8C6CFF"></i><i style="background:#42C8FF"></i></span>Late Shift</span>
+          </div>
+        </div>
+
+        <div class="hero-stage">
+          <div class="frame" aria-hidden="true"><span class="tick tl"></span><span class="tick tr"></span><span class="tick bl"></span><span class="tick br"></span></div>
+          <div class="case-glow" aria-hidden="true"></div>
+          <div class="case-wrap">
+            <div class="case">
+              <div class="plate">
+                <div class="keys" aria-label="LEOBOG Hi75C Pro keycaps, lit by the Neon Stream effect">
+        <div class="key mod" style="--c:1;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Esc</span></div>
+        <div class="key fn" style="--c:9;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F1</span></div>
+        <div class="key fn" style="--c:13;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F2</span></div>
+        <div class="key fn" style="--c:17;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F3</span></div>
+        <div class="key fn" style="--c:21;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F4</span></div>
+        <div class="key fn" style="--c:27;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F5</span></div>
+        <div class="key fn" style="--c:31;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.072),rgba(255,255,255,0) 44%),#261C32;color:#98A2B1;border-color:rgba(255,255,255,0.081);box-shadow:inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F6</span></div>
+        <div class="key fn" style="--c:35;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.157),rgba(255,255,255,0) 44%),#A9357C;color:#2A0A17;border-color:rgba(255,255,255,0.180);box-shadow:inset 0 1px 0 rgba(255,255,255,0.21),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 12px rgba(255,77,141,0.32)"><span>F7</span></div>
+        <div class="key fn" style="--c:39;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.215),rgba(255,255,255,0) 44%),#FF84B0;color:#2A0A17;border-color:rgba(255,255,255,0.247);box-shadow:inset 0 1px 0 rgba(255,255,255,0.30),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 16px rgba(255,77,141,0.45)"><span>F8</span></div>
+        <div class="key fn" style="--c:45;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.187),rgba(255,255,255,0) 44%),#E64489;color:#2A0A17;border-color:rgba(255,255,255,0.215);box-shadow:inset 0 1px 0 rgba(255,255,255,0.26),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 14px rgba(255,77,141,0.38)"><span>F9</span></div>
+        <div class="key fn" style="--c:49;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.216),rgba(255,255,255,0) 44%),#FF8CB6;color:#2A0A17;border-color:rgba(255,255,255,0.249);box-shadow:inset 0 1px 0 rgba(255,255,255,0.30),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 16px rgba(255,77,141,0.45)"><span>F10</span></div>
+        <div class="key fn" style="--c:53;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.140),rgba(255,255,255,0) 44%),#7F2D72;color:#F3DFE8;border-color:rgba(255,255,255,0.160);box-shadow:inset 0 1px 0 rgba(255,255,255,0.19),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 11px rgba(255,77,141,0.28)"><span>F11</span></div>
+        <div class="key fn" style="--c:57;--r:1;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>F12</span></div>
+        <div class="key alpha" style="--c:1;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>`</span></div>
+        <div class="key alpha" style="--c:5;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>1</span></div>
+        <div class="key alpha" style="--c:9;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>2</span></div>
+        <div class="key alpha" style="--c:13;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>3</span></div>
+        <div class="key alpha" style="--c:17;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>4</span></div>
+        <div class="key alpha" style="--c:21;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>5</span></div>
+        <div class="key alpha" style="--c:25;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>6</span></div>
+        <div class="key alpha" style="--c:29;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.155),rgba(255,255,255,0) 44%),#A4347B;color:#2A0A17;border-color:rgba(255,255,255,0.177);box-shadow:inset 0 1px 0 rgba(255,255,255,0.21),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 12px rgba(255,77,141,0.31)"><span>7</span></div>
+        <div class="key alpha" style="--c:33;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.188),rgba(255,255,255,0) 44%),#E84489;color:#2A0A17;border-color:rgba(255,255,255,0.217);box-shadow:inset 0 1px 0 rgba(255,255,255,0.26),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 14px rgba(255,77,141,0.39)"><span>8</span></div>
+        <div class="key alpha" style="--c:37;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.104),rgba(255,255,255,0) 44%),#3C2352;color:#F3DFE8;border-color:rgba(255,255,255,0.119);box-shadow:inset 0 1px 0 rgba(255,255,255,0.14),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 9px rgba(255,77,141,0.20)"><span>9</span></div>
+        <div class="key alpha" style="--c:41;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.081),rgba(255,255,255,0) 44%),#2D1E3B;color:#C4CCD9;border-color:rgba(255,255,255,0.092);box-shadow:inset 0 1px 0 rgba(255,255,255,0.11),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.15)"><span>0</span></div>
+        <div class="key alpha" style="--c:45;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.081),rgba(255,255,255,0) 44%),#2C1E3B;color:#C4CCD9;border-color:rgba(255,255,255,0.091);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.15)"><span>-</span></div>
+        <div class="key alpha" style="--c:49;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.088),rgba(255,255,255,0) 44%),#311F42;color:#C4CCD9;border-color:rgba(255,255,255,0.099);box-shadow:inset 0 1px 0 rgba(255,255,255,0.11),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 8px rgba(255,77,141,0.16)"><span>=</span></div>
+        <div class="key mod" style="--c:53;--r:6;--w:8;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.202),rgba(255,255,255,0) 44%),#FB4B8C;color:#2A0A17;border-color:rgba(255,255,255,0.232);box-shadow:inset 0 1px 0 rgba(255,255,255,0.28),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 15px rgba(255,77,141,0.42)"><span>Backspace</span></div>
+        <div class="key mod" style="--c:62;--r:6;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.060),rgba(255,255,255,0) 44%),#1F1B29;color:#98A2B1;border-color:rgba(255,255,255,0.067);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Del</span></div>
+        <div class="key mod" style="--c:1;--r:10;--w:6;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Tab</span></div>
+        <div class="key alpha" style="--c:7;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Q</span></div>
+        <div class="key alpha" style="--c:11;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>W</span></div>
+        <div class="key alpha" style="--c:15;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>E</span></div>
+        <div class="key alpha" style="--c:19;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>R</span></div>
+        <div class="key alpha" style="--c:23;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.105),rgba(255,255,255,0) 44%),#3C2353;color:#F3DFE8;border-color:rgba(255,255,255,0.119);box-shadow:inset 0 1px 0 rgba(255,255,255,0.14),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 9px rgba(255,77,141,0.20)"><span>T</span></div>
+        <div class="key alpha" style="--c:27;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.218),rgba(255,255,255,0) 44%),#FF98BD;color:#2A0A17;border-color:rgba(255,255,255,0.251);box-shadow:inset 0 1px 0 rgba(255,255,255,0.30),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 16px rgba(255,77,141,0.45)"><span>Y</span></div>
+        <div class="key alpha" style="--c:31;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.123),rgba(255,255,255,0) 44%),#5D2862;color:#F3DFE8;border-color:rgba(255,255,255,0.140);box-shadow:inset 0 1px 0 rgba(255,255,255,0.16),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 10px rgba(255,77,141,0.24)"><span>U</span></div>
+        <div class="key alpha" style="--c:35;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.078),rgba(255,255,255,0) 44%),#2A1D38;color:#C4CCD9;border-color:rgba(255,255,255,0.088);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.14)"><span>I</span></div>
+        <div class="key alpha" style="--c:39;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.070),rgba(255,255,255,0) 44%),#251B30;color:#C4CCD9;border-color:rgba(255,255,255,0.078);box-shadow:inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>O</span></div>
+        <div class="key alpha" style="--c:43;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.066),rgba(255,255,255,0) 44%),#231B2D;color:#C4CCD9;border-color:rgba(255,255,255,0.074);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>P</span></div>
+        <div class="key alpha" style="--c:47;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.068),rgba(255,255,255,0) 44%),#241B2E;color:#C4CCD9;border-color:rgba(255,255,255,0.076);box-shadow:inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>[</span></div>
+        <div class="key alpha" style="--c:51;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.075),rgba(255,255,255,0) 44%),#281D35;color:#C4CCD9;border-color:rgba(255,255,255,0.084);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>]</span></div>
+        <div class="key alpha" style="--c:55;--r:10;--w:6;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.117),rgba(255,255,255,0) 44%),#53275D;color:#F3DFE8;border-color:rgba(255,255,255,0.133);box-shadow:inset 0 1px 0 rgba(255,255,255,0.16),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 9px rgba(255,77,141,0.23)"><span>\</span></div>
+        <div class="key mod" style="--c:62;--r:10;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.158),rgba(255,255,255,0) 44%),#AD357D;color:#2A0A17;border-color:rgba(255,255,255,0.181);box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 12px rgba(255,77,141,0.32)"><span>End</span></div>
+        <div class="key mod" style="--c:1;--r:14;--w:7;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.136),rgba(255,255,255,0) 44%),#772C6F;color:#F3DFE8;border-color:rgba(255,255,255,0.156);box-shadow:inset 0 1px 0 rgba(255,255,255,0.18),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 11px rgba(255,77,141,0.27)"><span>Caps</span></div>
+        <div class="key alpha" style="--c:8;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.068),rgba(255,255,255,0) 44%),#241B2E;color:#C4CCD9;border-color:rgba(255,255,255,0.076);box-shadow:inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>A</span></div>
+        <div class="key alpha" style="--c:12;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.059),rgba(255,255,255,0) 44%),#1F1B29;color:#C4CCD9;border-color:rgba(255,255,255,0.066);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>S</span></div>
+        <div class="key alpha" style="--c:16;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.082),rgba(255,255,255,0) 44%),#2D1E3C;color:#C4CCD9;border-color:rgba(255,255,255,0.093);box-shadow:inset 0 1px 0 rgba(255,255,255,0.11),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.15)"><span>D</span></div>
+        <div class="key alpha" style="--c:20;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.147),rgba(255,255,255,0) 44%),#903076;color:#F3DFE8;border-color:rgba(255,255,255,0.168);box-shadow:inset 0 1px 0 rgba(255,255,255,0.20),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 11px rgba(255,77,141,0.30)"><span>F</span></div>
+        <div class="key alpha" style="--c:24;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.206),rgba(255,255,255,0) 44%),#FF5290;color:#2A0A17;border-color:rgba(255,255,255,0.237);box-shadow:inset 0 1px 0 rgba(255,255,255,0.28),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 15px rgba(255,77,141,0.43)"><span>G</span></div>
+        <div class="key alpha" style="--c:28;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.093),rgba(255,255,255,0) 44%),#342147;color:#C4CCD9;border-color:rgba(255,255,255,0.105);box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 8px rgba(255,77,141,0.18)"><span>H</span></div>
+        <div class="key alpha" style="--c:32;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.073),rgba(255,255,255,0) 44%),#271C33;color:#C4CCD9;border-color:rgba(255,255,255,0.081);box-shadow:inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>J</span></div>
+        <div class="key alpha" style="--c:36;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.061),rgba(255,255,255,0) 44%),#201B2A;color:#C4CCD9;border-color:rgba(255,255,255,0.068);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>K</span></div>
+        <div class="key alpha" style="--c:40;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>L</span></div>
+        <div class="key alpha" style="--c:44;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>;</span></div>
+        <div class="key alpha" style="--c:48;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>'</span></div>
+        <div class="key mod" style="--c:52;--r:14;--w:9;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.069),rgba(255,255,255,0) 44%),#251B2F;color:#98A2B1;border-color:rgba(255,255,255,0.077);box-shadow:inset 0 1px 0 rgba(255,255,255,0.09),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Enter</span></div>
+        <div class="key mod" style="--c:62;--r:14;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.163),rgba(255,255,255,0) 44%),#BA3880;color:#2A0A17;border-color:rgba(255,255,255,0.187);box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 13px rgba(255,77,141,0.33)"><span>PgUp</span></div>
+        <div class="key mod" style="--c:1;--r:18;--w:9;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.207),rgba(255,255,255,0) 44%),#FF5B96;color:#2A0A17;border-color:rgba(255,255,255,0.239);box-shadow:inset 0 1px 0 rgba(255,255,255,0.29),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 15px rgba(255,77,141,0.43)"><span>Shift</span></div>
+        <div class="key alpha" style="--c:10;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.162),rgba(255,255,255,0) 44%),#B83780;color:#2A0A17;border-color:rgba(255,255,255,0.186);box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 12px rgba(255,77,141,0.33)"><span>Z</span></div>
+        <div class="key alpha" style="--c:14;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.172),rgba(255,255,255,0) 44%),#D23C86;color:#2A0A17;border-color:rgba(255,255,255,0.198);box-shadow:inset 0 1px 0 rgba(255,255,255,0.24),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 13px rgba(255,77,141,0.35)"><span>X</span></div>
+        <div class="key alpha" style="--c:18;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.229),rgba(255,255,255,0) 44%),#FFD5E4;color:#2A0A17;border-color:rgba(255,255,255,0.264);box-shadow:inset 0 1px 0 rgba(255,255,255,0.32),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 17px rgba(255,77,141,0.48)"><span>C</span></div>
+        <div class="key alpha" style="--c:22;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.138),rgba(255,255,255,0) 44%),#7B2D71;color:#F3DFE8;border-color:rgba(255,255,255,0.158);box-shadow:inset 0 1px 0 rgba(255,255,255,0.19),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 11px rgba(255,77,141,0.28)"><span>V</span></div>
+        <div class="key alpha" style="--c:26;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.079),rgba(255,255,255,0) 44%),#2B1D39;color:#C4CCD9;border-color:rgba(255,255,255,0.089);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.14)"><span>B</span></div>
+        <div class="key alpha" style="--c:30;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.065),rgba(255,255,255,0) 44%),#221B2C;color:#C4CCD9;border-color:rgba(255,255,255,0.072);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>N</span></div>
+        <div class="key alpha" style="--c:34;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>M</span></div>
+        <div class="key alpha" style="--c:38;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>,</span></div>
+        <div class="key alpha" style="--c:42;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>.</span></div>
+        <div class="key alpha" style="--c:46;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#C4CCD9;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>/</span></div>
+        <div class="key mod" style="--c:50;--r:18;--w:7;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Shift</span></div>
+        <div class="key mod" style="--c:58;--r:19;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.063),rgba(255,255,255,0) 44%),#211B2B;color:#98A2B1;border-color:rgba(255,255,255,0.071);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>↑</span></div>
+        <div class="key mod" style="--c:62;--r:18;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.080),rgba(255,255,255,0) 44%),#2C1E3A;color:#98A2B1;border-color:rgba(255,255,255,0.090);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.15)"><span>PgDn</span></div>
+        <div class="key mod" style="--c:1;--r:22;--w:5;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.080),rgba(255,255,255,0) 44%),#2C1E3A;color:#98A2B1;border-color:rgba(255,255,255,0.090);box-shadow:inset 0 1px 0 rgba(255,255,255,0.10),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 7px rgba(255,77,141,0.15)"><span>Ctrl</span></div>
+        <div class="key mod" style="--c:6;--r:22;--w:5;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.138),rgba(255,255,255,0) 44%),#7B2C70;color:#F3DFE8;border-color:rgba(255,255,255,0.158);box-shadow:inset 0 1px 0 rgba(255,255,255,0.19),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 11px rgba(255,77,141,0.28)"><span>Win</span></div>
+        <div class="key mod" style="--c:11;--r:22;--w:5;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.166),rgba(255,255,255,0) 44%),#C23982;color:#2A0A17;border-color:rgba(255,255,255,0.191);box-shadow:inset 0 1px 0 rgba(255,255,255,0.23),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45),0 0 13px rgba(255,77,141,0.34)"><span>Alt</span></div>
+        <div class="key space" style="--c:16;--r:22;--w:25;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.063),rgba(255,255,255,0) 44%),#211B2B;color:rgba(198,208,222,.28);border-color:rgba(255,255,255,0.070);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>LEOBOG</span></div>
+        <div class="key mod" style="--c:41;--r:22;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Alt</span></div>
+        <div class="key mod" style="--c:45;--r:22;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Fn</span></div>
+        <div class="key mod" style="--c:49;--r:22;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>Ctrl</span></div>
+        <div class="key mod" style="--c:54;--r:23;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>←</span></div>
+        <div class="key mod" style="--c:58;--r:23;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.058),rgba(255,255,255,0) 44%),#1E1C28;color:#98A2B1;border-color:rgba(255,255,255,0.064);box-shadow:inset 0 1px 0 rgba(255,255,255,0.07),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>↓</span></div>
+        <div class="key mod" style="--c:62;--r:23;--w:4;--h:4;background:linear-gradient(155deg,rgba(255,255,255,0.063),rgba(255,255,255,0) 44%),#211B2B;color:#98A2B1;border-color:rgba(255,255,255,0.070);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08),inset 0 -2px 3px rgba(0,0,0,.42),0 1px 2px rgba(0,0,0,.45)"><span>→</span></div>
+                  <div class="knob-cell"><div class="knob" role="img" aria-label="Encoder knob"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="board-caption"><span class="line"></span><b>81 keys</b> + knob · aluminium<span class="line"></span></div>
+        </div>
+      </div>
+
+      <div class="mod" aria-label="Effect modulation">
+        <div class="mod-label"><div class="m1">Modulation</div><div class="m2">Sine · 1.80 s</div></div>
+        <div class="wave" aria-hidden="true">
+          <svg viewBox="0 0 360 22" preserveAspectRatio="none">
+            <path d="M0 11 C30 1 60 1 90 11 S150 21 180 11 S240 1 270 11 S330 21 360 11" fill="none" stroke="rgba(255,77,141,.26)" stroke-width="1.2"/>
+            <path class="runpath" d="M0 11 C30 1 60 1 90 11 S150 21 180 11 S240 1 270 11 S330 21 360 11" fill="none" stroke="#FF4D8D" stroke-width="1.5" stroke-linecap="round"/>
+            <g stroke="#1D222B" stroke-width="1" stroke-dasharray="1 4"><path d="M90 3v16M180 3v16M270 3v16"/></g>
+          </svg>
+        </div>
+        <div class="mod-right">FRAME 1,284 <span class="fps">30 FPS</span></div>
+      </div>
+
+      <div class="running" aria-label="Running summary">
+        <div class="run-cell"><div class="run-label">Effect</div><div class="run-val">Neon Stream</div><div class="run-sub">11 / 17</div></div>
+        <div class="run-cell"><div class="run-label">Colour</div><div class="run-val"><span class="sw"></span>Rose</div><div class="run-sub">#FF4D8D</div></div>
+        <div class="run-cell"><div class="run-label">Brightness</div><div class="run-val">78%</div><div class="run-sub"><span class="run-meter" aria-hidden="true"><i></i></span></div></div>
+        <div class="run-cell"><div class="run-label">Speed</div><div class="run-val">42%</div><div class="run-sub">1.80 s loop</div></div>
+        <div class="run-cell status"><div class="run-label">Synced</div><div class="run-val"><span class="dot green"></span>12 s ago</div><div class="run-sub">onboard slot 02</div></div>
+      </div>
+    </section>
+  </main>
+
+  <aside class="inspector">
+    <div class="insp-top">
+      <span class="sec-label">Inspector</span>
+      <div class="auto" aria-hidden="true">AUTO-APPLY<span class="toggle"><i></i></span></div>
+    </div>
+
+    <div class="sec-row"><span class="sec-label">Effect</span><span class="sec-note">17 AVAILABLE</span></div>
+    <div class="effects" role="group" aria-label="Lighting effect">
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Off</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Fixed On</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Breathing</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Spectrum Cycle</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Row Ripple</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Raindrops</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Slow Wave</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Board Ripple</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Stars Twinkle</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Snake</span></button>
+          <button class="effect active" type="button" aria-pressed="true"><span class="name">Neon Stream</span><span class="live-pin"></span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Reactive</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Center Wave</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Rainbow Wheel</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Waterfall</span></button>
+          <button class="effect" type="button" aria-pressed="false"><span class="name">Fast Flicker</span></button>
+          <button class="effect wide" type="button" aria-pressed="false"><span class="name">Per-Key Custom</span><span class="tag">MANUAL</span></button>
+    </div>
+
+    <div class="hair"></div>
+
+    <div class="sec-row"><span class="sec-label">Colour</span><span class="sec-note">#FF4D8D</span></div>
+    <div class="swatches" role="group" aria-label="Palette colour">
+            <button class="swatch" type="button" aria-pressed="false" title="Ember #FF5C39" aria-label="Ember #FF5C39" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#FF5C39"></button>
+            <button class="swatch" type="button" aria-pressed="false" title="Solar #FFC24B" aria-label="Solar #FFC24B" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#FFC24B"></button>
+            <button class="swatch" type="button" aria-pressed="false" title="Lime #B6F36B" aria-label="Lime #B6F36B" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#B6F36B"></button>
+            <button class="swatch" type="button" aria-pressed="false" title="Mint #3BE8B0" aria-label="Mint #3BE8B0" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#3BE8B0"></button>
+            <button class="swatch" type="button" aria-pressed="false" title="Ice #42C8FF" aria-label="Ice #42C8FF" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#42C8FF"></button>
+            <button class="swatch" type="button" aria-pressed="false" title="Violet #8C6CFF" aria-label="Violet #8C6CFF" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#8C6CFF"></button>
+            <button class="swatch selected" type="button" aria-pressed="true" title="Rose #FF4D8D" aria-label="Rose #FF4D8D" style="background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.42),rgba(255,255,255,0) 52%),#FF4D8D"></button>
+    </div>
+    <div class="colour-meta"><span class="cname"><span class="mini-dot"></span>Rose · warm pink</span><span class="mono">sRGB</span></div>
+
+    <div class="hair"></div>
+
+    <div class="slider">
+      <div class="s-head"><span class="s-label">Brightness</span><span class="s-val">78<i>%</i></span></div>
+      <div class="track" role="slider" tabindex="0" aria-label="Brightness" aria-valuemin="0" aria-valuemax="100" aria-valuenow="78">
+        <span class="fill" style="width:78%"></span><span class="thumb" style="left:78%"></span>
+      </div>
+    </div>
+    <div class="slider">
+      <div class="s-head"><span class="s-label">Speed</span><span class="s-val">42<i>%</i></span></div>
+      <div class="track" role="slider" tabindex="0" aria-label="Speed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
+        <span class="fill" style="width:42%"></span><span class="thumb" style="left:42%"></span>
+      </div>
+    </div>
+
+    <div class="hair"></div>
+
+    <div class="sec-row"><span class="sec-label">Presets</span><span class="sec-note">3 SAVED</span></div>
+    <div class="presets" role="group" aria-label="Lighting presets">
+            <button class="preset" type="button" aria-pressed="false">
+              <span class="p-top"><span>01</span></span>
+              <span class="p-name">Daylight</span>
+              <span class="p-eff">Fixed On</span>
+              <span class="p-dots"><i style="background:#FF5C39"></i><i style="background:#FFC24B"></i><i style="background:#FFE3BD"></i></span>
+            </button>
+            <button class="preset active" type="button" aria-pressed="true">
+              <span class="p-top"><span>02</span><svg class="p-check" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m2.2 6.1 2.5 2.5 5.1-5.1"/></svg></span>
+              <span class="p-name">Late Shift</span>
+              <span class="p-eff">Neon Stream</span>
+              <span class="p-dots"><i style="background:#FF4D8D"></i><i style="background:#8C6CFF"></i><i style="background:#42C8FF"></i></span>
+            </button>
+            <button class="preset" type="button" aria-pressed="false">
+              <span class="p-top"><span>03</span></span>
+              <span class="p-name">Deep Focus</span>
+              <span class="p-eff">Breathing</span>
+              <span class="p-dots"><i style="background:#42C8FF"></i><i style="background:#3BE8B0"></i><i style="background:#D6F7FF"></i></span>
+            </button>
+    </div>
+
+    <div class="insp-foot">
+      <span class="write"><span class="dot green"></span>Live write · 30 fps</span>
+      <span class="mono">12 ms · QUEUE 0</span>
+    </div>
+  </aside>
+
+</div>
+</body>
+</html>
