@@ -1334,6 +1334,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     if (!g_hwnd) return 1;
     dark_title_bar(g_hwnd);
     app_pump(g_hwnd);
+    app_cleanup_old_binary();
     SetTimer(g_hwnd, 1, 66, NULL);   /* ~15 fps preview */
     {
         char ms[16];

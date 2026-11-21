@@ -467,6 +467,13 @@ int app_update_apply(void) {
         DeleteFileW(parked);
         if (!MoveFileW(self, parked)) { DeleteFileW(staged); DeleteFileW(tmp); return 0; }
         if (!MoveFileW(staged, self)) { MoveFileW(parked, self); DeleteFileW(tmp); return 0; }
+        if (!file_is_exe(self)) {          /* never leave a broken binary installed */
+            MoveFileW(self, staged);
+            MoveFileW(parked, self);
+            DeleteFileW(staged);
+            DeleteFileW(tmp);
+            return 0;
+        }
     }
     DeleteFileW(tmp);
     return 1;
@@ -872,6 +879,19 @@ void app_init(void) {
     EnterCriticalSection(&g_lock);
     g_state.connected = device_open();
     LeaveCriticalSection(&g_lock);
+}
+
+void app_cleanup_old_binary(void) {
+    /* the update leaves <exe>.old behind because the file was running; the
+       next start can remove it */
+    wchar_t self[MAX_PATH], old[MAX_PATH], newf[MAX_PATH];
+    if (!GetModuleFileNameW(NULL, self, MAX_PATH)) return;
+    lstrcpynW(old, self, MAX_PATH);
+    lstrcatW(old, L".old");
+    lstrcpynW(newf, self, MAX_PATH);
+    lstrcatW(newf, L".new");
+    DeleteFileW(old);
+    DeleteFileW(newf);
 }
 
 void app_shutdown(void) {
