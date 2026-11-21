@@ -706,7 +706,7 @@ static void paint(HWND hwnd) {
             g.FillRectangle(&wash, 0, 0, rc.right, rc.bottom);
         }
 
-        if (g_dbg) dbg("paint %dx%d", rc.right, rc.bottom);
+        if (g_dbg) dbg("paint %dx%d scale %.3f", rc.right, rc.bottom, g_scale);
         if (rc.right < 700 || rc.bottom < 560) {
             SolidBrush bb(Color(255, 13, 14, 18));
             g.FillRectangle(&bb, 0, 0, rc.right, rc.bottom);
