@@ -1111,6 +1111,7 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
                 dbg("click at %d,%d  hotspots=%d  hit=%d", x, y, g_hot_n, id);
                 g_press = id;
                 if (id == 300 || id == 301) SetCapture(h);
+                if (id >= 100 && id < 207) app_stop_background_driver();   /* take over from the daemon */
                 if (id >= 100 && id < 100 + app_effect_count()) app_set_effect(app_effect_id(id - 100));
                 else if (id >= 200 && id < 207) app_set_colour(id - 200);
                 else if (id == 300) app_set_brightness(slider_value(300, x));

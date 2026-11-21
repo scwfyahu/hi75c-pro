@@ -47,6 +47,7 @@ int app_effect_test(const char *path);
 int  app_update_check(void);        /* 1 if a newer build exists */
 int  app_update_apply(void);        /* download + swap; 1 on success */
 void app_update_install(void);      /* queue the update, never blocks the UI */
+void app_stop_background_driver(void);  /* ask a running daemon to exit before we write */
 const char *app_version(void);
 const char *app_latest_tag(void);
 int app_daemon(const char *path);

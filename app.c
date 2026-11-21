@@ -627,6 +627,22 @@ void app_keymap_request(void) { enqueue(7, 0, 0, 0); }
 
 void app_keymap_apply(int idx, int usage) { enqueue(8, idx, usage, g_layer); }
 
+void app_stop_background_driver(void) {
+    /* the daemon and the window cannot both drive the board; the window wins,
+       because the user is looking at it */
+    HANDLE held = OpenMutexA(SYNCHRONIZE, FALSE, "Hi75CPro_Daemon_Singleton");
+    if (!held) return;
+    CloseHandle(held);
+    {
+        HANDLE stop = OpenEventA(EVENT_MODIFY_STATE, FALSE, "Hi75CPro_Daemon_Stop");
+        if (stop) {
+            SetEvent(stop);
+            CloseHandle(stop);
+            Sleep(300);        /* let it finish the frame it is on */
+        }
+    }
+}
+
 int app_keymap_get(int idx) {
     if (idx < 0 || idx * 4 + 3 >= KEYMAP_LEN) return -1;
     if (!keymap_load()) return -1;
@@ -901,6 +917,7 @@ int app_effect_test(const char *path) {
    "keep running after the window closes" is set; exits when the file is gone
    or the keyboard disappears. */
 static int g_daemon_dry;
+static HANDLE g_daemon_stop;
 
 int app_daemon(const char *path) {
     /* a second daemon would interleave frames with the first on the same
@@ -917,11 +934,20 @@ int app_daemon(const char *path) {
     double t0;
 
     if (!load_effect(path, &fx, err, sizeof(err))) return 2;
+    {
+        HANDLE stop = CreateEventA(NULL, TRUE, FALSE, "Hi75CPro_Daemon_Stop");
+        g_daemon_stop = stop;
+    }
     t0 = (double)GetTickCount64();
     for (;;) {
         double now = ((double)GetTickCount64() - t0) / 1000.0;
         int i;
         if (GetFileAttributesA(path) == INVALID_FILE_ATTRIBUTES) break;
+        if (g_daemon_stop && WaitForSingleObject(g_daemon_stop, 0) == WAIT_OBJECT_0) {
+            const char *lg = getenv("HI75C_DAEMON_LOG");
+            if (lg) { FILE *lf = fopen(lg, "a"); if (lf) { fputs("stopped by window\n", lf); fclose(lf); } }
+            break;
+        }
         memset(profile, 0, sizeof(profile));
         for (i = 0; i < KEY_COUNT; i++) {
             int at = KEYS[i].idx;
