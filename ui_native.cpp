@@ -550,11 +550,13 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     float pad = 16.0f;
     float avail_w = area.Width - pad * 2, avail_h = area.Height - pad * 2;
     float sx = avail_w / BOARD_WIDTH, sy = avail_h / BOARD_HEIGHT;
-    float s = sx < sy ? sx : sy;              /* the size that fits both axes */
-    /* fill the width, but never stretch the keycaps more than 35%: at that
-       point they read as typed keys rather than squashed ones */
-    float rx = (sx <= s * 1.35f) ? sx : s * 1.35f;
-    float sy2 = s;
+    /* Fill the card on both axes. The keyboard's own aspect (2.5:1) is close
+       enough to this card's that the resulting distortion is ~10-15%, which
+       reads as a slightly wide keycap rather than a stretched one. */
+    /* fill the width only as far as the caps stay believable: beyond ~1.35 the
+       keycaps read as squashed rather than wide */
+    float rx = (sx <= sy * 1.35f) ? sx : sy * 1.35f;
+    float sy2 = sy;
     float boardW = BOARD_WIDTH * rx, boardH = BOARD_HEIGHT * sy2;
     float ox = area.X + (area.Width - boardW) / 2;
     float oy = area.Y + (area.Height - boardH) / 2;
@@ -562,14 +564,14 @@ static void draw_keyboard(Graphics *g, const RectF &area, const Color &line, con
     int i;
     /* the legend has to scale with the cap, or text overflows the key when the
        board is drawn small */
-    float legendPx = s * 0.22f;
+    float legendPx = (sy2 < rx ? sy2 : rx) * 0.22f;
     if (legendPx < 6.0f) legendPx = 6.0f;
     if (legendPx > 10.5f) legendPx = 10.5f;
     Font key(g_face, legendPx, FontStyleRegular, UnitPixel);
     SolidBrush textbrush(dim);
     for (i = 0; i < KEY_COUNT; i++) {
-        RectF k(ox + KEYS[i].x * s + gap / 2, oy + KEYS[i].y * s + gap / 2,
-                KEYS[i].w * s - gap, KEYS[i].h * s - gap);
+        RectF k(ox + KEYS[i].x * rx + gap / 2, oy + KEYS[i].y * sy2 + gap / 2,
+                KEYS[i].w * rx - gap, KEYS[i].h * sy2 - gap);
         {
             int hot = (g_hover == 1000 + i);
             /* side wall first, then the lit top face: this is what makes a
