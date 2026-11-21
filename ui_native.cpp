@@ -1331,6 +1331,20 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
             }
         }
     }
+    if (strstr(cmdline, "--verify")) {
+        char pathA[MAX_PATH];
+        wchar_t path[MAX_PATH];
+        if (sscanf(cmdline, "%*s %259s", pathA) == 1) {
+            MultiByteToWideChar(CP_ACP, 0, pathA, -1, path, MAX_PATH);
+            {
+                int ok = app_verify_release(path);
+                FILE *f = fopen("verify.log", "w");    /* no console in a GUI build */
+                if (f) { fprintf(f, "%s\n", ok ? "ok" : "FAILED"); fclose(f); }
+                return ok ? 0 : 1;
+            }
+        }
+        return 2;
+    }
     if (cmdline && strstr(cmdline, "--uninstall")) {
         app_init();
         app_uninstall();

@@ -12,7 +12,7 @@ TARGET = "x86_64-windows-gnu"
 
 BASE = [ZIG, "cc", "-target", TARGET, "-Os", "-I", str(HERE)]
 GUI_LIBS = ["-lgdiplus", "-lgdi32", "-luser32", "-lshell32", "-lole32", "-ladvapi32",
-            "-lsetupapi", "-lhid", "-luuid", "-lcomdlg32", "-lwinhttp", "-lurlmon"]
+            "-lsetupapi", "-lhid", "-luuid", "-lcomdlg32", "-lbcrypt", "-lwinhttp", "-lurlmon"]
 DAEMON_LIBS = ["-lhid", "-lsetupapi", "-luser32"]
 
 
