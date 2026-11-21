@@ -283,6 +283,7 @@ static int effect_icon(int i, int hw) {
 }
 
 
+static float g_scale = 1.0f;   /* physical pixels per logical pixel */
 static int g_page;   /* 0 lighting, 1 keymap, 2 about */
 
 static void draw_rail(Graphics *g, const RECT &rc, int w, const Color &accent,
@@ -639,14 +640,25 @@ static void dark_title_bar(HWND hwnd) {
 static void paint(HWND hwnd) {
     PAINTSTRUCT ps;
     HDC dc = BeginPaint(hwnd, &ps);
-    RECT rc;
-    GetClientRect(hwnd, &rc);
+    RECT rcPhys, rc;
+    GetClientRect(hwnd, &rcPhys);
+    rc = rcPhys;
+    if (g_scale > 1.001f || g_scale < 0.999f) {
+        /* lay out in logical pixels so every literal in this file keeps its
+           intended physical size on a scaled display */
+        rc.right = (LONG)(rcPhys.right / g_scale);
+        rc.bottom = (LONG)(rcPhys.bottom / g_scale);
+    }
 
     HDC mem = CreateCompatibleDC(dc);
-    HBITMAP bmp = CreateCompatibleBitmap(dc, rc.right, rc.bottom);
+    HBITMAP bmp = CreateCompatibleBitmap(dc, rcPhys.right, rcPhys.bottom);
     HBITMAP old = (HBITMAP)SelectObject(mem, bmp);
     {
         Graphics g(mem);
+        if (g_scale > 1.001f || g_scale < 0.999f) {
+            Matrix m(g_scale, 0.0f, 0.0f, g_scale, 0.0f, 0.0f);
+            g.SetTransform(&m);
+        }
         g.SetSmoothingMode(SmoothingModeAntiAlias);
         g.SetTextRenderingHint(TextRenderingHintClearTypeGridFit);
         g.SetPixelOffsetMode(PixelOffsetModeHalf);
@@ -1041,14 +1053,16 @@ rendered:
             dbg("hot %d %d %d %d %d", g_hot[hi].id, g_hot[hi].x, g_hot[hi].y,
                 g_hot[hi].w, g_hot[hi].h);
     }
-    BitBlt(dc, 0, 0, rc.right, rc.bottom, mem, 0, 0, SRCCOPY);
+    BitBlt(dc, 0, 0, rcPhys.right, rcPhys.bottom, mem, 0, 0, SRCCOPY);
     SelectObject(mem, old);
     DeleteObject(bmp);
     DeleteDC(mem);
     EndPaint(hwnd, &ps);
 }
 
-static int hit(int x, int y) {
+static int hit(int px, int py) {
+    int x = g_scale > 0.001f ? (int)(px / g_scale) : px;
+    int y = g_scale > 0.001f ? (int)(py / g_scale) : py;
     int i;
     for (i = 0; i < g_hot_n; i++)
         if (x >= g_hot[i].x && x < g_hot[i].x + g_hot[i].w &&
@@ -1157,8 +1171,8 @@ static LRESULT CALLBACK proc(HWND h, UINT m, WPARAM w, LPARAM l) {
         case WM_GETMINMAXINFO:
             {
                 MINMAXINFO *mm = (MINMAXINFO *)l;
-                mm->ptMinTrackSize.x = 960;
-                mm->ptMinTrackSize.y = 900;
+                mm->ptMinTrackSize.x = (LONG)(960 * g_scale);
+                mm->ptMinTrackSize.y = (LONG)(900 * g_scale);
             }
             return 0;
         case WM_TIMER:
@@ -1268,6 +1282,23 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
             mon = MonitorFromRect(&saved, MONITOR_DEFAULTTONULL);
             mi.cbSize = sizeof(mi);
             if (!mon || !GetMonitorInfoW(mon, &mi)) { wx = CW_USEDEFAULT; wy = CW_USEDEFAULT; }
+        }
+        {
+            HDC sdc = GetDC(NULL);
+            int dpi = GetDeviceCaps(sdc, LOGPIXELSY);
+            ReleaseDC(NULL, sdc);
+            if (dpi >= 96 && dpi <= 480) g_scale = (float)dpi / 96.0f;
+            {
+                /* override for testing the scaled layout on a 96-dpi display */
+                char sc[16];
+                if (GetEnvironmentVariableA("HI75C_SCALE", sc, sizeof(sc)) > 0) {
+                    float f = (float)atof(sc);
+                    if (f >= 1.0f && f <= 3.0f) g_scale = f;
+                }
+            }
+            /* the window is created in physical pixels; the layout stays logical */
+            ww = (int)(ww * g_scale);
+            wh = (int)(wh * g_scale);
         }
         g_hwnd = CreateWindowA("Hi75CApp", "LEOBOG Hi75C Pro", WS_OVERLAPPEDWINDOW,
                                wx, wy, ww, wh, NULL, NULL, inst, NULL);
