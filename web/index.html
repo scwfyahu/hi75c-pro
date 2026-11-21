@@ -1,0 +1,217 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LEOBOG Hi75C Pro</title>
+<style>
+:root{--bg:#08090a;--card:#0d0e10;--line:#1a1c1f;--ink:#ecedef;--dim:#9a9da3;--mut:#6a6e75;--acc:#FF8C1A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 system-ui,Segoe UI,sans-serif;
+     display:flex;min-height:100vh}
+.rail{width:190px;border-right:1px solid var(--line);padding:22px 0;flex:0 0 auto}
+.brand{display:flex;gap:10px;align-items:center;padding:0 20px 22px}
+.mark{width:30px;height:30px;border-radius:9px;background:#161920;border:1px solid #2a2f3a;
+      display:grid;place-items:center}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--acc)}
+.brand b{display:block;font-size:12.5px;letter-spacing:.04em}
+.brand span{font-size:10.5px;color:var(--mut)}
+.lab{font-size:9px;letter-spacing:.16em;color:#4a505c;padding:0 20px 8px;font-weight:600}
+a.nav{display:block;padding:8px 20px;color:var(--dim);text-decoration:none;font-size:12px}
+a.nav.on{color:var(--ink);background:#141519;font-weight:600}
+.dev{margin-top:auto;padding:16px 20px;font-size:10px;color:var(--mut)}
+main{flex:1;padding:22px 26px;min-width:0}
+header{display:flex;align-items:flex-start;gap:16px;margin-bottom:18px}
+h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.01em}
+.sub{color:var(--mut);font-size:11.5px;margin-top:2px}
+.pill{margin-left:auto;border:1px solid var(--line);border-radius:8px;padding:7px 12px;font-size:11px;
+      background:var(--card);cursor:pointer;color:var(--ink)}
+.pill:hover{background:#161920}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.hd{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.hd .bar{width:3px;height:12px;background:var(--acc);border-radius:2px}
+.hd b{font-size:9.5px;letter-spacing:.16em;color:var(--dim)}
+.hd .right{margin-left:auto;font-size:10.5px;color:var(--mut)}
+#board{display:grid;gap:2px;grid-template-columns:repeat(60,1fr)}
+.key{background:#1f2229;border-radius:4px;height:26px;font-size:8px;color:#c9ced8;
+     display:grid;place-items:center;user-select:none;grid-column:span 3;grid-row:span 1}
+.key.w2{grid-column:span 6}.key.w3{grid-column:span 9}
+.effects{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.eff{border:1px solid var(--line);background:#181b21;border-radius:9px;padding:8px 6px;text-align:center;
+     cursor:pointer;font-size:11.5px;color:var(--dim)}
+.eff small{display:block;font-size:9px;color:var(--mut);margin-top:2px}
+.eff:hover{background:#20242c}
+.eff.on{background:#2a2f3a;border-color:#5a6172;color:#f6f7fa;font-weight:600}
+.cols{display:grid;grid-template-columns:1fr 300px;gap:16px}
+.sw{width:28px;height:28px;border-radius:8px;display:inline-block;margin-right:6px;cursor:pointer}
+.sw.on{outline:1px solid #ecedef;outline-offset:3px}
+.row{display:flex;justify-content:space-between;font-size:9.5px;color:var(--dim);
+     letter-spacing:.16em;margin:14px 0 6px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.run{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:11px;color:var(--ink);
+     display:flex;gap:10px;align-items:center}
+.run i{width:7px;height:7px;border-radius:50%;background:var(--acc);display:inline-block}
+.run .r{margin-left:auto;color:var(--mut);font-size:10.5px}
+#log{font:11px ui-monospace,Consolas,monospace;color:var(--mut);min-height:18px}
+</style></head><body>
+<div class="rail">
+  <div class="brand"><div class="mark"><div class="dot" id="dot"></div></div>
+    <div><b>LEOBOG</b><span>Hi75C Pro</span></div></div>
+  <div class="lab">SECTIONS</div>
+  <a class="nav on" href="#">Lighting</a>
+  <a class="nav" href="#">Keymap</a>
+  <a class="nav" href="#">About</a>
+  <div class="dev" id="dev">not connected</div>
+</div>
+<main>
+  <header>
+    <div><h1>LEOBOG Hi75C Pro</h1><div class="sub">Talks to the keyboard directly over WebHID.</div></div>
+    <button class="pill" id="connect">Connect keyboard</button>
+  </header>
+
+  <div class="card">
+    <div class="hd"><span class="bar"></span><b>BOARD</b><span class="right" id="boardnote">preview</span></div>
+    <div id="board"></div>
+  </div>
+
+  <div class="cols">
+    <div class="card">
+      <div class="hd"><span class="bar"></span><b>EFFECTS</b><span class="right">17 firmware</span></div>
+      <div class="effects" id="effects"></div>
+    </div>
+    <div class="card">
+      <div class="hd"><span class="bar"></span><b>COLOUR</b></div>
+      <div id="swatches"></div>
+      <div class="row"><span>BRIGHTNESS</span><span id="bval">70%</span></div>
+      <input type="range" id="bright" min="0" max="9" value="6">
+      <div class="row"><span>SPEED</span><span id="sval">2x</span></div>
+      <input type="range" id="speed" min="0" max="3" value="1">
+      <div class="run"><i></i><span id="run">—</span><span class="r" id="status">not written</span></div>
+    </div>
+  </div>
+  <div id="log"></div>
+</main>
+<script>
+const EFFECTS=[[1,"Fixed On","one colour"],[2,"Breathing","slow pulse"],[3,"Spectrum Cycle","hue sweep"],
+[4,"Row Ripple","row by row"],[5,"Raindrops","flickering dots"],[6,"Slow Wave","travelling wave"],
+[7,"Board Ripple","ripple outward"],[8,"Stars Twinkle","twinkling"],[10,"Snake","snake trail"],
+[11,"Neon Stream","streaming hue"],[12,"Reactive","reactive"],[13,"Center Wave","wave from centre"],
+[15,"Rainbow Wheel","hue by angle"],[16,"Waterfall","falling bars"],[17,"Fast Flicker","fast blink"],
+[32,"Per-Key Custom","per-key colours"],[0,"Off","dark board"]];
+const COLS=["#FF2B2B","#FF8C1A","#FFE11A","#2EE65C","#1AE5FF","#2E6BFF","#B833FF"];
+const KEYS=["Esc","F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12","`","1","2","3","4","5","6","7","8","9","0","-","=","Bksp","Tab","Q","W","E","R","T","Y","U","I","O","P","[","]","\\","Del","Caps","A","S","D","F","G","H","J","K","L",";","'","Enter","PgUp","Shift","Z","X","C","V","B","N","M",",",".","/","Shift","PgDn","Ctrl","Win","Alt","","Alt","Fn","Ctrl","←","↓","→"];
+let dev=null, effect=2, colour=1, bright=6, speed=1;
+
+/* ---- protocol: 20-byte reports, 0x13 <cmd> <count> <idx> <sub|len> .... checksum ---- */
+function frame(cmd,count,index,sub,payload){
+  const f=new Uint8Array(20);
+  f[0]=0x13; f[1]=cmd; f[2]=count; f[3]=index; f[4]=((sub&0xf)<<4)|(payload.length&0xf);
+  f.set(payload,5);
+  let s=0; for(let i=0;i<19;i++) s+=f[i]; f[19]=s&0xff; return f;
+}
+function chunk(cmd,blob,start,len,maxCount){
+  const n=Math.ceil(len/14), out=[];
+  for(let i=0;i<n;i++){
+    const off=start+i*14, take=Math.min(14,len-i*14);
+    out.push(frame(cmd,n,i,0,blob.slice(off,off+take)));
+  }
+  return out;
+}
+async function send(frames){
+  for(const f of frames) await dev.sendReport(0, f);
+}
+async function readCmd(cmd,sub,len){
+  const n=Math.ceil(len/14), buf=new Uint8Array(len);
+  const collect=new Promise(res=>{
+    const want=n, seen=new Set();
+    const h=e=>{const d=new Uint8Array(e.data.buffer);
+      if(d[1]!==cmd) return;
+      const idx=d[3], ln=d[4]&0xf;
+      if(idx>=n) return;
+      buf.set(d.slice(5,5+ln), idx*14); seen.add(idx);
+      if(seen.size>=n){ dev.removeEventListener('inputreport',h); res(true); }};
+    dev.addEventListener('inputreport',h);
+    setTimeout(()=>{dev.removeEventListener('inputreport',h); res(seen.size>=n);},2500);
+  });
+  const req=frame(cmd,n,0,sub,new Uint8Array(0));
+  await dev.sendReport(0, req);
+  return await collect;
+}
+async function apply(){
+  if(!dev){ log("connect a keyboard first"); return; }
+  try{
+    const cfg=new Uint8Array(128);
+    if(!await readCmd(0x44,0,128)) { log("could not read the config"); return; }
+    // readCmd leaves data in a closure; re-read into cfg via a second pass
+    const got=await readCmdInto(0x44,0,cfg,128);
+    if(!got){ log("config read failed"); return; }
+    if(cfg[126]!==0x5a||cfg[127]!==0xa5){ log("config has no 5A A5 magic — refusing to write"); return; }
+    cfg[10]=effect;
+    const slot=58+(effect-1)*2;
+    if(slot+1<128){ cfg[slot]=bright; cfg[slot+1]=((speed&3)<<4)|(colour&7); }
+    await send(chunk(0x04,cfg,0,128));
+    status("written to board");
+    log("effect "+effect+" written");
+  }catch(e){ log("write failed: "+e.message); }
+}
+async function readCmdInto(cmd,sub,dst,len){
+  const n=Math.ceil(len/14); let got=0;
+  return await new Promise(res=>{
+    const h=e=>{const d=new Uint8Array(e.data.buffer);
+      if(d[1]!==cmd) return;
+      const idx=d[3], ln=d[4]&0xf;
+      if(idx>=n) return; dst.set(d.slice(5,5+ln), idx*14); got++;
+      if(got>=n){ dev.removeEventListener('inputreport',h); res(true);} };
+    dev.addEventListener('inputreport',h);
+    dev.sendReport(0, frame(cmd,n,0,sub,new Uint8Array(0))).catch(()=>{});
+    setTimeout(()=>{dev.removeEventListener('inputreport',h); res(got>=n);},2500);
+  });
+}
+function log(m){ document.getElementById('log').textContent=m; }
+function status(m){ document.getElementById('status').textContent=m; }
+function render(){
+  document.getElementById('bval').textContent=(bright+1)*10+"%";
+  document.getElementById('sval').textContent=(speed+1)+"x";
+  document.getElementById('bright').value=bright;
+  document.getElementById('speed').value=speed;
+  document.querySelectorAll('.eff').forEach(el=>el.classList.toggle('on',+el.dataset.id===effect));
+  document.querySelectorAll('.sw').forEach((el,i)=>el.classList.toggle('on',i===colour));
+  document.documentElement.style.setProperty('--acc',COLS[colour]);
+  const board=document.getElementById('board');
+  board.querySelectorAll('.key').forEach((k,i)=>{
+    const c=COLS[colour];
+    k.style.background = effect===0 ? "#1f2229" : mix("#1f2229", c, 0.35);
+  });
+  const name=(EFFECTS.find(e=>e[0]===effect)||[0,"Off"])[1];
+  document.getElementById('run').textContent=name+"  ·  "+(colour+1)+"/7  ·  "+(bright+1)*10+"%  ·  "+(speed+1)+"x";
+}
+function mix(a,b,t){
+  const p=x=>parseInt(x.slice(1),16), A=p(a),B=p(b);
+  const r=Math.round(((A>>16)&255)+(((B>>16)&255)-((A>>16)&255))*t);
+  const g=Math.round(((A>>8)&255)+(((B>>8)&255)-((A>>8)&255))*t);
+  const bl=Math.round((A&255)+((B&255)-(A&255))*t);
+  return `rgb(${r},${g},${bl})`;
+}
+document.getElementById('effects').innerHTML=EFFECTS.map(([id,n,h])=>
+  `<div class="eff" data-id="${id}">${n}<small>${h}</small></div>`).join("");
+document.querySelectorAll('.eff').forEach(el=>el.onclick=()=>{effect=+el.dataset.id;render();apply();});
+document.getElementById('swatches').innerHTML=COLS.map((c,i)=>
+  `<span class="sw" data-i="${i}" style="background:${c}"></span>`).join("");
+document.querySelectorAll('.sw').forEach(el=>el.onclick=()=>{colour=+el.dataset.i;render();apply();});
+document.getElementById('bright').oninput=e=>{bright=+e.target.value;render();apply();};
+document.getElementById('speed').oninput=e=>{speed=+e.target.value;render();apply();};
+document.getElementById('connect').onclick=async()=>{
+  try{
+    const [d]=await navigator.hid.requestDevice({filters:[{vendorId:0x258a},{vendorId:0x3554}]});
+    if(!d) return;
+    await d.open(); dev=d;
+    document.getElementById('dev').textContent="connected · "+d.productName;
+    status("connected"); log("device open: "+d.productName);
+    const good=await readCmdInto(0x44,0,new Uint8Array(128),128);
+    status(good?"ready":"no reply to read");
+  }catch(e){ log("connect failed: "+e.message); }
+};
+document.getElementById('board').innerHTML=KEYS.map(k=>{
+  const wide = k===""?6 : (["Bksp","Tab","Caps","Enter","Shift","Ctrl","Alt","Win","Fn","PgUp","PgDn","Del","Esc"].includes(k)&&k.length>3?9:3);
+  const label = k===""?"":k;
+  return `<div class="key" style="grid-column:span ${wide}">${label}</div>`;
+}).join("");
+render();
+</script></body></html>
