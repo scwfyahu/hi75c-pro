@@ -614,7 +614,14 @@ void app_import_effect(void *owner) {
     Effect *fx = NULL;
     char err[128] = "";
 
-    app_stop_effect();
+    /* end any running animation, but only wait long enough for one frame:
+       the old 1.5 s join froze the window on every Import click */
+    app_request_stop_effect();
+    if (g_fx_thread) {
+        WaitForSingleObject(g_fx_thread, 300);
+        CloseHandle(g_fx_thread);
+        g_fx_thread = NULL;
+    }
     memset(&ofn, 0, sizeof(ofn));
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = (HWND)owner;
@@ -631,6 +638,12 @@ void app_import_effect(void *owner) {
     lstrcpynA(g_fx_name, fx->name[0] ? fx->name : "imported effect", sizeof(g_fx_name));
     InterlockedExchange(&g_fx_stop, 0);
     g_fx_thread = CreateThread(NULL, 0, fx_run, fx, 0, NULL);
+    if (!g_fx_thread) {
+        expr_free(fx->r); expr_free(fx->g); expr_free(fx->b);
+        free(fx);
+        snprintf(g_state.note, sizeof(g_state.note), "could not start the effect thread");
+        return;
+    }
     snprintf(g_state.note, sizeof(g_state.note), "running \"%s\" at %d fps", g_fx_name, fx->fps);
 }
 
