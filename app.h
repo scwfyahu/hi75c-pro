@@ -15,6 +15,7 @@ void      app_init(void);
 void      app_pump(void *hwnd);
 void      app_shutdown(void);
 int       app_connected(void);
+const char *app_device_path(void);  /* hidraw path of the open device, "" when none */
 AppState *app_state(void);
 
 int         app_effect_count(void);

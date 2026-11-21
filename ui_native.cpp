@@ -428,10 +428,23 @@ static void draw_secondary(Graphics *g, const RECT &rc, int cx, int cw, int top,
              RectF(card.X + 22, card.Y + 126, 620, 20), 12.5f, accent, StringAlignmentNear);
         text(g, "17 firmware effects   |   7 colours   |   2 layers   |   per-key remap",
              RectF(card.X + 22, card.Y + 166, 620, 20), 12.5f, dim, StringAlignmentNear);
-        text(g, "Version", RectF(card.X + 22, card.Y + 210, 80, 18), 10.5f,
-             Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
-        text(g, app_version(), RectF(card.X + 22, card.Y + 228, 200, 20), 13.0f, ink,
-             StringAlignmentNear);
+        {
+            const char *keys[4] = {"Version", "Device", "Path", "Effects"};
+            char vals[4][320];
+            snprintf(vals[0], sizeof(vals[0]), "%s", app_version());
+            snprintf(vals[1], sizeof(vals[1]), "%s", app_connected() ? "connected" : "not connected");
+            snprintf(vals[2], sizeof(vals[2]), "%s",
+                     app_device_path()[0] ? app_device_path() : "none");
+            snprintf(vals[3], sizeof(vals[3]), "%d firmware effects available", app_effect_count());
+            int r;
+            for (r = 0; r < 4; r++) {
+                float ry = card.Y + 208 + r * 44;
+                text(g, keys[r], RectF(card.X + 22, ry, 120, 16), 9.5f,
+                     Color(255, 110, 120, 138), StringAlignmentNear, NULL, true);
+                text(g, vals[r], RectF(card.X + 22, ry + 17, card.Width - 60, 20), 12.0f,
+                     r == 2 && !app_connected() ? dim : ink, StringAlignmentNear);
+            }
+        }
     }
 }
 

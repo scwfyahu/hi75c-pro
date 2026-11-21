@@ -129,6 +129,10 @@ static int device_open(void) {
     return r;
 }
 
+static char g_dev_path[512];   /* last hidraw path we opened, for diagnostics */
+
+const char *app_device_path(void) { return g_dev_path; }
+
 static int device_open_locked(void) {
     GUID guid;
     HDEVINFO set;
@@ -172,6 +176,8 @@ static int device_open_locked(void) {
                 caps.OutputReportByteLength == RPT_LEN) {
                 if (caps.UsagePage >= 0xFF00) {
                     if (g_dev != INVALID_HANDLE_VALUE) CloseHandle(g_dev);
+                    WideCharToMultiByte(CP_UTF8, 0, detail->DevicePath, -1, g_dev_path,
+                                        sizeof(g_dev_path), NULL, NULL);
                     g_dev = CreateFileW(detail->DevicePath, GENERIC_READ | GENERIC_WRITE,
                                         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                                         OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
@@ -190,6 +196,7 @@ static int device_open_locked(void) {
     SetupDiDestroyDeviceInfoList(set);
 
     if (g_dev == INVALID_HANDLE_VALUE && have_fallback) {
+        WideCharToMultiByte(CP_UTF8, 0, fallback, -1, g_dev_path, sizeof(g_dev_path), NULL, NULL);
         g_dev = CreateFileW(fallback, GENERIC_READ | GENERIC_WRITE,
                             FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                             OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
