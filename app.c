@@ -206,6 +206,16 @@ static int device_open_locked(void) {
 
 /* ------------------------------------------------------------------- work */
 
+
+/* a handle that fails to answer is stale: unplugging the keyboard leaves the
+   handle open, and every later write then fails until the user rescans */
+static void device_lost(void) {
+    hid_enter();
+    if (g_dev != INVALID_HANDLE_VALUE) { CloseHandle(g_dev); g_dev = INVALID_HANDLE_VALUE; }
+    hid_leave();
+    g_state.connected = 0;
+}
+
 static void apply_effect(void) {
     unsigned char cfg[CFG_LEN];
     int id = g_state.effect;
@@ -224,6 +234,7 @@ static void apply_effect(void) {
     hid_enter();
     if (!p_read(dev(), 0x44, 0, cfg, CFG_LEN)) {
         hid_leave();
+        device_lost();
         strcpy(g_state.note, "could not read the keyboard settings");
         return;
     }
@@ -239,6 +250,7 @@ static void apply_effect(void) {
     hid_enter();
     if (!p_write(dev(), 0x04, 0, cfg, CFG_LEN)) {
         hid_leave();
+        device_lost();
         strcpy(g_state.note, "the keyboard did not accept the settings");
         return;
     }
@@ -645,6 +657,7 @@ static int keymap_load(void) {
     hid_enter();
     if (!p_read(dev(), 0x41, g_layer, g_map_cache, KEYMAP_LEN)) {
         hid_leave();
+        device_lost();
         strcpy(g_state.note, "could not read the keymap");
         return 0;
     }
@@ -694,6 +707,7 @@ int app_keymap_set(int idx, int type, int usage) {
     hid_enter();
     if (!p_write(dev(), 0x01, g_layer, g_map_cache, KEYMAP_LEN)) {
         hid_leave();
+        device_lost();
         strcpy(g_state.note, "the keyboard rejected the keymap");
         return 0;
     }
