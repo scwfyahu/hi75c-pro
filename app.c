@@ -1023,7 +1023,10 @@ int app_self_test(void) {
         CHECK(f[19] == (sum & 0xff), "checksum correct");
     }
     CHECK(app_effect_count() == 17, "17 effects exposed to the UI");
-    CHECK(app_effect_id(1) == 2, "Breathing maps to hardware id 2");
+    CHECK(app_effect_id(1) == 1, "Fixed On maps to hardware id 1");
+    CHECK(app_effect_id(2) == 2, "Breathing maps to hardware id 2");
+    CHECK(app_effect_id(16) == 32, "Per-Key Custom maps to hardware id 32");
+    CHECK(app_effect_id(99) == 0, "out-of-range index is rejected");
     SAY("");
     SAY("%d checks, %d failures", pass + fail, fail);
     if (log) fclose(log);

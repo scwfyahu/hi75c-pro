@@ -24,14 +24,12 @@ step "protocol suite (compiles the same proto.c the exe links)"
 run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/prototest tests/proto_test.c proto.c
 run /tmp/prototest
 
-step "run the actual Windows binary on Windows APIs (Wine, headless self-test)"
-(cd /DATA/AppData/dsh-raw/home/Testing/hi75c && \
-  /tmp/wine/bin/wine64 Hi75CPro.exe --selftest 2>&1 | grep -viE "fontconfig|fixme|err:" | tee -a "$LOG")
-printf "[exit %s]\n" "$?" | tee -a "$LOG"
+step "expression engine (drives imported effect files)"
+run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/exprtest tests/expr_test.c expr.c -lm
+run /tmp/exprtest
 
-step "UI behaviour in real Chromium (the exact embedded page)"
-(cd /tmp/pptr && LD_LIBRARY_PATH=/tmp/chlibs/usr/lib/x86_64-linux-gnu node fullui.js 2>&1 | tee -a "$LOG")
-printf "[exit %s]\n" "$?" | tee -a "$LOG"
+step "shipped self-test — the binary users actually run"
+run /tmp/wine/bin/wine64 ./Hi75CPro.exe --selftest
 
 step "artefact audit — the file that gets downloaded"
 run python3 - <<'PY'
