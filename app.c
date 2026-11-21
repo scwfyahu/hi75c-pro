@@ -708,10 +708,23 @@ void app_load_state(int *wx, int *wy, int *ww, int *wh) {
     if (!f) return;
     while (fgets(line, sizeof(line), f)) {
         int a, b, c, d;
-        if (sscanf(line, "effect=%d", &a) == 1) g_state.effect = a;
-        else if (sscanf(line, "colour=%d", &a) == 1) g_state.colour = a;
-        else if (sscanf(line, "brightness=%d", &a) == 1) g_state.brightness = a;
-        else if (sscanf(line, "speed=%d", &a) == 1) g_state.speed = a;
+        if (sscanf(line, "effect=%d", &a) == 1) {
+            /* only accept ids that exist; anything else would be written to the
+               board as a bogus slot */
+            int i, okid = (a == 0);
+            for (i = 0; i < EFFECT_COUNT && !okid; i++)
+                if (atoi(EFFECTS[i][1]) == a) okid = 1;
+            g_state.effect = okid ? a : 0;
+        }
+        else if (sscanf(line, "colour=%d", &a) == 1) {
+            g_state.colour = (a >= 0 && a <= 6) ? a : 4;
+        }
+        else if (sscanf(line, "brightness=%d", &a) == 1) {
+            g_state.brightness = (a >= 0 && a <= 9) ? a : 5;
+        }
+        else if (sscanf(line, "speed=%d", &a) == 1) {
+            g_state.speed = (a >= 0 && a <= 3) ? a : 1;
+        }
         else if (sscanf(line, "window=%d,%d,%d,%d", &a, &b, &c, &d) == 4 && wx) {
             *wx = a; *wy = b; *ww = c; *wh = d;
         }
