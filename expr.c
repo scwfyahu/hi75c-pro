@@ -54,6 +54,7 @@ static int arity_of(const char *name) {
     return -1;                       /* unknown name */
 }
 
+static Node *parse_bin(int minprec);
 static Node *parse_primary(void) {
     skip();
     if (*P == '(') {
@@ -73,7 +74,8 @@ static Node *parse_primary(void) {
         n = node(3);
         if (!n) return NULL;
         n->op = '-';
-        n->a = parse_primary();
+        /* exponent binds tighter than the sign, so -2^2 is -(2^2) */
+        n->a = parse_bin(6);
         if (!n->a) return NULL;
         return n;
     }
@@ -81,6 +83,7 @@ static Node *parse_primary(void) {
         char *end = NULL;
         double v = strtod(P, &end);
         Node *n = node(0);
+        if (!n || end == P) return NULL;     /* allocation failure or no digits */
         n->num = v;
         P = end;
         return n;

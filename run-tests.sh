@@ -36,6 +36,10 @@ step "function arity and name resolution (typos must not evaluate)"
 run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/arity tests/expr_arity_test.c expr.c -lm
 run /tmp/arity
 
+step "operator precedence (unary minus versus exponent)"
+run $ZIG cc -target x86_64-linux-gnu -O1 -I. -o /tmp/prec tests/expr_precedence_test.c expr.c -lm
+run /tmp/prec
+
 step "shipped self-test — the binary users actually run"
 run /tmp/wine/bin/wine64 ./Hi75CPro.exe --selftest
 
