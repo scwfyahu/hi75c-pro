@@ -22,6 +22,7 @@ static void enqueue(int kind, int a, int b, int c);
 #include <hidsdi.h>
 #include <hidpi.h>
 #include <stdio.h>
+#include <io.h>
 #include <stdlib.h>
 #include <string.h>
 #include "board.h"
@@ -804,15 +805,25 @@ static void state_path(char *out, int cap) {
 }
 
 void app_save_state(int wx, int wy, int ww, int wh) {
-    char path[MAX_PATH];
+    char path[MAX_PATH], staged[MAX_PATH + 8];
     FILE *f;
+    int wrote;
     state_path(path, MAX_PATH);
     if (!path[0]) return;
-    f = fopen(path, "w");
+    /* write beside the real file and swap it in: opening the destination with
+       "w" destroyed the only copy before a single new byte existed, so a crash
+       or a full disk left the user with no settings at all */
+    snprintf(staged, sizeof(staged), "%s.new", path);
+    f = fopen(staged, "w");
     if (!f) return;
-    fprintf(f, "effect=%d\ncolour=%d\nbrightness=%d\nspeed=%d\nwindow=%d,%d,%d,%d\n",
-            g_state.effect, g_state.colour, g_state.brightness, g_state.speed, wx, wy, ww, wh);
+    wrote = fprintf(f, "effect=%d\ncolour=%d\nbrightness=%d\nspeed=%d\nwindow=%d,%d,%d,%d\n",
+                    g_state.effect, g_state.colour, g_state.brightness, g_state.speed,
+                    wx, wy, ww, wh);
+    if (wrote < 0) { fclose(f); DeleteFileA(staged); return; }
+    if (fflush(f) != 0) { fclose(f); DeleteFileA(staged); return; }
+    if (_commit(_fileno(f)) != 0) { fclose(f); DeleteFileA(staged); return; }
     fclose(f);
+    if (!MoveFileExA(staged, path, MOVEFILE_REPLACE_EXISTING)) DeleteFileA(staged);
 }
 
 void app_load_state(int *wx, int *wy, int *ww, int *wh) {
@@ -842,7 +853,12 @@ void app_load_state(int *wx, int *wy, int *ww, int *wh) {
             g_state.speed = (a >= 0 && a <= 3) ? a : 1;
         }
         else if (sscanf(line, "window=%d,%d,%d,%d", &a, &b, &c, &d) == 4 && wx) {
-            *wx = a; *wy = b; *ww = c; *wh = d;
+            /* these feed CreateWindow and the backing bitmap: bound them, or a
+               hand-edited file asks for a negative or 2 GB-wide window */
+            if (c >= 400 && c <= 8000 && d >= 300 && d <= 8000 &&
+                a > -32000 && a < 32000 && b > -32000 && b < 32000) {
+                *wx = a; *wy = b; *ww = c; *wh = d;
+            }
         }
     }
     fclose(f);
